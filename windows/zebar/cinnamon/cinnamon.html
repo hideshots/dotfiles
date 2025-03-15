@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Base styles for consistency -->
+    <link rel="stylesheet" type="text/css" href="../normalize.css" />
+    <!-- Custom styles -->
+    <link rel="stylesheet" type="text/css" href="./cinnamon.css" />
+
+    <!-- Babel for buildless React -->
+    <script
+      src="https://unpkg.com/@babel/standalone@7.25.6/babel.min.js"
+      integrity="sha256-aS0B0wnsaDByLfE16h4MDCP1fQFccysd1YWOcV+gbBo="
+      crossorigin="anonymous"
+    ></script>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module">
+      import React, { useState, useEffect } from 'https://esm.sh/react@18?dev';
+      import { createRoot } from 'https://esm.sh/react-dom@18/client?dev';
+      import * as zebar from 'https://esm.sh/zebar@2';
+
+      const SHOW_NETWORK = true;
+      const SHOW_MEMORY = false;
+      const SHOW_CPU = false;
+
+      const providers = zebar.createProviderGroup({
+        network: { type: 'network' },
+        glazewm: { type: 'glazewm' },
+        cpu: { type: 'cpu' },
+        date: { type: 'date', formatting: 'EEE MMM d\xa0\xa0h:mm a' },
+        media: { type: 'media' },
+        memory: { type: 'memory' },
+        weather: { type: 'weather', latitude: 45.0355, longitude: 38.9753 },
+      });
+
+      createRoot(document.getElementById('root')).render(<App />);
+
+      function App() {
+        const [output, setOutput] = useState(providers.outputMap);
+        const [showCelsius, setShowCelsius] = useState(false);
+        const [showAvailableMemory, setShowAvailableMemory] = useState(true);
+        const [weatherHovered, setWeatherHovered] = useState(false);
+
+        useEffect(() => {
+          providers.onOutput(() => setOutput(providers.outputMap));
+        }, []);
+
+        // Helper to return a workspace's indicator classes
+        const getWorkspaceIndicatorClass = (workspace) => {
+          let className = 'workspace-indicator';
+          if (workspace.hasFocus) {
+            className += ' active';
+            if (output.glazewm?.isPaused) {
+              className += ' paused';
+            }
+          }
+          return className;
+        };
+
+        // Weather status to icon
+        function getWeatherIcon(weatherOutput) {
+          const icons = {
+            cloudy_day: 'nf nf-fae-cloud',
+            cloudy_night: 'nf nf-fae-cloud',
+            light_rain_day: 'nf nf-fae-raining',
+            light_rain_night: 'nf nf-fae-raining',
+            heavy_rain_day: 'nf nf-fae-raining',
+            heavy_rain_night: 'nf nf-fae-raining',
+            snow_day: 'nf nf-fae-snowing',
+            snow_night: 'nf nf-fae-snowing',
+            thunder_day: 'nf nf-fae-raining',
+            thunder_night: 'nf nf-fae-raining',
+          };
+          return icons[weatherOutput.status] ? (
+            <i className={icons[weatherOutput.status]}></i>
+          ) : null;
+        }
+
+        // Weather status to text
+        function getWeatherText(weatherOutput) {
+          const textMapping = {
+            clear_day: 'Clear',
+            clear_night: 'Clear',
+            cloudy_day: 'Cloudy',
+            cloudy_night: 'Cloudy',
+            light_rain_day: 'Light Rain',
+            light_rain_night: 'Light Rain',
+            heavy_rain_day: 'Heavy Rain',
+            heavy_rain_night: 'Heavy Rain',
+            snow_day: 'Snow',
+            snow_night: 'Snow',
+            thunder_day: 'Thunder',
+            thunder_night: 'Thunder',
+          };
+          return textMapping[weatherOutput.status];
+        }
+
+        return (
+          <div className="app">
+            <div
+              className="hotcorner"
+              onClick={() =>
+                providers.outputMap.glazewm?.runCommand(
+                  'shell-exec nircmd.exe sendkeypress lwin+tab'
+                )
+              }
+            ></div>
+
+            <div className="left">
+              {output.glazewm && (
+                <>
+                  <div
+                    className="workspaces"
+                    onWheel={(event) => {
+                      // Scroll down to focus next, scroll up to focus previous workspace
+                      if (event.deltaY > 0) {
+                        output.glazewm.runCommand('focus --next-active-workspace');
+                      } else {
+                        output.glazewm.runCommand('focus --prev-active-workspace');
+                      }
+                    }}
+                  >
+                    {output.glazewm.currentWorkspaces.map((workspace) => (
+                      <div
+                        key={workspace.name}
+                        className={getWorkspaceIndicatorClass(workspace)}
+                        onClick={() =>
+                          output.glazewm.runCommand(
+                            `focus --workspace ${workspace.name}`
+                          )
+                        }
+                      ></div>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {SHOW_NETWORK && output.network && (
+                <div
+                  className="network-macos widget-hover"
+                  style={{ cursor: 'default' }}
+                >
+                  {/* Upload */}
+                  <div className="upload">
+                    <i className="nf nf-cod-arrow_small_up"></i>
+                    <span>
+                      {`${
+                        output.network.traffic?.transmitted?.iecValue?.toFixed(2) ||
+                        '0.00'
+                      } ${
+                        output.network.traffic?.transmitted?.iecUnit || 'KiB'
+                      }/s`}
+                    </span>
+                  </div>
+                  {/* Download */}
+                  <div className="download">
+                    <i className="nf nf-cod-arrow_small_down"></i>
+                    <span>
+                      {`${
+                        output.network.traffic?.received?.iecValue?.toFixed(2) ||
+                        '0.00'
+                      } ${
+                        output.network.traffic?.received?.iecUnit || 'KiB'
+                      }/s`}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {SHOW_MEMORY && output.memory && (
+                <div
+                  className="memory"
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => setShowAvailableMemory(!showAvailableMemory)}
+                >
+                  <i className="nf nf-fa-memory"></i>
+                  {output.memory.usedMemory !== undefined &&
+                  output.memory.totalMemory !== undefined ? (
+                    showAvailableMemory ? (
+                      `${(
+                        (output.memory.totalMemory - output.memory.usedMemory) /
+                        (1024 * 1024 * 1024)
+                      ).toFixed(1)} GB`
+                    ) : (
+                      `${Math.ceil(
+                        output.memory.totalMemory / (1024 * 1024 * 1024)
+                      )} GB / ${(
+                        output.memory.usedMemory / (1024 * 1024 * 1024)
+                      ).toFixed(1)} GB`
+                    )
+                  ) : (
+                    'Memory data unavailable'
+                  )}
+                </div>
+              )}
+
+              {SHOW_CPU && output.cpu && (
+                <div className="cpu">
+                  <i className="nf nf-oct-cpu"></i>
+                  {`${output.cpu.usage?.toFixed(1)}%`}
+                </div>
+              )}
+            </div>
+
+            <div className="center">
+              {output.glazewm &&
+                output.glazewm.focusedWorkspace.children.map(
+                  (window) =>
+                    window.hasFocus && (
+                      <div
+                        key={window.id}
+                        className={`focused-workspace ${
+                          output.glazewm.isPaused ? 'paused' : ''
+                        }`}
+                      >
+                        {window.title?.substring(0, 80) ?? 'No title'}
+                      </div>
+                    )
+                )}
+            </div>
+
+            <div className="right">
+              {output.media && (
+                <div
+                  className={`media ${
+                    output.media.session?.artist?.length +
+                      output.media.session?.title?.length >=
+                    35
+                      ? 'scrollable'
+                      : ''
+                  }`}
+                >
+                  {output.media.session?.artist && output.media.session?.title ? (
+                    output.media.session.artist.length +
+                      output.media.session.title.length >=
+                    35 ? (
+                      <div className="scroll">
+                        <div className="content">
+                          {output.media.session.artist} -{' '}
+                          {output.media.session.title}&nbsp;&nbsp;
+                        </div>
+                        <div className="content duplicate">
+                          {output.media.session.artist} -{' '}
+                          {output.media.session.title}&nbsp;&nbsp;
+                        </div>
+                      </div>
+                    ) : (
+                      <span>
+                        {output.media.session.artist} -{' '}
+                        {output.media.session.title}
+                      </span>
+                    )
+                  ) : (
+                    <span> </span>
+                  )}
+
+                  <div className="media-controls">
+                    <i
+                      className="nf nf-md-skip_previous"
+                      onClick={() => output.media.previous()}
+                    ></i>
+                    <i
+                      className={
+                        output.media.session?.isPlaying
+                          ? 'nf nf-md-pause'
+                          : 'nf nf-md-play'
+                      }
+                      onClick={() => output.media.togglePlayPause()}
+                    ></i>
+                    <i
+                      className="nf nf-md-skip_next"
+                      onClick={() => output.media.next()}
+                    ></i>
+                  </div>
+                </div>
+              )}
+
+              {output.weather && (
+                <div
+                  className="weather widget-hover"
+                  onClick={() => setShowCelsius(!showCelsius)}
+                  onMouseEnter={() => setWeatherHovered(true)}
+                  onMouseLeave={() => setWeatherHovered(false)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  {getWeatherIcon(output.weather)}
+                  {weatherHovered ? (
+                    <span className="weather-text">
+                      {getWeatherText(output.weather)}
+                    </span>
+                  ) : showCelsius ? (
+                    `${Math.round(output.weather.celsiusTemp)}°C`
+                  ) : (
+                    `${Math.round(output.weather.fahrenheitTemp)}°F`
+                  )}
+                </div>
+              )}
+
+              <div
+                className="windows-tray-widget widget-hover"
+                onClick={() =>
+                  output.glazewm?.runCommand(
+                    'shell-exec nircmd.exe sendkeypress lwin+b & nircmd.exe sendkeypress enter'
+                  )
+                }
+              >
+                <i className="nf nf-fa-caret_down"></i>
+              </div>
+
+              <div
+                className="spotlight-widget widget-hover"
+                onClick={() =>
+                  output.glazewm?.runCommand(
+                    'shell-exec C:\\Users\\drama\\AppData\\Local\\FlowLauncher\\Flow.Launcher.exe'
+                  )
+                }
+              >
+                <i className="nf nf-fa-magnifying_glass"></i>
+              </div>
+
+              <div
+                className="quick-settings-widget"
+                onClick={() =>
+                  output.glazewm?.runCommand(
+                    'shell-exec nircmd.exe sendkeypress lwin+a'
+                  )
+                }
+              >
+                <i className="nf nf-fa-server"></i>
+              </div>
+
+              <div
+                className="date"
+                onClick={() =>
+                  output.glazewm?.runCommand('shell-exec ms-actioncenter:')
+                }
+              >
+                {output.date?.formatted}
+              </div>
+            </div>
+          </div>
+        );
+      }
+    </script>
+  </body>
+</html>

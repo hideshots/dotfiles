@@ -1,0 +1,84 @@
+window#waybar {
+  background-color: rgba(0, 0, 0, 0.4);
+  color: #ffffff;
+  padding: 0 10px;
+  text-shadow: 0 0 14px rgba(0, 0, 0, 0.51);
+  font-size: 14px;
+  font-family: "SF Pro Rounded", ui-monospace, monospace;
+  font-weight: 600;
+}
+
+.modules-left,
+.modules-center,
+.modules-right {
+  padding: 0 20px;
+}
+
+#workspaces {
+  margin-right: 12px;
+}
+
+#clock {
+  margin-left: 8px;
+}
+
+#privacy {
+  margin-left: 10px;
+}
+
+#language, #custom-wofi, #pulseaudio, #mpris, #network {
+  min-width:  34px;
+}
+
+#custom-weather {
+  margin-left: 14px;
+  min-width:  34px;
+}
+
+#language {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 6px;
+}
+
+#window {
+  padding: 0 5px;
+  color: #ffffff;
+  font-size: 15px;
+}
+
+#workspaces button {
+  all: unset;
+  padding: 0px 5px;
+  color: rgba(255, 255, 255, 0.6);
+  /*transition: all 0.4s ease;*/
+  font-size: 6px;
+}
+
+#workspaces button.active {
+  color: #f2f2f2;
+  font-size: 8px;
+  margin: -1px 0px 0px 0px;
+  text-shadow: 0px 0px 4px rgba(0, 0, 0, 0.4);
+}
+
+#workspaces button.inactive {
+  color: #797979;
+  text-shadow: 0px 0px 2px rgba(0, 0, 0, 0.4);
+}
+
+#network:hover {
+  color: #f0f0f0;
+}
+
+#workspaces button:hover {
+  color: #ffffff;
+}
+
+#pulseaudio:hover {
+  color: #f0f0f0;
+}
+
+#custom-language {
+  margin-right: 9px;
+  margin-left: 9px;
+}

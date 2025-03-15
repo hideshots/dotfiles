@@ -1,0 +1,34 @@
+{
+  "$schema": "https://github.com/glzr-io/zebar/raw/v2.4.0/resources/widget-schema.json",
+  "htmlPath": "./cinnamon.html",
+  "zOrder": "top_most",
+  "shownInTaskbar": false,
+  "focused": false,
+  "resizable": false,
+  "transparent": true,
+  "caching": {
+    "defaultDuration": 604800,
+    "rules": []
+  },
+  "privileges": {
+    "shellCommands": []
+  },
+  "presets": [
+    {
+      "name": "cinnamon",
+      "anchor": "top_center",
+      "offsetX": "0px",
+      "offsetY": "0px",
+      "width": "100%",
+      "height": "34px",
+      "monitorSelection": {
+        "type": "all"
+      },
+      "dockToEdge": {
+        "enabled": true,
+        "edge": null,
+        "windowMargin": "0px"
+      }
+    }
+  ]
+}

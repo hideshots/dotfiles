@@ -1,0 +1,97 @@
+:root {
+  --background: #000000;
+  --foreground: #ebebeb;
+  --accent-color: #4c7899;
+  --focused-bg: #285577;
+  --active-bg: #5f676a;
+  --inactive-text: #888;
+}
+
+body {
+  margin: 0;
+  font-family: 'DejaVu Sans Mono', monospace;
+  font-size: 10px;
+  background-color: var(--background);
+  color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+}
+
+.app {
+  display: grid;
+  grid-template-columns: 15% 85%;
+  align-items: center;
+  height: 20px;
+  background-color: var(--background);
+}
+
+.left, .right {
+  display: flex;
+  align-items: center;
+}
+
+.left {
+  justify-content: flex-start;
+}
+
+.right {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: nowrap;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.left { justify-content: flex-start; }
+.right { justify-content: flex-end; }
+
+.sep {
+  color: #d9d9d9;
+}
+
+.active-window {
+  margin-left: 8px;
+  white-space: nowrap;
+  color: var(--foreground);
+  line-height: 20px;
+}
+
+.media.i3widget {
+  white-space: nowrap;
+  color: #00d000;
+}
+
+.disk.i3widget {
+  color: #e30000;
+}
+
+.workspaces {
+  display: flex;
+  font-size: 10px;
+}
+
+.workspace {
+  background: #222222;
+  color: #bbbbbb;
+  border: 1px solid #313131;
+  padding: 2px 5px;
+  margin-right: 1px;
+  cursor: pointer;
+}
+
+.workspace.focused {
+  background: #285577;
+  color: #ffffff;
+  border-color: #487393;
+}
+
+.workspace.urgent,
+.binding-mode {
+  background: #900000;
+  color: #ffffff;
+  border-color: #2f343a;
+}
+
+.date {
+  padding: 0 8px;
+}

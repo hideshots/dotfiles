@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Base styles for consistency across platforms -->
+  <link rel="stylesheet" type="text/css" href="../normalize.css" />
+  <!-- i3-like custom styles -->
+  <link rel="stylesheet" type="text/css" href="./i3wm.css" />
+
+  <!-- Babel for buildless React -->
+  <script
+    src="https://unpkg.com/@babel/standalone@7.25.6/babel.min.js"
+    integrity="sha256-aS0B0wnsaDByLfE16h4MDCP1fQFccysd1YWOcV+gbBo="
+    crossorigin="anonymous">
+  </script>
+</head>
+
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel" data-type="module">
+    import React, { useState, useEffect } from 'https://esm.sh/react@18?dev';
+    import { createRoot } from 'https://esm.sh/react-dom@18/client?dev';
+    import * as zebar from 'https://esm.sh/zebar@2';
+
+    const providers = zebar.createProviderGroup({
+      glazewm: { type: 'glazewm' },
+      date: { type: 'date', formatting: 'yyyy-MM-dd HH:mm:ss' },
+      memory: { type: 'memory' },
+      network: { type: 'network' },
+      weather: { type: 'weather', latitude: 45.0355, longitude: 38.9753 },
+      media: { type: 'media' },
+      disk: { type: 'disk', refreshInterval: 60000 }
+    });
+
+    createRoot(document.getElementById('root')).render(<App />);
+
+    function App() {
+      const [output, setOutput] = useState(providers.outputMap);
+
+      useEffect(() => {
+        providers.onOutput(() => setOutput(providers.outputMap));
+      }, []);
+
+      function handleWorkspaceScroll(event) {
+        if (!output.glazewm) return;
+        if (event.deltaY > 0) {
+          output.glazewm.runCommand('focus --next-active-workspace');
+        } else {
+          output.glazewm.runCommand('focus --prev-active-workspace');
+        }
+      }
+
+      function getWeatherDescription(status) {
+        const descriptions = {
+          clear_day: "Clear",
+          clear_night: "Clear",
+          cloudy_day: "Cloudy",
+          cloudy_night: "Cloudy",
+          light_rain_day: "Light Rain",
+          light_rain_night: "Light Rain",
+          heavy_rain_night: "Heavy Rain",
+          snow_day: "Snow",
+          snow_night: "Snow",
+          thunder_day: "Thunderstorm",
+          thunder_night: "Thunderstorm",
+        };
+        return descriptions[status] || status;
+      }
+
+      function getWorkspaceClass(workspace) {
+        return workspace.hasFocus ? 'workspace focused' : 'workspace';
+      }
+
+      return (
+        <div className="app">
+          {/* Left: workspace indicators */}
+            <div className="left">
+              <div class="workspaces-container">
+                {output.glazewm && (
+                  <div className="workspaces" onWheel={handleWorkspaceScroll}>
+                    {output.glazewm.currentWorkspaces.map(ws => (
+                      <div
+                        key={ws.name}
+                        className={getWorkspaceClass(ws)}
+                        onClick={() => output.glazewm.runCommand(`focus --workspace ${ws.name}`)}
+                      >
+                        {ws.name}
+                      </div>
+                    ))}
+
+                    {/* Show "resize" in red if GlazeWM is paused */}
+                    {output.glazewm.isPaused && (
+                      <div className="workspace binding-mode">
+                       Paused
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+          {/* Right: network speed, memory usage, weather, media, date/time */}
+          <div className="right">
+            {output.media && output.media.currentSession && (
+              <>
+                <div className="media i3widget">
+                  {output.media.currentSession.title} - {output.media.currentSession.artist || 'Unknown'}
+                </div>
+                <div className="sep">&nbsp;|&nbsp;</div>
+              </>
+            )}
+
+            {output.disk && output.disk.disks && (
+              <>
+                <div className="disk i3widget">
+                  {output.disk.disks
+                    .filter(disk => disk.mountPoint && ['c', 'd', 'e'].includes(disk.mountPoint[0].toLowerCase()))
+                    .sort((a, b) => ['c', 'd', 'e'].indexOf(a.mountPoint[0].toLowerCase()) - ['c', 'd', 'e'].indexOf(b.mountPoint[0].toLowerCase()))
+                    .map(disk => (
+                      <span
+                        key={disk.mountPoint}
+                        className={disk.driveType === 'HDD' ? 'disk-hdd' : ''}
+                      >
+                        {disk.mountPoint[0].toUpperCase()}: {(disk.availableSpace.bytes / 1073741824).toFixed(1)} GB&nbsp;
+                      </span>
+                    ))}
+                </div>
+                <div className="sep">|&nbsp;</div>
+              </>
+            )}
+
+            {output.network && (
+              <>
+                <div className="network i3widget">
+                  ↓ {(output.network.traffic.received.bytes / 1_000_000).toFixed(1)}MB/s&nbsp;
+                  ↑ {(output.network.traffic.transmitted.bytes / 1_000_000).toFixed(1)}MB/s
+                </div>
+                <div className="sep">&nbsp;|&nbsp;</div>
+              </>
+            )}
+
+            {output.memory && (
+              <>
+                <div className="memory i3widget">
+                  {(output.memory.usedMemory / 1073741824).toFixed(1)}&nbsp;GB
+                </div>
+                <div className="sep">&nbsp;|&nbsp;</div>
+              </>
+            )}
+
+            {output.weather && (
+              <>
+                <div className="weather i3widget">
+                  {output.weather.fahrenheitTemp?.toFixed(0)}°F&nbsp;
+                  {getWeatherDescription(output.weather.status)}
+                </div>
+                <div className="sep">&nbsp;|</div>
+              </>
+            )}
+
+
+            {/* Date & time */}
+            <div className="date">{output.date?.formatted}</div>
+          </div>
+        </div>
+      );
+    }
+  </script>
+</body>
+</html>
