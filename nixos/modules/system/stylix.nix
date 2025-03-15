@@ -3,7 +3,7 @@
 {
   stylix.enable = true;
   stylix.autoEnable = true;
-  stylix.image = ../../wallpapers/cherry_3.png;
+  stylix.image = ../../../wallpapers/cherry_3.png;
   stylix.polarity = "dark";
 
   # Home Manager integration options
