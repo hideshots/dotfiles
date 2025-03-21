@@ -6,6 +6,8 @@
       ./hardware.nix
       ../common.nix
       ../../modules/system/hardware/intel.nix
+      ../../modules/system/gaming.nix
+      ../../modules/system/sunshine.nix
       ../../modules/system/bootloader.nix
       ../../modules/system/stylix.nix
       ../../modules/system/vpns.nix
