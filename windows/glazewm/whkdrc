@@ -4,9 +4,9 @@
 .pause_hook glazewm.exe command wm-toggle-pause
 
 # Launch Terminal
-win + q             : wt
-win + n             : wt wsl
-win + r             : %LOCALAPPDATA%\FlowLauncher\Flow.Launcher.exe
+win + q             : cmd /c start "" /B wezterm start
+win + n             : cmd /c start "" /B wezterm start -- wsl
+win + r             : C:\Users\drama\AppData\Local\FlowLauncher\Flow.Launcher.exe 
 
 # Focus windows
 win + h                 : glazewm.exe command focus --direction left
