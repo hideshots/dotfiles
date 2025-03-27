@@ -28,10 +28,6 @@
   let
     system          = "x86_64-linux";
     lib             = nixpkgs.lib;
-    pkgs            = import nixpkgs {
-      system = system;
-      config.allowUnfree = true;
-    };
     specialArgs     = { inherit system inputs; };
     extraSpecialArgs = { inherit system inputs; };
   in {

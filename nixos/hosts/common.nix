@@ -19,7 +19,15 @@
   # Hyprland.
   programs.hyprland.enable = true;
 
-# Greeter.
+  # DWM.
+  services.xserver.windowManager.dwm = {
+    enable = true;
+    package = pkgs.dwm.overrideAttrs {
+      src = ../modules/system/dwm-6.5;
+    };
+  };
+
+  # Greeter.
   services.displayManager.ly.enable = true;
   services.displayManager.sessionPackages = [ pkgs.hyprland ]; 
 

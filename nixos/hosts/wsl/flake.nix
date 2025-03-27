@@ -26,6 +26,11 @@
     pkgs            = import nixpkgs {
       system = system;
       config.allowUnfree = true;
+      nixpkgs.overlays = [
+        (final: prev: {
+          nvchad = inputs.nvchad4nix.packages."${pkgs.system}".nvchad;
+        })
+      ];
     };
     specialArgs     = { inherit system inputs; };
     extraSpecialArgs = { inherit system inputs; };

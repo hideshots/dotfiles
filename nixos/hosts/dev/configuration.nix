@@ -7,6 +7,7 @@
       ../common.nix
       ../../modules/system/bootloader.nix
       ../../modules/system/stylix.nix
+      ../../modules/system/vpns.nix
     ];
 
   virtualisation.vmware.guest.enable = true;
