@@ -23,7 +23,7 @@
   services.xserver.windowManager.dwm = {
     enable = true;
     package = pkgs.dwm.overrideAttrs {
-      src = ../modules/system/dwm-6.5;
+      src = ../modules/user/dwm-6.5;
     };
   };
 

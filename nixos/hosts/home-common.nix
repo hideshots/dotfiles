@@ -3,6 +3,7 @@
 {
   imports = [
     ../modules/user/hyprland/setup.nix
+    ../modules/user/dwm-6.5/setup.nix
     ../modules/user/shell.nix
     ../modules/user/spicetify.nix
     ../modules/user/tmux.nix
