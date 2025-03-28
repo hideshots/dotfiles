@@ -7,7 +7,7 @@
 
   services.sunshine = {
     enable = true;
-    autoStart = true;
+    autoStart = false;
     capSysAdmin = true;
     openFirewall = true;
   };
