@@ -6,5 +6,13 @@
   home.packages = with pkgs; [
     hsetroot
     picom
+
+    # bar
+    bc
+    alsa-utils
+    mpc
+    connman
+    xorg.xbacklight
+    brightnessctl
   ];
 }

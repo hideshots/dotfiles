@@ -30,6 +30,7 @@ static const char *colors[][3]      = {
 
 static const char *const autostart[] = {
   "sh", "-c", "hsetroot -center ~/.dotfiles/wallpapers/cherry_2.png", NULL,
+  "sh", "-c", "~/.dotfiles/nixos/modules/user/dwm-6.5/dwm-bar/dwm_bar.sh", NULL,
 	"picom", NULL,
 	NULL
 };
@@ -50,7 +51,7 @@ static const Rule rules[] = {
 /* layout(s) */
 static const float mfact     = 0.55; /* factor of master area size [0.05..0.95] */
 static const int nmaster     = 1;    /* number of clients in master area */
-static const int resizehints = 0;    /* 1 means respect size hints in tiled resizals */
+static const int resizehints = 1;    /* 1 means respect size hints in tiled resizals */
 static const int attachbelow = 1;    /* 1 means attach after the currently active window */
 static const int lockfullscreen = 1; /* 1 will force focus on the fullscreen window */
 
@@ -95,6 +96,8 @@ static const Key keys[] = {
 	{ MODKEY,                       XK_d,      incnmaster,     {.i = -1 } },
   { MODKEY,                       XK_h,      focusstack,     {.i = -1 } },
   { MODKEY,                       XK_l,      focusstack,     {.i = +1 } },
+  { MODKEY,                       XK_u,      setmfact,       {.f = -0.05} },
+  { MODKEY,                       XK_p,      setmfact,       {.f = +0.05} },
 	{ MODKEY|ShiftMask,             XK_h,      movestack,      {.i = +1 } },
 	{ MODKEY|ShiftMask,             XK_l,      movestack,      {.i = -1 } },
 	{ MODKEY,                       XK_Return, zoom,           {0} },
