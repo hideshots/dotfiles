@@ -17,12 +17,7 @@
   stylix.targets.hyprland.enable = false;
   stylix.targets.spicetify.enable = false;
 
-  services.easyeffects.enable = true;
-
   home.packages = with pkgs; [
-    # Audio
-    easyeffects
-
     # General apps
     inputs.zen-browser.packages."${system}".beta
     haskellPackages.greenclip

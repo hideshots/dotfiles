@@ -60,6 +60,7 @@
   '';
   security.polkit.enable = true;
 
+  services.easyeffects.enable = true;
   environment.systemPackages = with pkgs; [
     (discord-canary.override {
       withVencord = true;
