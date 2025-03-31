@@ -82,8 +82,18 @@ static const char *dmenucmd[] = { "rofi", "-show", "drun", NULL };
 static const char *termcmd[]  = { "kitty", NULL };
 static const char *filescmd[]  = { "nautilus", NULL };
 
-#include "movestack.c"
+#include <X11/XF86keysym.h>
+static const char *volupcmd[]     = { "wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", "5%+", NULL };
+static const char *voldowncmd[]   = { "wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", "5%-", NULL };
+static const char *mutecmd[]      = { "wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle", NULL };
+static const char *micmutecmd[]   = { "wpctl", "set-mute", "@DEFAULT_AUDIO_SOURCE@", "toggle", NULL };
+static const char *briupcmd[]     = { "brightnessctl", "s", "10%+", NULL };
+static const char *bridowncmd[]   = { "brightnessctl", "s", "10%-", NULL };
+static const char *nextcmd[]      = { "playerctl", "next", NULL };
+static const char *playpausecmd[] = { "playerctl", "play-pause", NULL };
+static const char *prevcmd[]      = { "playerctl", "previous", NULL };
 
+#include "movestack.c"
 static const Key keys[] = {
 	/* modifier                     key        function        argument */
 	{ MODKEY,                       XK_r,      spawn,          {.v = dmenucmd } },
@@ -130,6 +140,15 @@ static const Key keys[] = {
 	{ MODKEY,                       XK_period, focusmon,       {.i = +1 } },
 	{ MODKEY|ShiftMask,             XK_comma,  tagmon,         {.i = -1 } },
 	{ MODKEY|ShiftMask,             XK_period, tagmon,         {.i = +1 } },
+  { 0, XF86XK_AudioRaiseVolume, spawn, {.v = volupcmd } },
+  { 0, XF86XK_AudioLowerVolume, spawn, {.v = voldowncmd } },
+  { 0, XF86XK_AudioMute,        spawn, {.v = mutecmd } },
+  { 0, XF86XK_AudioMicMute,     spawn, {.v = micmutecmd } },
+  { 0, XF86XK_MonBrightnessUp,    spawn,                     {.v = briupcmd } },
+  { 0, XF86XK_MonBrightnessDown,  spawn,                     {.v = bridowncmd } },
+  { 0, XF86XK_AudioNext,          spawn,                     {.v = nextcmd } },
+  { 0, XF86XK_AudioPlay,          spawn,                     {.v = playpausecmd } },
+  { 0, XF86XK_AudioPrev,          spawn,                     {.v = prevcmd } },
 	TAGKEYS(                        XK_1,                      0)
 	TAGKEYS(                        XK_2,                      1)
 	TAGKEYS(                        XK_3,                      2)

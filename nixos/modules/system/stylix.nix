@@ -3,7 +3,8 @@
 {
   stylix.enable = true;
   stylix.autoEnable = true;
-  stylix.image = ../../../wallpapers/cherry_3.png;
+  # stylix.image = ../../../wallpapers/cherry_2.png;
+  stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/black-metal.yaml";
   stylix.polarity = "dark";
 
   # Home Manager integration options

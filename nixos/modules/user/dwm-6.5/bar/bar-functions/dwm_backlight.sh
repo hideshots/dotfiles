@@ -1,16 +1,15 @@
 #!/bin/sh
 
-# A dwm_bar module to display the current backlight brightness with xbacklight
+# A dwm_bar module to display the current backlight brightness with brightnessctl
 # GNU GPLv3
 
-# Dependencies: xbacklight
+# Dependencies: brightnessctl
 
 dwm_backlight () {
-    brightness=$(xbacklight 2>/dev/null)
+    brightness=$(brightnessctl -m | awk -F, '{print substr($4, 1, length($4)-1)}')
     if [ -n "$brightness" ]; then
-        printf "%s☀ %.0f%s\n" "$SEP1" "$brightness" "$SEP2"
+        printf "%s☀ %s%%%s\n" "$SEP1" "$brightness" "$SEP2"
     fi
 }
 
 dwm_backlight
-
