@@ -234,10 +234,10 @@
   xdg.configFile."hypr/hyprpaper.conf" = {
     text = ''
       # Preload the wallpaper
-      preload = ~/.dotfiles/wallpapers/cherry_3.png
+      preload = ~/.dotfiles/wallpapers/cherry_2.png
 
       # Set the wallpaper for all monitors
-      wallpaper = ,~/.dotfiles/wallpapers/cherry_3.png
+      wallpaper = ,~/.dotfiles/wallpapers/cherry_2.png
     '';
   };
 
