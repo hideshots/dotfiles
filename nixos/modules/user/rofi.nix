@@ -11,7 +11,7 @@
 
           bg0:    #242424E6;
           bg1:    #7E7E7E80;
-          bg2:    #756251FF;
+          bg2:    #39363dFF;
 
           fg0:    #DEDEDE;
           fg1:    #FFFFFF;

@@ -61,6 +61,7 @@ static const int lockfullscreen = 1; /* 1 will force focus on the fullscreen win
 static const Layout layouts[] = {
 	/* symbol     arrange function */
 	{ "[\\]",     dwindle },
+ 	{ "[M]",      monocle },
 	{ "><>",      NULL },    /* no layout function means floating behavior */
 	{ NULL,       NULL },
 };
@@ -102,8 +103,8 @@ static const Key keys[] = {
 	{ MODKEY,                       XK_b,      togglebar,      {0} },
 	{ MODKEY,                       XK_j,      focusstack,     {.i = +1 } },
 	{ MODKEY,                       XK_k,      focusstack,     {.i = -1 } },
-	{ MODKEY,                       XK_i,      incnmaster,     {.i = +1 } },
-	{ MODKEY,                       XK_d,      incnmaster,     {.i = -1 } },
+	/*{ MODKEY,                       XK_i,      incnmaster,     {.i = +1 } },*/
+	/*{ MODKEY,                       XK_d,      incnmaster,     {.i = -1 } },*/
   { MODKEY,                       XK_h,      focusstack,     {.i = -1 } },
   { MODKEY,                       XK_l,      focusstack,     {.i = +1 } },
   { MODKEY,                       XK_u,      setmfact,       {.f = -0.05} },
@@ -111,27 +112,27 @@ static const Key keys[] = {
 	{ MODKEY|ShiftMask,             XK_h,      movestack,      {.i = +1 } },
 	{ MODKEY|ShiftMask,             XK_l,      movestack,      {.i = -1 } },
 	{ MODKEY,                       XK_Return, zoom,           {0} },
-	{ MODKEY|Mod4Mask,              XK_u,      incrgaps,       {.i = +1 } },
-	{ MODKEY|Mod4Mask|ShiftMask,    XK_u,      incrgaps,       {.i = -1 } },
-	{ MODKEY|Mod4Mask,              XK_i,      incrigaps,      {.i = +1 } },
-	{ MODKEY|Mod4Mask|ShiftMask,    XK_i,      incrigaps,      {.i = -1 } },
-	{ MODKEY|Mod4Mask,              XK_o,      incrogaps,      {.i = +1 } },
-	{ MODKEY|Mod4Mask|ShiftMask,    XK_o,      incrogaps,      {.i = -1 } },
-	{ MODKEY|Mod4Mask,              XK_6,      incrihgaps,     {.i = +1 } },
-	{ MODKEY|Mod4Mask|ShiftMask,    XK_6,      incrihgaps,     {.i = -1 } },
-	{ MODKEY|Mod4Mask,              XK_7,      incrivgaps,     {.i = +1 } },
-	{ MODKEY|Mod4Mask|ShiftMask,    XK_7,      incrivgaps,     {.i = -1 } },
-	{ MODKEY|Mod4Mask,              XK_8,      incrohgaps,     {.i = +1 } },
-	{ MODKEY|Mod4Mask|ShiftMask,    XK_8,      incrohgaps,     {.i = -1 } },
-	{ MODKEY|Mod4Mask,              XK_9,      incrovgaps,     {.i = +1 } },
-	{ MODKEY|Mod4Mask|ShiftMask,    XK_9,      incrovgaps,     {.i = -1 } },
-	{ MODKEY|Mod4Mask,              XK_0,      togglegaps,     {0} },
-	{ MODKEY|Mod4Mask|ShiftMask,    XK_0,      defaultgaps,    {0} },
+	/*{ MODKEY|Mod4Mask,              XK_u,      incrgaps,       {.i = +1 } },*/
+	/*{ MODKEY|Mod4Mask|ShiftMask,    XK_u,      incrgaps,       {.i = -1 } },*/
+	/*{ MODKEY|Mod4Mask,              XK_i,      incrigaps,      {.i = +1 } },*/
+	/*{ MODKEY|Mod4Mask|ShiftMask,    XK_i,      incrigaps,      {.i = -1 } },*/
+	/*{ MODKEY|Mod4Mask,              XK_o,      incrogaps,      {.i = +1 } },*/
+	/*{ MODKEY|Mod4Mask|ShiftMask,    XK_o,      incrogaps,      {.i = -1 } },*/
+	/*{ MODKEY|Mod4Mask,              XK_6,      incrihgaps,     {.i = +1 } },*/
+	/*{ MODKEY|Mod4Mask|ShiftMask,    XK_6,      incrihgaps,     {.i = -1 } },*/
+	/*{ MODKEY|Mod4Mask,              XK_7,      incrivgaps,     {.i = +1 } },*/
+	/*{ MODKEY|Mod4Mask|ShiftMask,    XK_7,      incrivgaps,     {.i = -1 } },*/
+	/*{ MODKEY|Mod4Mask,              XK_8,      incrohgaps,     {.i = +1 } },*/
+	/*{ MODKEY|Mod4Mask|ShiftMask,    XK_8,      incrohgaps,     {.i = -1 } },*/
+	/*{ MODKEY|Mod4Mask,              XK_9,      incrovgaps,     {.i = +1 } },*/
+	/*{ MODKEY|Mod4Mask|ShiftMask,    XK_9,      incrovgaps,     {.i = -1 } },*/
+	/*{ MODKEY|Mod4Mask,              XK_0,      togglegaps,     {0} },*/
+	/*{ MODKEY|Mod4Mask|ShiftMask,    XK_0,      defaultgaps,    {0} },*/
 	{ MODKEY,                       XK_Tab,    view,           {0} },
 	{ MODKEY|ShiftMask,             XK_q,      killclient,     {0} },
-	{ MODKEY,                       XK_t,      setlayout,      {.v = &layouts[0]} },
+	/*{ MODKEY,                       XK_t,      setlayout,      {.v = &layouts[0]} },*/
+	{ MODKEY,                       XK_d,      setlayout,      {.v = &layouts[0]} },
 	{ MODKEY,                       XK_f,      setlayout,      {.v = &layouts[1]} },
-	{ MODKEY,                       XK_m,      setlayout,      {.v = &layouts[2]} },
 	{ MODKEY,                       XK_space,  setlayout,      {0} },
 	{ MODKEY,                       XK_c,      togglefloating, {0} },
 	{ MODKEY,                       XK_0,      view,           {.ui = ~0 } },
@@ -140,15 +141,15 @@ static const Key keys[] = {
 	{ MODKEY,                       XK_period, focusmon,       {.i = +1 } },
 	{ MODKEY|ShiftMask,             XK_comma,  tagmon,         {.i = -1 } },
 	{ MODKEY|ShiftMask,             XK_period, tagmon,         {.i = +1 } },
-  { 0, XF86XK_AudioRaiseVolume, spawn, {.v = volupcmd } },
-  { 0, XF86XK_AudioLowerVolume, spawn, {.v = voldowncmd } },
-  { 0, XF86XK_AudioMute,        spawn, {.v = mutecmd } },
-  { 0, XF86XK_AudioMicMute,     spawn, {.v = micmutecmd } },
-  { 0, XF86XK_MonBrightnessUp,    spawn,                     {.v = briupcmd } },
-  { 0, XF86XK_MonBrightnessDown,  spawn,                     {.v = bridowncmd } },
-  { 0, XF86XK_AudioNext,          spawn,                     {.v = nextcmd } },
-  { 0, XF86XK_AudioPlay,          spawn,                     {.v = playpausecmd } },
-  { 0, XF86XK_AudioPrev,          spawn,                     {.v = prevcmd } },
+  { 0, XF86XK_AudioRaiseVolume,              spawn,          {.v = volupcmd } },
+  { 0, XF86XK_AudioLowerVolume,              spawn,          {.v = voldowncmd } },
+  { 0, XF86XK_AudioMute,                     spawn,          {.v = mutecmd } },
+  { 0, XF86XK_AudioMicMute,                  spawn,          {.v = micmutecmd } },
+  { 0, XF86XK_MonBrightnessUp,               spawn,          {.v = briupcmd } },
+  { 0, XF86XK_MonBrightnessDown,             spawn,          {.v = bridowncmd } },
+  { 0, XF86XK_AudioNext,                     spawn,          {.v = nextcmd } },
+  { 0, XF86XK_AudioPlay,                     spawn,          {.v = playpausecmd } },
+  { 0, XF86XK_AudioPrev,                     spawn,          {.v = prevcmd } },
 	TAGKEYS(                        XK_1,                      0)
 	TAGKEYS(                        XK_2,                      1)
 	TAGKEYS(                        XK_3,                      2)

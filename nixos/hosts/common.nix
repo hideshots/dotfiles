@@ -53,7 +53,7 @@
     xkb = {
       layout = "us,ru";
       variant = ",";
-      options = "grp:win_space_toggle";
+      options = "grp:win_space_toggle,ctrl:nocaps";
     };
   };
 
