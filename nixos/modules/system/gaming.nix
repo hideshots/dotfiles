@@ -8,6 +8,9 @@
     wineWowPackages.stable
     # wine64
     winetricks
+
+    # required to fix memory allocation issues in some Source engine games
+    # pkgsi686Linux.jemalloc
   ];
 
   programs.gamescope = {

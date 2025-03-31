@@ -23,6 +23,7 @@
       "$menu" = "rofi -show drun";
 
       exec-once = [
+        "hyprctl reload"
         "dbus-launch --exit-with-session"
         "nm-applet &"
         "hyprpaper & waybar -c ~/.dotfiles/nixos/modules/user/waybar/config.jsonc -s ~/.dotfiles/nixos/modules/user/waybar/style.css &"
@@ -41,6 +42,10 @@
         "XCURSOR_SIZE,24"
         "HYPRCURSOR_SIZE,24"
       ];
+
+      # render = {
+      #   cm_enabled = false;
+      # };
 
       general = {
         gaps_in = 6;

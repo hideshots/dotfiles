@@ -29,7 +29,7 @@ static const char *colors[][3]      = {
 };
 
 static const char *const autostart[] = {
-  "sh", "-c", "hsetroot -center ~/.dotfiles/wallpapers/cherry_2.png", NULL,
+  "sh", "-c", "hsetroot -cover ~/.dotfiles/wallpapers/cherry_2.png", NULL,
   "sh", "-c", "~/.dotfiles/nixos/modules/user/dwm-6.5/bar/dwm_bar.sh", NULL,
 	"picom", NULL,
 	NULL
