@@ -10,6 +10,11 @@
         show_hidden = true;
         show_symlink = true;
       };
+
+      preview = {
+        max_width  = 2000;
+        max_height = 2000;
+      };
     };
 
     flavors = {
