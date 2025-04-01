@@ -1,8 +1,9 @@
-{ config, pkgs, lib, ... }:
+{ config, pkgs, lib, inputs, ... }:
 
 {
   imports = [
     ../home-common.nix
+    ../../modules/user/mangohud.nix
   ];
 
   home.username      = "lenovo";
@@ -18,11 +19,11 @@
   };
 
   # Hyprland config override
-  wayland.windowManager.hyprland.settings.input.kb_options = lib.mkForce "grp:win_space_toggle,ctrl:nocaps";
   wayland.windowManager.hyprland.settings.input.force_no_accel = lib.mkForce "0";
   wayland.windowManager.hyprland.settings.input.sensitivity = lib.mkForce "-0.15";
 
   home.packages = with pkgs; [
+    # inputs.nix-gaming.packages.${system}.osu-lazer-bin
     moonlight-qt
     prismlauncher
 

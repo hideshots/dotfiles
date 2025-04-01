@@ -5,11 +5,10 @@ for_window [class=".*"] border pixel 0
 # Font for window titles. Will also be used by the bar unless a different font
 # is used in the bar {} block below.
 font pango:monospace 8
-
 focus_follows_mouse no
 
-exec --no-startup-id spotify
-exec --no-startup-id telegram-desktop -startintray
+# exec --no-startup-id spotify
+# exec --no-startup-id telegram-desktop -startintray
 
 exec_always for id in $(xinput list | grep "pointer" | cut -d '=' -f 2 | cut -f 1); do xinput --set-prop $id 'libinput Accel Profile Enabled' 0, 1; done
 exec --no-startup-id autotiling -sr 1.61
@@ -18,12 +17,12 @@ exec --no-startup-id xrandr --output HDMI-0 --mode 1920x1080 --rate 143.98 --rig
 exec --no-startup-id dex --autostart --environment i3
 exec --no-startup-id xss-lock --transfer-sleep-lock -- i3lock --nofork
 exec --no-startup-id nm-applet
-exec --no-startup-id feh --bg-scale ~/.dotfiles/wallpapers/cherry_3.png
+exec --no-startup-id hsetroot -cover  ~/.dotfiles/wallpapers/cherry_2.png
 exec --no-startup-id picom --config ~/.config/picom.conf
 
-bindsym $mod+Shift+p exec --no-startup-id ~/.dotfiles/nixos/modules/i3/toggle-picom.sh
+bindsym $mod+Shift+p exec --no-startup-id ~/.dotfiles/nixos/modules/user/scripts/toggle-picom.sh
 
-bindsym Print exec --no-startup-id ~/.dotfiles/nixos/modules/i3/screenshot.sh
+bindsym Print exec --no-startup-id ~/.dotfiles/nixos/modules/user/scripts/screenshot.sh
 
 assign [class="ZenBrowser"] 3
 assign [class="Steam"] 4
@@ -38,9 +37,9 @@ assign [class="TelegramDesktop"] 7
 floating_modifier $mod
 tiling_drag modifier
 
-bindsym $mod+Return exec kitty 
+bindsym $mod+q exec kitty 
 bindsym $mod+Shift+q kill
-bindsym $mod+d exec --no-startup-id rofi -show drun
+bindsym $mod+r exec --no-startup-id rofi -show drun
 
 # change focus
 bindsym $mod+h focus left
@@ -162,7 +161,7 @@ mode "resize" {
         bindsym $mod+r mode "default"
 }
 
-bindsym $mod+r mode "resize"
+bindsym $mod+d mode "resize"
 
 # Start i3bar to display a workspace bar (plus the system information i3status
 # finds out, if available)

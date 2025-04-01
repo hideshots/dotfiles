@@ -27,5 +27,5 @@
   ];
 
   home.file.".config/i3/config".source = ./config;
-  home.file.".config/picom.conf".source = ./picom.conf;
+  # home.file.".config/picom.conf".source = ./picom.conf;
 }

@@ -3,7 +3,6 @@
 {
   environment.systemPackages = with pkgs; [
     gamemode
-    mangohud
     lutris
     wineWowPackages.stable
     # wine64
