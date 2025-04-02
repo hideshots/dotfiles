@@ -1,6 +1,11 @@
 { config, pkgs, inputs, ... }:
 
 {
+  imports = [
+    ../modules/system/xorg.nix
+    ../modules/system/wayland.nix
+  ];
+
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
   nixpkgs.config.allowUnfree = true;
   nix.gc.automatic = true;
@@ -15,17 +20,6 @@
 
   # Networking.
   networking.networkmanager.enable = true;
-
-  # Hyprland.
-  programs.hyprland.enable = true;
-
-  # DWM.
-  services.xserver.windowManager.dwm = {
-    enable = true;
-    package = pkgs.dwm.overrideAttrs {
-      src = ../modules/user/dwm-6.5;
-    };
-  };
 
   # Greeter.
   services.displayManager.ly.enable = true;
@@ -44,17 +38,6 @@
     LC_PAPER           = "en_US.UTF-8";
     LC_TELEPHONE       = "en_US.UTF-8";
     LC_TIME            = "en_US.UTF-8";
-  };
-
-  # X11 settings.
-  services.xserver = {
-    enable = true;
-
-    xkb = {
-      layout = "us,ru";
-      variant = ",";
-      options = "grp:win_space_toggle,ctrl:nocaps";
-    };
   };
 
   fonts.packages = with pkgs; [
@@ -77,19 +60,8 @@
     jq
     image-roll
     nautilus
-
-    # wayland
-    wl-clipboard
-    hyprpaper
-    hyprsunset
-    waybar
-    slurp
-    grim
-
     playerctl
     pavucontrol
-    kitty
-    tmux
 
     adwaita-icon-theme
   ];

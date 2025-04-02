@@ -28,24 +28,18 @@
         "nm-applet &"
         "hyprpaper & waybar -c ~/.dotfiles/nixos/modules/user/waybar/config.jsonc -s ~/.dotfiles/nixos/modules/user/waybar/style.css &"
         "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP"
-        "greenclip daemon &"
 
-        # "ELECTRON_OZONE_PLATFORM_HINT= discordcanary"
-        "discordcanary &"
-        "telegram-desktop -startintray &"
-        "AmneziaVPN &"
-        "steam &"
-        "spotify &"
+        # "discordcanary &"
+        # "telegram-desktop -startintray &"
+        # "AmneziaVPN &"
+        # "steam &"
+        # "spotify &"
       ];
 
       env = [
         "XCURSOR_SIZE,24"
         "HYPRCURSOR_SIZE,24"
       ];
-
-      # render = {
-      #   cm_enabled = false;
-      # };
 
       general = {
         gaps_in = 6;
@@ -190,7 +184,6 @@
         "$mainMod, S, togglespecialworkspace, magic"
         "$mainMod SHIFT, S, movetoworkspace, special:magic"
         ", Print, exec, sh -c 'grim -g \"$(slurp)\" - | tee ~/Pictures/Screenshots/$(date +\"%Y-%m-%d_%H-%M-%S\").png | wl-copy'"
-        "$mainMod, V, exec, rofi -modi \"clipboard:greenclip print\" -show clipboard -run-command '{cmd}'"
       ];
 
       bindm = [

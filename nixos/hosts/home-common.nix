@@ -3,7 +3,7 @@
 {
   imports = [
     ../modules/user/hyprland/setup.nix
-    ../modules/user/dwm-6.5/setup.nix
+    # ../modules/user/i3/setup.nix
     ../modules/user/shell.nix
     ../modules/user/spicetify.nix
     ../modules/user/tmux.nix
@@ -20,7 +20,6 @@
   home.packages = with pkgs; [
     # General apps
     inputs.zen-browser.packages."${system}".beta
-    haskellPackages.greenclip
     telegram-desktop
     btop
     mpv
