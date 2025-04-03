@@ -10,5 +10,6 @@
     waybar
     slurp
     grim
+    eww
   ];
 }
