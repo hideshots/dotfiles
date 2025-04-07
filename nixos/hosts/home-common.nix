@@ -3,7 +3,7 @@
 {
   imports = [
     ../modules/user/hyprland/setup.nix
-    # ../modules/user/i3/setup.nix
+    ../modules/user/picom.nix
     ../modules/user/shell.nix
     ../modules/user/spicetify.nix
     ../modules/user/tmux.nix

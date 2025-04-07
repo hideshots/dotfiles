@@ -52,8 +52,8 @@
 
       decoration = {
         rounding = 7;
-        active_opacity = 0.94;
-        inactive_opacity = 0.90;
+        active_opacity = 0.90;
+        inactive_opacity = 0.80;
 
         shadow = {
           enabled = true;

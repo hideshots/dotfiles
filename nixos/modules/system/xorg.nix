@@ -18,16 +18,20 @@
   };
 
   environment.systemPackages = with pkgs; [
+    xorg.xbacklight
+    brightnessctl
+    redshift
+    xclip
+    maim
+
     autotiling
     hsetroot
     picom
 
     # bar
-    bc
     alsa-utils
-    mpc
     connman
-    xorg.xbacklight
-    brightnessctl
+    mpc
+    bc
   ];
 }

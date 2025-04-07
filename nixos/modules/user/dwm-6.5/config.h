@@ -44,6 +44,7 @@ static const Rule rules[] = {
 	 *	WM_NAME(STRING) = title
 	 */
 	/* class      instance    title       tags mask     isfloating   monitor */
+  { NULL,       NULL,       "Picture-in-Picture", 0,  1,           -1 },
 	{ "Gimp",     NULL,       NULL,       0,            1,           -1 },
 	{ "Firefox",  NULL,       NULL,       1 << 8,       0,           -1 },
 };
@@ -90,6 +91,8 @@ static const char *mutecmd[]      = { "wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@
 static const char *micmutecmd[]   = { "wpctl", "set-mute", "@DEFAULT_AUDIO_SOURCE@", "toggle", NULL };
 static const char *briupcmd[]     = { "brightnessctl", "s", "10%+", NULL };
 static const char *bridowncmd[]   = { "brightnessctl", "s", "10%-", NULL };
+static const char *tempupcmd[]    = { "~/.dotfiles/nixos/modules/user/scripts/nightlight_warmer.sh", NULL };
+static const char *tempdowncmd[]  = { "~/.dotfiles/nixos/modules/user/scripts/nightlight_cooler.sh", NULL };
 static const char *nextcmd[]      = { "playerctl", "next", NULL };
 static const char *playpausecmd[] = { "playerctl", "play-pause", NULL };
 static const char *prevcmd[]      = { "playerctl", "previous", NULL };
@@ -97,6 +100,7 @@ static const char *prevcmd[]      = { "playerctl", "previous", NULL };
 #include "movestack.c"
 static const Key keys[] = {
 	/* modifier                     key        function        argument */
+  { 0,XK_Print,spawn,SHCMD("~/.dotfiles/nixos/modules/user/scripts/screenshot.sh") },
 	{ MODKEY,                       XK_r,      spawn,          {.v = dmenucmd } },
 	{ MODKEY,                       XK_q,      spawn,          {.v = termcmd } },
 	{ MODKEY,                       XK_e,      spawn,          {.v = filescmd } },
@@ -147,6 +151,8 @@ static const Key keys[] = {
   { 0, XF86XK_AudioMicMute,                  spawn,          {.v = micmutecmd } },
   { 0, XF86XK_MonBrightnessUp,               spawn,          {.v = briupcmd } },
   { 0, XF86XK_MonBrightnessDown,             spawn,          {.v = bridowncmd } },
+  { MODKEY,                       XK_F11,    spawn,          {.v = tempdowncmd } },
+  { MODKEY,                       XK_F12,    spawn,          {.v = tempupcmd } },
   { 0, XF86XK_AudioNext,                     spawn,          {.v = nextcmd } },
   { 0, XF86XK_AudioPlay,                     spawn,          {.v = playpausecmd } },
   { 0, XF86XK_AudioPrev,                     spawn,          {.v = prevcmd } },
