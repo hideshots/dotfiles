@@ -5,6 +5,8 @@
     [
       ./hardware.nix
       ../common.nix
+      ../../modules/system/xorg.nix
+      ../../modules/system/wayland.nix
       ../../modules/system/hardware/devices.nix
       ../../modules/system/hardware/nvidia.nix
       ../../modules/system/bootloader.nix

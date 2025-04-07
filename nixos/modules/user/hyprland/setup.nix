@@ -41,6 +41,10 @@
         "HYPRCURSOR_SIZE,24"
       ];
 
+      render = {
+        cm_enabled = false;
+      };
+
       general = {
         gaps_in = 6;
         gaps_out = 10;
@@ -52,8 +56,13 @@
 
       decoration = {
         rounding = 7;
+<<<<<<< HEAD
         active_opacity = 0.90;
         inactive_opacity = 0.80;
+=======
+        active_opacity = 0.80;
+        inactive_opacity = 0.90;
+>>>>>>> d96619d255d6c647aa4343428a1c55585508aaf1
 
         shadow = {
           enabled = true;
@@ -225,6 +234,7 @@
 
       layerrule = [
         "blur,waybar"
+        "blur,gtk-layer-shell"
       ];
     };
   };
@@ -232,10 +242,10 @@
   xdg.configFile."hypr/hyprpaper.conf" = {
     text = ''
       # Preload the wallpaper
-      preload = ~/.dotfiles/wallpapers/cherry_2.png
+      preload = ~/.dotfiles/wallpapers/cherry_3.png
 
       # Set the wallpaper for all monitors
-      wallpaper = ,~/.dotfiles/wallpapers/cherry_2.png
+      wallpaper = ,~/.dotfiles/wallpapers/cherry_3.png
     '';
   };
 
