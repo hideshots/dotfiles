@@ -56,13 +56,8 @@
 
       decoration = {
         rounding = 7;
-<<<<<<< HEAD
-        active_opacity = 0.90;
-        inactive_opacity = 0.80;
-=======
         active_opacity = 0.80;
         inactive_opacity = 0.90;
->>>>>>> d96619d255d6c647aa4343428a1c55585508aaf1
 
         shadow = {
           enabled = true;
