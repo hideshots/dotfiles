@@ -28,6 +28,9 @@ static const char *colors[][3]      = {
 	[SchemeSel]  = { col_gray4, col_cyan,  col_cyan  },
 };
 
+#define ICONSIZE 16   /* icon size */
+#define ICONSPACING 5 /* space between icon and title */
+
 static const char *const autostart[] = {
   "sh", "-c", "hsetroot -cover ~/.dotfiles/wallpapers/cherry_2.png", NULL,
   "sh", "-c", "~/.dotfiles/nixos/modules/user/dwm-6.5/bar/dwm_bar.sh", NULL,
@@ -39,14 +42,13 @@ static const char *const autostart[] = {
 static const char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
 
 static const Rule rules[] = {
-	/* xprop(1):
-	 *	WM_CLASS(STRING) = instance, class
-	 *	WM_NAME(STRING) = title
-	 */
-	/* class      instance    title       tags mask     isfloating   monitor */
-  { NULL,       NULL,       "Picture-in-Picture", 0,  1,           -1 },
-	{ "Gimp",     NULL,       NULL,       0,            1,           -1 },
-	{ "Firefox",  NULL,       NULL,       1 << 8,       0,           -1 },
+    /* class       instance    title               tags mask     isfloating   monitor */
+    { NULL,        NULL,   "Picture-in-Picture",    ~0,         1,           -1 },
+    { NULL,        NULL,       "Zen Browser",       1 << 2,     0,           -1 },
+    { "Gimp",      NULL,       NULL,                0,          1,           -1 },
+    { "Firefox",   NULL,       NULL,                1 << 8,     0,           -1 },
+    { "Spotify",   NULL,       NULL,                1 << 4,     0,           -1 },
+    { "Steam",     NULL,       NULL,                1 << 3,     0,           -1 },
 };
 
 /* layout(s) */
@@ -80,35 +82,34 @@ static const Layout layouts[] = {
 
 /* commands */
 static char dmenumon[2] = "0"; /* component of dmenucmd, manipulated in spawn() */
-static const char *dmenucmd[] = { "rofi", "-show", "drun", NULL };
-static const char *termcmd[]  = { "kitty", NULL };
-static const char *filescmd[]  = { "nautilus", NULL };
+static const char *dmenucmd[]        = { "rofi", "-show", "drun", NULL };
+static const char *termcmd[]         = { "kitty", NULL };
+static const char *filescmd[]        = { "nautilus", NULL };
+static const char *tempupcmd[]       = { "/bin/sh", "-c", "~/.dotfiles/nixos/modules/user/scripts/nightlight_warmer.sh", NULL };
+static const char *tempdowncmd[]     = { "/bin/sh", "-c", "~/.dotfiles/nixos/modules/user/scripts/nightlight_cooler.sh", NULL };
+static const char *printscreencmd[]  = { "/bin/sh", "-c", "~/.dotfiles/nixos/modules/user/scripts/screenshot.sh", NULL };
 
 #include <X11/XF86keysym.h>
-static const char *volupcmd[]     = { "wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", "5%+", NULL };
-static const char *voldowncmd[]   = { "wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", "5%-", NULL };
-static const char *mutecmd[]      = { "wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle", NULL };
-static const char *micmutecmd[]   = { "wpctl", "set-mute", "@DEFAULT_AUDIO_SOURCE@", "toggle", NULL };
-static const char *briupcmd[]     = { "brightnessctl", "s", "10%+", NULL };
-static const char *bridowncmd[]   = { "brightnessctl", "s", "10%-", NULL };
-static const char *tempupcmd[]    = { "/bin/sh", "-c", "~/.dotfiles/nixos/modules/user/scripts/nightlight_warmer.sh", NULL };
-static const char *tempdowncmd[]  = { "/bin/sh", "-c", "~/.dotfiles/nixos/modules/user/scripts/nightlight_cooler.sh", NULL };
-static const char *nextcmd[]      = { "playerctl", "next", NULL };
-static const char *playpausecmd[] = { "playerctl", "play-pause", NULL };
-static const char *prevcmd[]      = { "playerctl", "previous", NULL };
+static const char *volupcmd[]        = { "wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", "5%+", NULL };
+static const char *voldowncmd[]      = { "wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", "5%-", NULL };
+static const char *mutecmd[]         = { "wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle", NULL };
+static const char *micmutecmd[]      = { "wpctl", "set-mute", "@DEFAULT_AUDIO_SOURCE@", "toggle", NULL };
+static const char *briupcmd[]        = { "brightnessctl", "s", "10%+", NULL };
+static const char *bridowncmd[]      = { "brightnessctl", "s", "10%-", NULL };
+static const char *nextcmd[]         = { "playerctl", "next", NULL };
+static const char *playpausecmd[]    = { "playerctl", "play-pause", NULL };
+static const char *prevcmd[]         = { "playerctl", "previous", NULL };
 
 #include "movestack.c"
 static const Key keys[] = {
 	/* modifier                     key        function        argument */
-  { 0,XK_Print,spawn,SHCMD("~/.dotfiles/nixos/modules/user/scripts/screenshot.sh") },
+  { 0,                            XK_Print,  spawn,          {.v = printscreencmd } },
 	{ MODKEY,                       XK_r,      spawn,          {.v = dmenucmd } },
 	{ MODKEY,                       XK_q,      spawn,          {.v = termcmd } },
 	{ MODKEY,                       XK_e,      spawn,          {.v = filescmd } },
 	{ MODKEY,                       XK_b,      togglebar,      {0} },
 	{ MODKEY,                       XK_j,      focusstack,     {.i = +1 } },
 	{ MODKEY,                       XK_k,      focusstack,     {.i = -1 } },
-	/*{ MODKEY,                       XK_i,      incnmaster,     {.i = +1 } },*/
-	/*{ MODKEY,                       XK_d,      incnmaster,     {.i = -1 } },*/
   { MODKEY,                       XK_h,      focusstack,     {.i = -1 } },
   { MODKEY,                       XK_l,      focusstack,     {.i = +1 } },
   { MODKEY,                       XK_u,      setmfact,       {.f = -0.05} },
@@ -116,28 +117,10 @@ static const Key keys[] = {
 	{ MODKEY|ShiftMask,             XK_h,      movestack,      {.i = +1 } },
 	{ MODKEY|ShiftMask,             XK_l,      movestack,      {.i = -1 } },
 	{ MODKEY,                       XK_Return, zoom,           {0} },
-	/*{ MODKEY|Mod4Mask,              XK_u,      incrgaps,       {.i = +1 } },*/
-	/*{ MODKEY|Mod4Mask|ShiftMask,    XK_u,      incrgaps,       {.i = -1 } },*/
-	/*{ MODKEY|Mod4Mask,              XK_i,      incrigaps,      {.i = +1 } },*/
-	/*{ MODKEY|Mod4Mask|ShiftMask,    XK_i,      incrigaps,      {.i = -1 } },*/
-	/*{ MODKEY|Mod4Mask,              XK_o,      incrogaps,      {.i = +1 } },*/
-	/*{ MODKEY|Mod4Mask|ShiftMask,    XK_o,      incrogaps,      {.i = -1 } },*/
-	/*{ MODKEY|Mod4Mask,              XK_6,      incrihgaps,     {.i = +1 } },*/
-	/*{ MODKEY|Mod4Mask|ShiftMask,    XK_6,      incrihgaps,     {.i = -1 } },*/
-	/*{ MODKEY|Mod4Mask,              XK_7,      incrivgaps,     {.i = +1 } },*/
-	/*{ MODKEY|Mod4Mask|ShiftMask,    XK_7,      incrivgaps,     {.i = -1 } },*/
-	/*{ MODKEY|Mod4Mask,              XK_8,      incrohgaps,     {.i = +1 } },*/
-	/*{ MODKEY|Mod4Mask|ShiftMask,    XK_8,      incrohgaps,     {.i = -1 } },*/
-	/*{ MODKEY|Mod4Mask,              XK_9,      incrovgaps,     {.i = +1 } },*/
-	/*{ MODKEY|Mod4Mask|ShiftMask,    XK_9,      incrovgaps,     {.i = -1 } },*/
-	/*{ MODKEY|Mod4Mask,              XK_0,      togglegaps,     {0} },*/
-	/*{ MODKEY|Mod4Mask|ShiftMask,    XK_0,      defaultgaps,    {0} },*/
 	{ MODKEY,                       XK_Tab,    view,           {0} },
 	{ MODKEY|ShiftMask,             XK_q,      killclient,     {0} },
-	/*{ MODKEY,                       XK_t,      setlayout,      {.v = &layouts[0]} },*/
 	{ MODKEY,                       XK_d,      setlayout,      {.v = &layouts[0]} },
 	{ MODKEY,                       XK_f,      setlayout,      {.v = &layouts[1]} },
-	/*{ MODKEY,                       XK_space,  setlayout,      {0} },*/
 	{ MODKEY,                       XK_c,      togglefloating, {0} },
 	{ MODKEY,                       XK_0,      view,           {.ui = ~0 } },
 	{ MODKEY|ShiftMask,             XK_0,      tag,            {.ui = ~0 } },
@@ -145,14 +128,14 @@ static const Key keys[] = {
 	{ MODKEY,                       XK_period, focusmon,       {.i = +1 } },
 	{ MODKEY|ShiftMask,             XK_comma,  tagmon,         {.i = -1 } },
 	{ MODKEY|ShiftMask,             XK_period, tagmon,         {.i = +1 } },
+  { MODKEY,                       XK_F11,    spawn,          {.v = tempdowncmd } },
+  { MODKEY,                       XK_F12,    spawn,          {.v = tempupcmd } },
   { 0, XF86XK_AudioRaiseVolume,              spawn,          {.v = volupcmd } },
   { 0, XF86XK_AudioLowerVolume,              spawn,          {.v = voldowncmd } },
   { 0, XF86XK_AudioMute,                     spawn,          {.v = mutecmd } },
   { 0, XF86XK_AudioMicMute,                  spawn,          {.v = micmutecmd } },
   { 0, XF86XK_MonBrightnessUp,               spawn,          {.v = briupcmd } },
   { 0, XF86XK_MonBrightnessDown,             spawn,          {.v = bridowncmd } },
-  { MODKEY,                       XK_F11,    spawn,          {.v = tempdowncmd } },
-  { MODKEY,                       XK_F12,    spawn,          {.v = tempupcmd } },
   { 0, XF86XK_AudioNext,                     spawn,          {.v = nextcmd } },
   { 0, XF86XK_AudioPlay,                     spawn,          {.v = playpausecmd } },
   { 0, XF86XK_AudioPrev,                     spawn,          {.v = prevcmd } },
