@@ -3,8 +3,6 @@
 /* appearance */
 static const unsigned int borderpx       = 0;     /* border pixel of windows */
 static const unsigned int snap           = 32;    /* snap pixel */
-static const          int scalepreview   = 4;     /* preview scaling (display w and h / scalepreview) */
-static const          int previewbar     = 1;     /* show the bar in the preview window */
 static const unsigned int gappih         = 6;     /* horiz inner gap between windows */
 static const unsigned int gappiv         = 6;     /* vert inner gap between windows */
 static const unsigned int gappoh         = 10;    /* horiz outer gap between windows and screen edge */
@@ -12,19 +10,21 @@ static const unsigned int gappov         = 10;    /* vert outer gap between wind
 static const unsigned int systraypinning = 0;     /* 0: sloppy systray follows selected monitor, >0: pin systray to monitor X */
 static const unsigned int systrayonleft  = 0;     /* 0: systray in the right corner, >0: systray on left of status text */
 static const unsigned int systrayspacing = 2;     /* systray spacing */
+static const          int scalepreview   = 4;     /* preview scaling (display w and h / scalepreview) */
+static const          int previewbar     = 1;     /* show the bar in the preview window */
 static const int systraypinningfailfirst = 1;     /* 1: if pinning fails, display systray on the first monitor, False: display systray on the last monitor*/
-static const int showsystray        = 1;        /* 0 means no systray */
-static const int showbar            = 1;        /* 0 means no bar */
-static const int topbar             = 1;        /* 0 means bottom bar */
-static       int smartgaps          = 0;        /* 1 means no outer gap when there is only one window */
-static const char *fonts[]          = { "monospace:size=10" };
-static const char dmenufont[]       = "monospace:size=10";
-static const char col_gray1[]       = "#222222";
-static const char col_gray2[]       = "#444444";
-static const char col_gray3[]       = "#bbbbbb";
-static const char col_gray4[]       = "#eeeeee";
-static const char col_cyan[]        = "#39363d";
-static const char *colors[][3]      = {
+static const int showsystray             = 1;     /* 0 means no systray */
+static const int showbar                 = 1;     /* 0 means no bar */
+static const int topbar                  = 1;     /* 0 means bottom bar */
+static       int smartgaps               = 0;     /* 1 means no outer gap when there is only one window */
+static const char *fonts[]               = { "monospace:size=10" };
+static const char dmenufont[]            = "monospace:size=10";
+static const char col_gray1[]            = "#222222";
+static const char col_gray2[]            = "#444444";
+static const char col_gray3[]            = "#bbbbbb";
+static const char col_gray4[]            = "#eeeeee";
+static const char col_cyan[]             = "#39363d";
+static const char *colors[][3]           = {
 	/*               fg         bg         border   */
 	[SchemeNorm] = { col_gray3, col_gray1, col_gray2 },
 	[SchemeSel]  = { col_gray4, col_cyan,  col_cyan  },
@@ -54,7 +54,7 @@ static const Rule rules[] = {
 };
 
 /* layout(s) */
-static const float mfact     = 0.55; /* factor of master area size [0.05..0.95] */
+static const float mfact     = 0.50; /* factor of master area size [0.05..0.95] */
 static const int nmaster     = 1;    /* number of clients in master area */
 static const int resizehints = 1;    /* 1 means respect size hints in tiled resizals */
 static const int attachbelow = 1;    /* 1 means attach after the currently active window */
@@ -105,20 +105,19 @@ static const char *prevcmd[]         = { "playerctl", "previous", NULL };
 #include "movestack.c"
 static const Key keys[] = {
 	/* modifier                     key        function        argument */
-  { 0,                            XK_Print,  spawn,          {.v = printscreencmd } },
+    { 0,                            XK_Print,  spawn,          {.v = printscreencmd } },
 	{ MODKEY,                       XK_r,      spawn,          {.v = dmenucmd } },
 	{ MODKEY,                       XK_q,      spawn,          {.v = termcmd } },
 	{ MODKEY,                       XK_e,      spawn,          {.v = filescmd } },
 	{ MODKEY,                       XK_b,      togglebar,      {0} },
 	{ MODKEY,                       XK_j,      focusstack,     {.i = +1 } },
 	{ MODKEY,                       XK_k,      focusstack,     {.i = -1 } },
-  { MODKEY,                       XK_h,      focusstack,     {.i = -1 } },
-  { MODKEY,                       XK_l,      focusstack,     {.i = +1 } },
-  { MODKEY,                       XK_u,      setmfact,       {.f = -0.05} },
-  { MODKEY,                       XK_p,      setmfact,       {.f = +0.05} },
+    { MODKEY,                       XK_h,      focusstack,     {.i = -1 } },
+    { MODKEY,                       XK_l,      focusstack,     {.i = +1 } },
+    { MODKEY,                       XK_u,      setmfact,       {.f = -0.05} },
+    { MODKEY,                       XK_p,      setmfact,       {.f = +0.05} },
 	{ MODKEY|ShiftMask,             XK_h,      movestack,      {.i = +1 } },
 	{ MODKEY|ShiftMask,             XK_l,      movestack,      {.i = -1 } },
-	{ MODKEY,                       XK_Return, zoom,           {0} },
 	{ MODKEY,                       XK_Tab,    view,           {0} },
 	{ MODKEY|ShiftMask,             XK_q,      killclient,     {0} },
 	{ MODKEY,                       XK_d,      setlayout,      {.v = &layouts[0]} },
@@ -130,17 +129,17 @@ static const Key keys[] = {
 	{ MODKEY,                       XK_period, focusmon,       {.i = +1 } },
 	{ MODKEY|ShiftMask,             XK_comma,  tagmon,         {.i = -1 } },
 	{ MODKEY|ShiftMask,             XK_period, tagmon,         {.i = +1 } },
-  { MODKEY,                       XK_F11,    spawn,          {.v = tempdowncmd } },
-  { MODKEY,                       XK_F12,    spawn,          {.v = tempupcmd } },
-  { 0, XF86XK_AudioRaiseVolume,              spawn,          {.v = volupcmd } },
-  { 0, XF86XK_AudioLowerVolume,              spawn,          {.v = voldowncmd } },
-  { 0, XF86XK_AudioMute,                     spawn,          {.v = mutecmd } },
-  { 0, XF86XK_AudioMicMute,                  spawn,          {.v = micmutecmd } },
-  { 0, XF86XK_MonBrightnessUp,               spawn,          {.v = briupcmd } },
-  { 0, XF86XK_MonBrightnessDown,             spawn,          {.v = bridowncmd } },
-  { 0, XF86XK_AudioNext,                     spawn,          {.v = nextcmd } },
-  { 0, XF86XK_AudioPlay,                     spawn,          {.v = playpausecmd } },
-  { 0, XF86XK_AudioPrev,                     spawn,          {.v = prevcmd } },
+    { MODKEY,                       XK_F11,    spawn,          {.v = tempdowncmd } },
+    { MODKEY,                       XK_F12,    spawn,          {.v = tempupcmd } },
+    { 0, XF86XK_AudioRaiseVolume,              spawn,          {.v = volupcmd } },
+    { 0, XF86XK_AudioLowerVolume,              spawn,          {.v = voldowncmd } },
+    { 0, XF86XK_AudioMute,                     spawn,          {.v = mutecmd } },
+    { 0, XF86XK_AudioMicMute,                  spawn,          {.v = micmutecmd } },
+    { 0, XF86XK_MonBrightnessUp,               spawn,          {.v = briupcmd } },
+    { 0, XF86XK_MonBrightnessDown,             spawn,          {.v = bridowncmd } },
+    { 0, XF86XK_AudioNext,                     spawn,          {.v = nextcmd } },
+    { 0, XF86XK_AudioPlay,                     spawn,          {.v = playpausecmd } },
+    { 0, XF86XK_AudioPrev,                     spawn,          {.v = prevcmd } },
 	TAGKEYS(                        XK_1,                      0)
 	TAGKEYS(                        XK_2,                      1)
 	TAGKEYS(                        XK_3,                      2)
