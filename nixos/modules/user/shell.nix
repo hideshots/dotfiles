@@ -29,6 +29,12 @@
       font_family = "FiraCode Nerd Font";
       font_size = 14.0;
 
+      cursor_trail = 10;
+      cursor_trail_start_threshold = 0;
+      cursor_trail_decay = "0.01 0.15";
+      cursor_shape = "block";
+      cursor_blink = true;
+
       confirm_os_window_close = 0;
       scrollback_lines = 10000;
       hide_window_decorations = 1;
