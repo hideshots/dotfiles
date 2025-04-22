@@ -7,6 +7,8 @@
   stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/black-metal.yaml";
   stylix.polarity = "dark";
 
+  stylix.targets.spicetify.enable = true;
+
   # Home Manager integration options
   stylix.homeManagerIntegration = {
     autoImport = true;  # Automatically import Stylix into every Home Manager user

@@ -17,16 +17,19 @@
     };
   };
   
+  services.easyeffects.enable = true;
+  
   home.packages = with pkgs; [
     obs-studio
     obsidian
     teams-for-linux
     chromium
+    easyeffects
 
-    inputs.nix-gaming.packages.${system}.osu-lazer-bin
+    # inputs.nix-gaming.packages.${system}.osu-lazer-bin
     # inputs.nix-gaming.packages.${system}.osu-stable
     prismlauncher
-    rpcs3
+    # rpcs3
   ];
 
   home.stateVersion  = "24.11";

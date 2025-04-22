@@ -5,10 +5,10 @@
     [
       ./hardware.nix
       ../common.nix
-      ../../modules/system/xorg.nix
-      ../../modules/system/wayland.nix
       ../../modules/system/hardware/devices.nix
       ../../modules/system/hardware/nvidia.nix
+      ../../modules/system/xorg.nix
+      ../../modules/system/wayland.nix
       ../../modules/system/bootloader.nix
       ../../modules/system/gaming.nix
       ../../modules/system/vpns.nix
@@ -62,7 +62,6 @@
   '';
   security.polkit.enable = true;
 
-  services.easyeffects.enable = true;
   environment.systemPackages = with pkgs; [
     (discord-canary.override {
       withVencord = true;
