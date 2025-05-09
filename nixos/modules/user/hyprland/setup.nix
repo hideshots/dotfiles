@@ -31,7 +31,7 @@
         "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP"
 
         # "discordcanary &"
-        # "telegram-desktop -startintray &"
+        "telegram-desktop -startintray &"
         # "AmneziaVPN &"
         # "steam &"
         # "spotify &"
@@ -40,6 +40,10 @@
       env = [
         "XCURSOR_SIZE,24"
         "HYPRCURSOR_SIZE,24"
+        "MOZ_ENABLE_WAYLAND,1"
+        "XDG_SESSION_TYPE,wayland"
+        "ELECTRON_OZONE_PLATFORM_HINT,auto"
+        "NIXOS_OZONE_WL=1"
       ];
 
       general = {
@@ -241,17 +245,17 @@
     '';
   };
 
-  home.sessionVariables = {
-    OSU_SDL3 = "1";
-    NIXOS_OZONE_WL = "1";
-    MOZ_ENABLE_WAYLAND = "1";
-    # WLR_NO_HARDWARE_CURSORS = "1";
-    # XDG_CURRENT_DESKTOP = "Hyprland";
-    # XDG_SESSION_DESKTOP = "Hyprland";
-    # GDK_BACKEND         = "wayland";
-    # QT_QPA_PLATFORM     = "wayland";
-    # SDL_VIDEODRIVER     = "wayland";
-    # CLUTTER_BACKEND     = "wayland";
-    # XDG_SESSION_TYPE    = "wayland";
-  };
+  # home.sessionVariables = {
+  #   OSU_SDL3 = "1";
+  #   # NIXOS_OZONE_WL = "1";
+  #   # MOZ_ENABLE_WAYLAND = "1";
+  #   # WLR_NO_HARDWARE_CURSORS = "1";
+  #   # XDG_CURRENT_DESKTOP = "Hyprland";
+  #   # XDG_SESSION_DESKTOP = "Hyprland";
+  #   # GDK_BACKEND         = "wayland";
+  #   # QT_QPA_PLATFORM     = "wayland";
+  #   # SDL_VIDEODRIVER     = "wayland";
+  #   # CLUTTER_BACKEND     = "wayland";
+  #   # XDG_SESSION_TYPE    = "wayland";
+  # };
 }

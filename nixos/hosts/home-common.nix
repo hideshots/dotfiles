@@ -21,6 +21,7 @@
     # General apps
     inputs.zen-browser.packages."${system}".beta
     telegram-desktop
+    bitwarden-desktop
     btop
     mpv
 

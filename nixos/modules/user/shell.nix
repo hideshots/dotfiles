@@ -7,7 +7,7 @@
     syntaxHighlighting.enable = true;
     oh-my-zsh.enable = true;
     oh-my-zsh.theme = "bureau";
-    initExtra = ''
+    initContent = ''
       autoload -Uz add-zsh-hook
       unsetopt beep
 

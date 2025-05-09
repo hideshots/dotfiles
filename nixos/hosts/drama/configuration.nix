@@ -62,11 +62,11 @@
   '';
   security.polkit.enable = true;
 
-  environment.systemPackages = with pkgs; [
-    (discord-canary.override {
-      withVencord = true;
-    })
-  ];
+  # environment.systemPackages = with pkgs; [
+  #   (discord-canary.override {
+  #     withVencord = true;
+  #   })
+  # ];
 
   users.users.drama = {
     isNormalUser            = true;

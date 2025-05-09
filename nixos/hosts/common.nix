@@ -52,6 +52,7 @@
 
   environment.systemPackages = with pkgs; [
     networkmanagerapplet
+    gnome-keyring
     home-manager
     nvchad
     wget
