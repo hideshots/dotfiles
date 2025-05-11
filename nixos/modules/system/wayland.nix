@@ -6,8 +6,8 @@
   environment.systemPackages = with pkgs; [
     wl-clipboard
     hyprsunset
+    libnotify
     hyprpaper
-    waybar
     slurp
     grim
     eww

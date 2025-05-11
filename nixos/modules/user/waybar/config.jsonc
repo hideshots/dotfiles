@@ -1,7 +1,7 @@
 {
-  "layer": "top",
+  "layer": "bottom",
   "position": "top",
-  "height": 40,
+  "height": 34,
   "background-color": "#00000000",
   "color": "#ffffff",
   "modules-left": ["hyprland/workspaces", "tray", "privacy"],
@@ -9,8 +9,10 @@
    "modules-right": [
     "hyprland/language",
     "mpris",
-    "custom/weather",
+    // "custom/weather",
     "pulseaudio",
+    "custom/rofi",
+    "custom/control-center",
     "battery",
     "network",
     "clock"
@@ -18,7 +20,7 @@
 
   "privacy": {
     "icon-spacing": 4,
-    "icon-size": 18,
+    "icon-size": 14,
     "transition-duration": 250,
     "modules": [
       {
@@ -35,7 +37,7 @@
   },
 
   "tray": {
-    "icon-size": 16,
+    "icon-size": 14,
     "spacing": 10,
     "show-passive-items": true,
     "smooth-scrolling-threshold": 0.0,
@@ -93,6 +95,7 @@
   
   "clock": {
     "format": "{:%a %b %d %I:%M %p}",
+    "on-click": "swaync-client -t",
     "interval": 60
   },
 
@@ -115,11 +118,18 @@
     "on-click": "kitty nmtui"
   },
 
-  "custom/wofi": {
+  "custom/rofi": {
     "exec": "echo '{\"text\":\"\"}'",
     "return-type": "json",
     "interval": "once",
-    "on-click": "wofi --show drun"
+    "on-click": "rofi -show drun"
+  },
+
+  "custom/control-center": {
+    "exec": "echo '{\"text\":\"\"}'",
+    "return-type": "json",
+    "interval": "once",
+    "on-click": "swaync-client -t"
   },
 
   "pulseaudio": {
@@ -137,35 +147,32 @@
       "phone-muted": "",
   "portable": "",
       "car": "",
-      "default": ["", ""]
+      "default": ["", ""]
     },
     "scroll-step": 5,
     "on-click": "pavucontrol",
     "ignored-sinks": ["Easy Effects Sink"]
   },
 
-"battery": {
-  "interval": 30,
-  "tooltip": true,
-  "tooltip-format": "{time} ({capacity}%)",
-  "states": {
-    "good": 95,
-    "warning": 30,
-    "critical": 20
-  },
-  "format": "{icon}",
-  "format-charging": "󰂄",
-  "format-plugged": "",
-  "format-alt": "{capacity}",
-  "format-icons": [
-    "󰁻",
-    "󰁼",
-    "󰁾",
-    "󰂀",
-    "󰂂",
-    "󰁹"
-  ]
-}
-
-
+  "battery": {
+    "interval": 30,
+    "tooltip": true,
+    "tooltip-format": "{time} ({capacity}%)",
+    "states": {
+      "good": 95,
+      "warning": 30,
+      "critical": 20
+    },
+    "format": "{icon}",
+    "format-charging": "󱐋",
+    "format-plugged": "",
+    "format-alt": "{capacity}%",
+    "format-icons": [
+      "",
+      "",
+      "",
+      "",
+      ""
+    ]
+  }
 }

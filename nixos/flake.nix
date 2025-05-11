@@ -46,6 +46,7 @@
           {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
+            home-manager.backupFileExtension = "backup";
             home-manager.users.dev = import ./hosts/dev/home.nix;
             home-manager.extraSpecialArgs = extraSpecialArgs;
           }
@@ -65,6 +66,7 @@
           {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
+            home-manager.backupFileExtension = "backup";
             home-manager.users.lenovo = import ./hosts/lenovo/home.nix;
             home-manager.extraSpecialArgs = extraSpecialArgs;
           }
@@ -84,6 +86,7 @@
           {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
+            home-manager.backupFileExtension = "backup";
             home-manager.users.drama = import ./hosts/drama/home.nix;
             home-manager.extraSpecialArgs = extraSpecialArgs;
           }

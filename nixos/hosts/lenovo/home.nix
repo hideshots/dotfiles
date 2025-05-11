@@ -18,23 +18,25 @@
     };
   };
 
-  # Hyprland config override
+  # Hyprland configuration overrides.
   wayland.windowManager.hyprland.settings = {
     monitor = lib.mkForce [
-      "eDP-1,preferred,auto,1,transform,0"
+      "eDP-1, preferred, auto, 1, transform, 0"
     ];
 
     exec-once = [
-      "iio-hyprland" # auto-rotation
+      "iio-hyprland"     # automatic screen rotation
     ];
 
     bind = [
-      "SUPER,O,exec,~/.dotfiles/nixos/modules/user/scripts/"
+      "SUPER,O,exec,~/.dotfiles/nixos/modules/user/scripts/my-script.sh"
     ];
-  };
 
-  wayland.windowManager.hyprland.settings.input.force_no_accel = lib.mkForce "0";
-  wayland.windowManager.hyprland.settings.input.sensitivity = lib.mkForce "-0.15";
+    input = {
+      force_no_accel = lib.mkForce "0";
+      sensitivity = lib.mkForce "-0.15";
+    };
+  };
 
   home.packages = with pkgs; [
     # inputs.nix-gaming.packages.${system}.osu-lazer-bin

@@ -1,9 +1,9 @@
 window#waybar {
-  background-color: rgba(0, 0, 0, 0.4);
+  background-color: rgba(0, 0, 0, 0.3);
   color: #ffffff;
   padding: 0 10px;
   text-shadow: 0 0 14px rgba(0, 0, 0, 0.51);
-  font-size: 14px;
+  font-size: 13px;
   font-family: "SF Pro Rounded", ui-monospace, monospace;
   font-weight: 600;
 }
@@ -22,19 +22,24 @@ window#waybar {
   margin-left: 8px;
 }
 
+#mpris {
+  margin-right: 8px;
+}
+
 #privacy {
   margin-left: 10px;
 }
 
-#language, #custom-wofi, #pulseaudio, #mpris, #network {
-  min-width:  34px;
+#language, #custom-rofi, #pulseaudio, #battery, #network, #custom-control-center{
+  min-width: 33px;
+  margin-left: -5px;
 }
 
-#custom-weather {
-  margin-left: 14px;
-  min-width:  34px;
-}
-
+/* #custom-weather { */
+/*   margin-left: 14px; */
+/*   min-width:  34px; */
+/* } */
+    
 #language {
   color: rgba(255, 255, 255, 0.6);
   font-size: 6px;
@@ -50,14 +55,14 @@ window#waybar {
   all: unset;
   padding: 0px 5px;
   color: rgba(255, 255, 255, 0.6);
-  /*transition: all 0.4s ease;*/
+  transition: all 0.06s ease;
   font-size: 6px;
 }
 
 #workspaces button.active {
   color: #f2f2f2;
   font-size: 8px;
-  margin: -1px 0px 0px 0px;
+  margin: 0px 0px 0px 0px;
   text-shadow: 0px 0px 4px rgba(0, 0, 0, 0.4);
 }
 
@@ -78,7 +83,7 @@ window#waybar {
   color: #f0f0f0;
 }
 
-#custom-language {
-  margin-right: 9px;
-  margin-left: 9px;
-}
+/* #custom-language { */
+/*   margin-right: 9px; */
+/*   margin-left: 9px; */
+/* } */

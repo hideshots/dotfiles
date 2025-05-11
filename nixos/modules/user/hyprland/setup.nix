@@ -4,6 +4,8 @@
   imports = [
     ./hypridle.nix
     ./hyprlock.nix
+    ../swaync/setup.nix
+    ../waybar/setup.nix
   ];
 
   wayland.windowManager.hyprland = {
@@ -27,7 +29,7 @@
         "hyprctl reload"
         "dbus-launch --exit-with-session"
         "nm-applet &"
-        "hyprpaper & waybar -c ~/.dotfiles/nixos/modules/user/waybar/config.jsonc -s ~/.dotfiles/nixos/modules/user/waybar/style.css &"
+        "hyprpaper & waybar & swaync &"
         "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP"
 
         # "discordcanary &"
@@ -69,9 +71,12 @@
 
         blur = {
           enabled = true;
-          size = 14;
-          passes = 2;
-          # noise = 0.03;
+          size = 12;
+          passes = 4;
+          vibrancy = 1;
+          vibrancy_darkness = 0.1;
+          # brightness = 1.0;
+          noise = 0.015;
         };
       };
 
@@ -146,7 +151,10 @@
         "$mainMod, R, exec, $menu"
         "$mainMod, F, fullscreen,"
 
-        "$mainMod, W, exec, pkill waybar && waybar -c ~/.dotfiles/nixos/modules/user/waybar/config.jsonc -s ~/.dotfiles/nixos/modules/user/waybar/style.css"
+        "$mainMod SHIFT, W, exec, pkill waybar && waybar -c ~/.dotfiles/nixos/modules/user/waybar/config.jsonc -s ~/.dotfiles/nixos/modules/user/waybar/style.css"
+        "$mainMod SHIFT, N, exec, pkill swaync && swaync -c .dotfiles/nixos/modules/user/swaync/config.json -s .dotfiles/nixos/modules/user/swaync/style.css "
+        "$mainMod, N, exec, swaync-client -t" 
+        "$mainMod, B, exec, ~/.dotfiles/nixos/modules/user/hyprland/gamemode.sh" 
 
         "$mainMod, h, movefocus, l"
         "$mainMod, l, movefocus, r"
@@ -229,7 +237,13 @@
 
       layerrule = [
         "blur,waybar"
+
         "blur,gtk-layer-shell"
+
+        "blur,^(swaync-control-center)$"
+        "blur,^(swaync-notification-window)$"
+        "ignorezero,^(swaync-control-center)$"
+        "ignorezero,^(swaync-notification-window)$"
       ];
     };
   };
