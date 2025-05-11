@@ -19,6 +19,10 @@
 
   home-manager.backupFileExtension = "backup";
 
+  hardware.sensor.iio.enable = true;
+
+  programs.iio-hyprland.enable = true;
+
   users.users.lenovo = {
     isNormalUser            = true;
     description             = "lenovo";

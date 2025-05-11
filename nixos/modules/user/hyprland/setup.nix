@@ -57,8 +57,8 @@
 
       decoration = {
         rounding = 7;
-        active_opacity = 0.80;
-        inactive_opacity = 0.90;
+        # active_opacity = 0.90;
+        # inactive_opacity = 0.80;
 
         shadow = {
           enabled = true;
@@ -69,10 +69,9 @@
 
         blur = {
           enabled = true;
-          size = 16;
+          size = 14;
           passes = 2;
           # noise = 0.03;
-          vibrancy = 0.1696;
         };
       };
 

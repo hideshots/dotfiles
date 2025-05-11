@@ -7,6 +7,7 @@
     stylix.url = "github:danth/stylix";
     apple-fonts.url = "github:Lyndeno/apple-fonts.nix";
     nix-gaming.url = "github:fufexan/nix-gaming";
+    iio-hyprland.url = "github:JeanSchoeller/iio-hyprland";
 
     home-manager = {
       url = "github:nix-community/home-manager";
