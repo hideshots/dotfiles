@@ -1,17 +1,20 @@
 { config, pkgs, lib, ... }:
 
+let
+  rofiDir = "${config.xdg.configHome}/rofi";
+in
 {
-  home.file.".config/rofi/spotlight-dark.rasi" = {
+  # Spotlight-dark
+  home.file."${rofiDir}/spotlight-dark.rasi" = {
     text = ''
       /* MACOS SPOTLIGHT LIKE DARK THEME FOR ROFI  */
       /* Author: Newman Sanchez (https://github.com/newmanls) */
-      
       * {
-          font:   "Montserrat 12";
+          font:   "SF Pro";
 
-          bg0:    #242424E6;
+          bg0:    #242424AA;
           bg1:    #7E7E7E80;
-          bg2:    #39363dFF;
+          bg2:    ${config.lib.stylix.colors.withHashtag.base0A};
 
           fg0:    #DEDEDE;
           fg1:    #FFFFFF;
@@ -105,13 +108,108 @@
     '';
   };
 
+  # Launchpad
+  home.file."${rofiDir}/launchpad-dark.rasi" = {
+    text = ''
+      /* MACOS LAUNCHPAD LIKE THEME FOR ROFI */
+      /* Author: Newman Sanchez (https://github.com/newmanls) */
+
+      * {
+          font: "SF Pro";
+
+          bg0:  #24242480;
+          bg1:  #363636;
+          bg2:  #f5f5f520;
+          bg3:  #f5f5f540;
+          bg4:  ${config.lib.stylix.colors.withHashtag.base0A};
+
+
+          fg0:  #f5f5f5;
+          fg1:  #f5f5f580;
+
+          background-color: transparent;
+          text-color:       @fg0;
+          padding:          0px;
+          margin:           0px;
+      }
+
+      window {
+        fullscreen: true;
+        padding: 1em;
+        background-color: @bg0;
+      }
+
+      mainbox {
+        padding: 8px;
+      }
+
+      inputbar {
+        background-color: @bg2;
+        margin:   0px calc(50% - 120px);
+        padding:  2px 4px;
+        spacing:  4px;
+        border:         1px;
+        border-radius:  2px;
+        border-color:   @bg3;
+        children: [icon-search,entry];
+      }
+
+      prompt {
+        enabled: false;
+      }
+
+      icon-search {
+        expand: false;
+        filename: "search";
+        vertical-align: 0.5;
+      }
+
+      entry {
+        placeholder:       "Search";
+        placeholder-color: @bg2;
+      }
+
+      listview {
+        margin:   48px calc(50% - 560px);
+        spacing:  48px;
+        columns:  6;
+        fixed-columns: true;
+      }
+
+      element, element-text, element-icon {
+        cursor: pointer;
+      }
+
+      element {
+        padding:      8px;
+        spacing:      4px;
+        orientation:  vertical;
+        border-radius: 16px;
+      }
+
+      element selected {
+        background-color: @bg4;
+      }
+
+      element-icon {
+        size: 4em;
+        horizontal-align: 0.5;
+      }
+
+      element-text {
+        horizontal-align: 0.5;
+      }
+    '';
+  };
+
   programs.rofi = {
     enable = true;
     package = pkgs.rofi-wayland;
-    theme = "${config.xdg.configHome}/rofi/spotlight-dark.rasi";
+    theme = "${rofiDir}/spotlight-dark.rasi";
+
     extraConfig = {
-      modi = "drun,run,window";
-      terminal = "foot";
+      modi       = "drun,run,window";
+      terminal   = "foot";
       show-icons = true;
     };
   };

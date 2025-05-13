@@ -1,4 +1,4 @@
-{ config, pkgs, inputs, ... }:
+{ config, pkgs, inputs, lib, ... }:
 
 {
   imports = [
@@ -58,15 +58,19 @@
       };
 
       decoration = {
-        rounding = 7;
-        # active_opacity = 0.90;
-        # inactive_opacity = 0.80;
+        rounding = 5;
+        # dim_inactive = true;
+        # dim_strength = 0.2;
+        # active_opacity = 1.0;
+        # inactive_opacity = 0.85;
 
         shadow = {
           enabled = true;
-          range = 4;
+          range = 50;
           render_power = 3;
-          color = "rgba(1a1a1aee)";
+          offset = "0 9";
+          scale = 0.98;
+          color = lib.mkForce "rgba(00000088)";
         };
 
         blur = {
@@ -149,6 +153,7 @@
         "$mainMod, E, exec, $fileManager"
         "$mainMod, C, togglefloating,"
         "$mainMod, R, exec, $menu"
+        "$mainMod, M, exec, rofi -show drun -theme launchpad-dark"
         "$mainMod, F, fullscreen,"
 
         "$mainMod SHIFT, W, exec, pkill waybar && waybar -c ~/.dotfiles/nixos/modules/user/waybar/config.jsonc -s ~/.dotfiles/nixos/modules/user/waybar/style.css"
@@ -238,7 +243,8 @@
       layerrule = [
         "blur,waybar"
 
-        "blur,gtk-layer-shell"
+        "blur,rofi"
+        "ignorealpha,rofi"
 
         "blur,^(swaync-control-center)$"
         "blur,^(swaync-notification-window)$"
@@ -248,15 +254,15 @@
     };
   };
 
-  xdg.configFile."hypr/hyprpaper.conf" = {
-    text = ''
-      # Preload the wallpaper
-      preload = ~/.dotfiles/wallpapers/cherry_3.png
-
-      # Set the wallpaper for all monitors
-      wallpaper = ,~/.dotfiles/wallpapers/cherry_3.png
-    '';
-  };
+  # xdg.configFile."hypr/hyprpaper.conf" = {
+  #   text = ''
+  #     # Preload the wallpaper
+  #     preload = ~/.dotfiles/wallpapers/cherry_3.png
+  #
+  #     # Set the wallpaper for all monitors
+  #     wallpaper = ,~/.dotfiles/wallpapers/cherry_3.png
+  #   '';
+  # };
 
   # home.sessionVariables = {
   #   OSU_SDL3 = "1";

@@ -3,9 +3,9 @@
 {
   imports = [
     ../modules/user/hyprland/setup.nix
+    ../modules/user/spicetify.nix
     ../modules/user/picom.nix
     ../modules/user/shell.nix
-    ../modules/user/spicetify.nix
     ../modules/user/tmux.nix
     ../modules/user/yazi.nix
     ../modules/user/rofi.nix
@@ -13,15 +13,23 @@
     inputs.spicetify-nix.homeManagerModules.default
   ];
 
-  stylix.targets.rofi.enable = false;
-  stylix.targets.hyprland.enable = false;
-  stylix.targets.spicetify.enable = false;
+    stylix.targets = {
+      hyprland = {
+        enable    = true;
+        hyprpaper = { enable = true; };
+      };
+      nixos-icons         = { enable = true; };
+      kitty               = { enable = true; };
+      foot                = { enable = true; };
+      gtk                 = { enable = true; };
+      qt                  = { enable = true; };
+    };
 
   home.packages = with pkgs; [
     # General apps
     inputs.zen-browser.packages."${system}".beta
-    telegram-desktop
     bitwarden-desktop
+    telegram-desktop
     btop
     mpv
 

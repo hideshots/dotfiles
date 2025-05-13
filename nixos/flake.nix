@@ -7,10 +7,15 @@
     stylix.url = "github:danth/stylix";
     apple-fonts.url = "github:Lyndeno/apple-fonts.nix";
     nix-gaming.url = "github:fufexan/nix-gaming";
-    iio-hyprland.url = "github:JeanSchoeller/iio-hyprland";
+    iio-hyprland.url = "github:JeanSchoeller/iio-hyprland"; 
 
     home-manager = {
       url = "github:nix-community/home-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    minimal-tmux = {
+      url = "github:niksingh710/minimal-tmux-status";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
