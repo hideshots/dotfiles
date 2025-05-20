@@ -8,6 +8,7 @@
       ../../modules/system/xorg.nix
       ../../modules/system/wayland.nix
       ../../modules/system/bootloader.nix
+      ../../modules/system/bluetooth.nix
       ../../modules/system/stylix.nix
       ../../modules/system/vpns.nix
     ];
@@ -16,7 +17,7 @@
 
   programs.nix-ld = {
     enable = true;
-    package = pkgs.nix-ld-rs;  # For NixOS 24.05 or newer
+    package = pkgs.nix-ld-rs;
   };
 
   users.users.dev = {

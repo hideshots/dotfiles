@@ -15,9 +15,6 @@
 
     settings = {
       monitor = [
-        "HDMI-A-2, 1920x1080@144 ,0x0,1"
-        "DP-1,     1920x1080@240 ,1920x0,1"
-        "HDMI-A-1, 1920x1080@60  ,3840x0,1"
         ", preferred, auto, 1"
       ];
 
@@ -27,6 +24,7 @@
 
       exec-once = [
         "hyprctl reload"
+        "/usr/bin/pypr"
         "dbus-launch --exit-with-session"
         "nm-applet &"
         "hyprpaper & waybar & swaync &"
@@ -166,6 +164,11 @@
         "$mainMod, k, movefocus, u"
         "$mainMod, j, movefocus, d"
 
+        "$mainMod SHIFT, H, moveactive, -50 0"
+        "$mainMod SHIFT, L, moveactive, 50 0"
+        "$mainMod SHIFT, K, moveactive, 0 -50"
+        "$mainMod SHIFT, J, moveactive, 0 50"
+
         "$mainMod SHIFT, h, swapwindow, l"
         "$mainMod SHIFT, l, swapwindow, r"
         "$mainMod SHIFT, k, swapwindow, u"
@@ -245,6 +248,9 @@
 
         "blur,rofi"
         "ignorealpha,rofi"
+
+        "blur,nwg-dock"
+        "ignorezero,nwg-dock"
 
         "blur,^(swaync-control-center)$"
         "blur,^(swaync-notification-window)$"

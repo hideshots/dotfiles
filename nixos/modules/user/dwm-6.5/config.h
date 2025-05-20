@@ -34,7 +34,7 @@ static const char *colors[][3]           = {
 #define ICONSPACING 5 /* space between icon and title */
 
 static const char *const autostart[] = {
-  "sh", "-c", "hsetroot -cover ~/.dotfiles/wallpapers/cherry_2.png", NULL,
+  "sh", "-c", "hsetroot -cover ~/.dotfiles/wallpapers/aletiune_2.png", NULL,
   "sh", "-c", "~/.dotfiles/nixos/modules/user/dwm-6.5/bar/dwm_bar.sh", NULL,
 	"picom", NULL,
 	"nm-applet", NULL,

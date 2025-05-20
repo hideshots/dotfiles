@@ -8,7 +8,7 @@
       ../../modules/system/xorg.nix
       ../../modules/system/wayland.nix
       ../../modules/system/hardware/intel.nix
-      ../../modules/system/hardware/battery.nix
+      # ../../modules/system/hardware/battery.nix
       ../../modules/system/gaming.nix
       ../../modules/system/sunshine.nix
       ../../modules/system/bootloader.nix

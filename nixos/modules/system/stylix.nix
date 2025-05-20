@@ -4,12 +4,12 @@
   stylix = {
     enable = true;
     autoEnable = false;
-    image = ../../../wallpapers/cherry_3.png;
+    image = ../../../wallpapers/aletiune_6.png;
     polarity = "dark";
 
     homeManagerIntegration = {
-      autoImport = true;
-      followSystem = true;
+      autoImport    = true;
+      followSystem  = true;
     };
 
     override = {
@@ -38,29 +38,29 @@
     fonts = {
       serif = {
         package = inputs.apple-fonts.packages.${pkgs.system}.sf-pro;
-        name = "SF Pro";
+        name    = "SF Pro";
       };
 
       sansSerif = {
         package = inputs.apple-fonts.packages.${pkgs.system}.sf-pro;
-        name = "SF Pro";
+        name    = "SF Pro";
       };
 
       monospace = {
         package = inputs.apple-fonts.packages.${pkgs.system}.sf-mono-nerd;
-        name = "SF Mono Nerd Font";
+        name    = "SF Mono Nerd Font";
       };
 
       emoji = {
-        package = pkgs.noto-fonts-emoji;
-        name = "Noto Color Emoji";
+        package = inputs.appleEmoji.packages.${pkgs.system}.apple-emoji-linux;
+        name    = "Apple Color Emoji";
       };
     };
 
     cursor = {
       package = pkgs.whitesur-cursors;
-      name = "WhiteSur-cursors";
-      size = 16;
+      name    = "WhiteSur-cursors";
+      size    = 16;
     };
   };
 }

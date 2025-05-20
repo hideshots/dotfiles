@@ -4,6 +4,7 @@ import json
 import requests
 from datetime import datetime
 
+# Mapping weather codes to emoji
 WEATHER_CODES = {
     '113': '☀️',
     '116': '⛅️',
@@ -55,61 +56,79 @@ WEATHER_CODES = {
     '395': '❄️'
 }
 
-data = {}
+def format_time(time_str):
+    """Normalize hour string (e.g., '0', '600', '1200')."""
+    return time_str.replace('00', '').zfill(2)
 
 
-weather = requests.get("https://wttr.in/krasnodar, Manitoba?format=j1").json()
-
-
-def format_time(time):
-    return time.replace("00", "").zfill(2)
-
-
-def format_temp(temp):
-    return (hour['FeelsLikeC']+"°").ljust(3)
+def format_temp_f(hour):
+    """Format the 'Feels Like' temperature in Fahrenheit."""
+    return f"{hour['FeelsLikeF']}°F".ljust(4)
 
 
 def format_chances(hour):
+    """Return weather event chance descriptions."""
     chances = {
-        "chanceoffog": "Fog",
-        "chanceoffrost": "Frost",
-        "chanceofovercast": "Overcast",
-        "chanceofrain": "Rain",
-        "chanceofsnow": "Snow",
-        "chanceofsunshine": "Sunshine",
-        "chanceofthunder": "Thunder",
-        "chanceofwindy": "Wind"
+        'chanceoffog': 'Fog',
+        'chanceoffrost': 'Frost',
+        'chanceofovercast': 'Overcast',
+        'chanceofrain': 'Rain',
+        'chanceofsnow': 'Snow',
+        'chanceofsunshine': 'Sunshine',
+        'chanceofthunder': 'Thunder',
+        'chanceofwindy': 'Wind'
     }
-
     conditions = []
-    for event in chances.keys():
-        if int(hour[event]) > 0:
-            conditions.append(chances[event]+" "+hour[event]+"%")
-    return ", ".join(conditions)
+    for key, label in chances.items():
+        if int(hour.get(key, 0)) > 0:
+            conditions.append(f"{label} {hour[key]}%")
+    return ', '.join(conditions)
 
 
-data['text'] = WEATHER_CODES[weather['current_condition'][0]['weatherCode']] + \
-    " " + weather['current_condition'][0]['FeelsLikeC']+ "°"
-#data['text'] = weather['current_condition'][0]['FeelsLikeC']+"°"
+def main():
+    data = {}
+    # Request JSON data
+    # 'format=j1' returns both Celsius and Fahrenheit fields
+    weather = requests.get(
+        'https://wttr.in/krasnodar,Manitoba?format=j1'
+    ).json()
 
-data['tooltip'] = f"<b>{weather['current_condition'][0]['weatherDesc'][0]['value']} {weather['current_condition'][0]['temp_C']}°</b>\n"
-data['tooltip'] += f"Feels like: {weather['current_condition'][0]['FeelsLikeC']}°\n"
-data['tooltip'] += f"Wind: {weather['current_condition'][0]['windspeedKmph']}Km/h\n"
-data['tooltip'] += f"Humidity: {weather['current_condition'][0]['humidity']}%\n"
-for i, day in enumerate(weather['weather']):
-    data['tooltip'] += f"\n<b>"
-    if i == 0:
-        data['tooltip'] += "Today, "
-    if i == 1:
-        data['tooltip'] += "Tomorrow, "
-    data['tooltip'] += f"{day['date']}</b>\n"
-    data['tooltip'] += f"⬆️ {day['maxtempC']}° ⬇️ {day['mintempC']}° "
-    data['tooltip'] += f" {day['astronomy'][0]['sunrise']}  {day['astronomy'][0]['sunset']}\n"
-    for hour in day['hourly']:
-        if i == 0:
-            if int(format_time(hour['time'])) < datetime.now().hour-2:
+    current = weather['current_condition'][0]
+    icon = WEATHER_CODES.get(current['weatherCode'], '')
+    temp_f = current['FeelsLikeF']
+    wind_mph = current['windspeedMiles']
+
+    # Text for waybar
+    data['text'] = f"{icon} {temp_f}°F"
+
+    # Tooltip with more details
+    tooltip = []
+    tooltip.append(f"<b>{current['weatherDesc'][0]['value']} {current['temp_F']}°F</b>")
+    tooltip.append(f"Feels like: {current['FeelsLikeF']}°F")
+    tooltip.append(f"Wind: {wind_mph} mph")
+    tooltip.append(f"Humidity: {current['humidity']}%")
+
+    # Forecast for today & tomorrow
+    for idx, day in enumerate(weather['weather'][:2]):
+        label = 'Today' if idx == 0 else 'Tomorrow'
+        tooltip.append(f"\n<b>{label}, {day['date']}</b>")
+        tooltip.append(
+            f"⬆️ {day['maxtempF']}°F ⬇️ {day['mintempF']}°F "
+            f" {day['astronomy'][0]['sunrise']}  {day['astronomy'][0]['sunset']}"
+        )
+        # Hourly details (skip past hours for today)
+        for hour in day['hourly']:
+            h = format_time(hour['time'])
+            if idx == 0 and int(h) < datetime.now().hour - 2:
                 continue
-        data['tooltip'] += f"{format_time(hour['time'])} {WEATHER_CODES[hour['weatherCode']]} {format_temp(hour['FeelsLikeC'])} {hour['weatherDesc'][0]['value']}, {format_chances(hour)}\n"
+            icon_h = WEATHER_CODES.get(hour['weatherCode'], '')
+            tooltip.append(
+                f"{h}:00 {icon_h} {format_temp_f(hour)} "
+                f"{hour['weatherDesc'][0]['value']}, {format_chances(hour)}"
+            )
 
+    data['tooltip'] = '\n'.join(tooltip)
+    print(json.dumps(data))
 
-print(json.dumps(data))
+if __name__ == '__main__':
+    main()

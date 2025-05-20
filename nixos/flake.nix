@@ -1,13 +1,19 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    hyprland.url = "github:hyprwm/Hyprland";
+    nixpkgs.url       = "github:NixOS/nixpkgs/nixos-unstable";
+    hyprland.url      = "github:hyprwm/Hyprland";
     spicetify-nix.url = "github:Gerg-L/spicetify-nix";
-    zen-browser.url = "github:0xc000022070/zen-browser-flake";
-    stylix.url = "github:danth/stylix";
-    apple-fonts.url = "github:Lyndeno/apple-fonts.nix";
-    nix-gaming.url = "github:fufexan/nix-gaming";
-    iio-hyprland.url = "github:JeanSchoeller/iio-hyprland"; 
+    zen-browser.url   = "github:0xc000022070/zen-browser-flake";
+    apple-fonts.url   = "github:Lyndeno/apple-fonts.nix";
+    appleEmoji.url    = "github:samuelngs/apple-emoji-linux";
+    nix-gaming.url    = "github:fufexan/nix-gaming";
+    iio-hyprland.url  = "github:JeanSchoeller/iio-hyprland"; 
+    pyprland.url      = "github:hyprland-community/pyprland";
+
+    stylix = {
+      url = "github:danth/stylix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     home-manager = {
       url = "github:nix-community/home-manager";
@@ -30,7 +36,7 @@
     };
   };
 
-  outputs = { self, nixpkgs, home-manager, stylix, nix-gaming, ... }@inputs:
+  outputs = { self, nixpkgs, home-manager, stylix, nix-gaming, pyprland, ... }@inputs:
   let
     system          = "x86_64-linux";
     lib             = nixpkgs.lib;

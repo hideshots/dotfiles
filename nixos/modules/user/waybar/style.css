@@ -8,6 +8,12 @@ window#waybar {
   font-weight: 600;
 }
 
+#window {
+  padding: 0 5px;
+  color: #ffffff;
+  font-size: inherit;
+}
+
 .modules-left,
 .modules-center,
 .modules-right {
@@ -30,15 +36,15 @@ window#waybar {
   margin-left: 10px;
 }
 
-#language, #custom-rofi, #pulseaudio, #battery, #network, #custom-control-center{
+#language, #custom-rofi, #custom-rofi, #pulseaudio, #battery, #network, #custom-control-center{
   min-width: 33px;
   margin-left: -5px;
 }
 
-/* #custom-weather { */
-/*   margin-left: 14px; */
-/*   min-width:  34px; */
-/* } */
+#custom-weather {
+  margin-left: 5px;
+  margin-right: 5px;
+}
     
 #language {
   color: rgba(255, 255, 255, 0.6);
@@ -46,9 +52,7 @@ window#waybar {
 }
 
 #window {
-  padding: 0 5px;
-  color: #ffffff;
-  font-size: 15px;
+  padding: 0 10px;
 }
 
 #workspaces button {
