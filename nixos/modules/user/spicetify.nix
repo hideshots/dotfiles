@@ -5,8 +5,9 @@ let
 in {
   programs.spicetify = {
     enable = true;
-    theme = spicePkgs.themes.defaultDynamic;
-    # theme = spicePkgs.themes.text;
+    # theme = spicePkgs.themes.default;
+    # theme = spicePkgs.themes.defaultDynamic;
+    theme = spicePkgs.themes.text;
 
     enabledExtensions = with spicePkgs.extensions; [
       adblockify

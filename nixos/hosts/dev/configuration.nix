@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, pkgs, lib, ... }:
 
 {
   imports =
@@ -12,6 +12,8 @@
       ../../modules/system/stylix.nix
       ../../modules/system/vpns.nix
     ];
+
+  stylix.image = lib.mkForce ../../../wallpapers/aletiune_4.png;
 
   virtualisation.vmware.guest.enable = true;
 

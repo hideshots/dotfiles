@@ -17,6 +17,14 @@
       ../../modules/system/qemu.nix
     ];
 
+  stylix.image = lib.mkForce ../../../wallpapers/aletiune_3.png;
+
+  # environment.systemPackages = with pkgs; [
+  #   (discord-canary.override {
+  #     withVencord = true;
+  #   })
+  # ];
+
   boot.supportedFilesystems = [ "ntfs" ];
   fileSystems."/mnt/dev" = {
     device = "/dev/disk/by-uuid/A64C9C314C9BF9EF";
@@ -61,12 +69,6 @@
     options v4l2loopback devices=1 video_nr=1 card_label="OBS Cam" exclusive_caps=1
   '';
   security.polkit.enable = true;
-
-  # environment.systemPackages = with pkgs; [
-  #   (discord-canary.override {
-  #     withVencord = true;
-  #   })
-  # ];
 
   users.users.drama = {
     isNormalUser            = true;

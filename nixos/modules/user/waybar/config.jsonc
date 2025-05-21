@@ -65,6 +65,7 @@
       "format": "{}",
       "tooltip": true,
       "interval": 1800,
+      "on-click": "mousam",
       "exec": "~/.dotfiles/nixos/modules/user/waybar/scripts/weather.py",
       "return-type": "json"
   },

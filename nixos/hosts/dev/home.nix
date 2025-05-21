@@ -3,6 +3,7 @@
 {
   imports = [
     ../home-common.nix
+    ../../modules/user/gimp.nix
   ];
 
 
@@ -15,7 +16,7 @@
     };
   };
 
-# Hyprland configuration overrides.
+  # Hyprland configuration overrides.
   wayland.windowManager.hyprland.settings = {
     monitor = lib.mkForce [
       "Virtual-3, 1920x1080@60 ,0x0,1"

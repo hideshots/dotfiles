@@ -54,6 +54,7 @@
     networkmanagerapplet
     gnome-keyring
     home-manager
+    mousam
     nvchad
     wget
     git

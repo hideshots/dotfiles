@@ -21,6 +21,7 @@
       xresources          = { enable = true; };
       nixos-icons         = { enable = true; };
       kitty               = { enable = true; };
+      yazi                = { enable = true; };
       foot                = { enable = true; };
       gtk                 = { enable = true; };
       qt                  = { enable = true; };
@@ -31,6 +32,7 @@
     inputs.zen-browser.packages."${system}".beta
     bitwarden-desktop
     telegram-desktop
+    motrix
     btop
     mpv
 

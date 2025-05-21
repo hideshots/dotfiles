@@ -26,24 +26,24 @@
       };
     };
 
-    theme = {
-      flavor = {
-        dark = "kanagawa";
-        light = "kanagawa";
-      };
-    };
+    # theme = {
+    #   flavor = {
+    #     dark = "kanagawa";
+    #     light = "kanagawa";
+    #   };
+    # };
   };
 
   programs.yazi.yaziPlugins = {
     enable = true;
     plugins = {
+      full-border = { enable = true; };
+      bookmarks   = { enable = true; };
+      chmod       = { enable = true; };
       relative-motions = {
         enable = true;
         show_numbers = "relative_absolute";
         show_motion = true;
-      };
-      full-border = {
-        enable = true;
       };
       max-preview = {
         enable = true;
