@@ -1,12 +1,10 @@
-{ config, pkgs, inputs, ... }:
+{ config, pkgs, inputs, lib, ... }:
 
 {
   imports = [
     ../home-common.nix
   ];
 
-  home.username      = "dev";
-  home.homeDirectory = "/home/dev";
 
   programs.git = {
     enable = true;
@@ -17,5 +15,29 @@
     };
   };
 
-  home.stateVersion  = "24.11";
+# Hyprland configuration overrides.
+  wayland.windowManager.hyprland.settings = {
+    monitor = lib.mkForce [
+      "Virtual-3, 1920x1080@60 ,0x0,1"
+      "Virtual-1, 1920x1080@60 ,1920x0,1"
+      "Virtual-2, 1920x1080@60 ,3840x0,1"
+    ];
+    workspace = [
+      "1, monitor:Virtual-1"
+      "2, monitor:Virtual-1"
+      "3, monitor:Virtual-1"
+      "4, monitor:Virtual-1"
+      "5, monitor:Virtual-1"
+      "6, monitor:Virtual-1"
+      "7, monitor:Virtual-1"
+      "8, monitor:Virtual-3"
+      "9, monitor:Virtual-2"
+    ];
+  };
+
+  home = {
+    username      = "dev";
+    homeDirectory = "/home/dev";
+    stateVersion  = "24.11";
+  };
 }

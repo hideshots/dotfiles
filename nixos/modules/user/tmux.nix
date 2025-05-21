@@ -9,13 +9,12 @@
       {
         plugin = inputs.minimal-tmux.packages.${pkgs.system}.default;
         extraConfig = ''
-          # this will now be applied before the plugin loads
           set -g @minimal-tmux-bg "${config.lib.stylix.colors.withHashtag.base0A}"
         '';
       }
       better-mouse-mode
       vim-tmux-navigator
-      resurrect         # doesn't work in unstable for some reason
+      resurrect
       continuum
       sensible
     ];

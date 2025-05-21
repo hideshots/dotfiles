@@ -4,7 +4,7 @@
   stylix = {
     enable = true;
     autoEnable = false;
-    image = ../../../wallpapers/aletiune_6.png;
+    image = ../../../wallpapers/aletiune_4.png;
     polarity = "dark";
 
     homeManagerIntegration = {

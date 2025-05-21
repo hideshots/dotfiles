@@ -87,9 +87,6 @@
       "active": "",
       "default": "",
       "empty": ""
-    },
-    "persistent-workspaces": {
-      "*": [1, 2, 3, 4, 5]
     }
   },
   
@@ -165,7 +162,7 @@
       "critical": 20
     },
     "format": "{icon}",
-    "format-charging": "󱐋",
+    "format-charging": "",
     "format-plugged": "",
     "format-alt": "{capacity}%",
     "format-icons": [

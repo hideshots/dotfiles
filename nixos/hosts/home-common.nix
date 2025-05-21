@@ -18,6 +18,7 @@
         enable    = true;
         hyprpaper = { enable = true; };
       };
+      xresources          = { enable = true; };
       nixos-icons         = { enable = true; };
       kitty               = { enable = true; };
       foot                = { enable = true; };

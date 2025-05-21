@@ -6,9 +6,6 @@
     ../../modules/user/mangohud.nix
   ];
 
-  home.username      = "lenovo";
-  home.homeDirectory = "/home/lenovo";
-
   programs.git = {
     enable = true;
     userName = "lenovo";
@@ -45,6 +42,10 @@
 
     brightnessctl
   ];
-
-  home.stateVersion  = "24.11";
+  
+  home = {
+    username      = "lenovo";
+    homeDirectory = "/home/lenovo";
+    stateVersion  = "24.11";
+  };
 }

@@ -1,11 +1,20 @@
---- dwm.c	2020-06-25 00:21:30.383692180 -0300
-+++ dwm.c	2020-06-25 00:20:35.643692330 -0300
-@@ -1057,6 +1057,8 @@ manage(Window w, XWindowAttributes *wa)
- 	updatewindowtype(c);
- 	updatesizehints(c);
- 	updatewmhints(c);
-+	c->x = c->mon->mx + (c->mon->mw - WIDTH(c)) / 2;
-+	c->y = c->mon->my + (c->mon->mh - HEIGHT(c)) / 2;
- 	XSelectInput(dpy, w, EnterWindowMask|FocusChangeMask|PropertyChangeMask|StructureNotifyMask);
- 	grabbuttons(c, 0);
- 	if (!c->isfloating)
+--- dwm.c
++++ dwm.c
+@@ -248,6 +262,8 @@ static int xerror(Display *dpy, XErrorEvent *ee);
+ static int xerrordummy(Display *dpy, XErrorEvent *ee);
+ static int xerrorstart(Display *dpy, XErrorEvent *ee);
+ static void zoom(const Arg *arg);
++static void load_xresources(void);
++static void resource_load(XrmDatabase db, char *name, enum resource_type rtype, void *dst);
+ 
+ /* variables */
+ static const char broken[] = "broken";
+@@ -2207,6 +2277,8 @@ main(int argc, char *argv[])
+ 	if (!(dpy = XOpenDisplay(NULL)))
+ 		die("dwm: cannot open display");
+ 	checkotherwm();
++	XrmInitialize();
++	load_xresources();
+ 	setup();
+ #ifdef __OpenBSD__
+ 	if (pledge("stdio rpath proc exec", NULL) == -1)

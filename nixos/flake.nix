@@ -2,13 +2,12 @@
   inputs = {
     nixpkgs.url       = "github:NixOS/nixpkgs/nixos-unstable";
     hyprland.url      = "github:hyprwm/Hyprland";
+    iio-hyprland.url  = "github:JeanSchoeller/iio-hyprland"; 
     spicetify-nix.url = "github:Gerg-L/spicetify-nix";
     zen-browser.url   = "github:0xc000022070/zen-browser-flake";
     apple-fonts.url   = "github:Lyndeno/apple-fonts.nix";
     appleEmoji.url    = "github:samuelngs/apple-emoji-linux";
     nix-gaming.url    = "github:fufexan/nix-gaming";
-    iio-hyprland.url  = "github:JeanSchoeller/iio-hyprland"; 
-    pyprland.url      = "github:hyprland-community/pyprland";
 
     stylix = {
       url = "github:danth/stylix";
@@ -36,7 +35,7 @@
     };
   };
 
-  outputs = { self, nixpkgs, home-manager, stylix, nix-gaming, pyprland, ... }@inputs:
+  outputs = { self, nixpkgs, home-manager, stylix, nix-gaming, ... }@inputs:
   let
     system          = "x86_64-linux";
     lib             = nixpkgs.lib;

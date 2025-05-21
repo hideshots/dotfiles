@@ -5,9 +5,6 @@
     ../home-common.nix
   ];
 
-  home.username      = "drama";
-  home.homeDirectory = "/home/drama";
-
   programs.git = {
     enable = true;
     userName = "drama";
@@ -26,6 +23,17 @@
       "DP-1,     1920x1080@240 ,1920x0,1"
       "HDMI-A-1, 1920x1080@60  ,3840x0,1"
     ];
+    workspace = [
+      "1, monitor:DP-1"
+      "2, monitor:DP-1"
+      "3, monitor:DP-1"
+      "4, monitor:DP-1"
+      "5, monitor:DP-1"
+      "6, monitor:DP-1"
+      "7, monitor:DP-1"
+      "8, monitor:HDMI-A-1"
+      "9, monitor:HDMI-A-2"
+    ];
   };
 
   home.packages = with pkgs; [
@@ -41,5 +49,9 @@
     # rpcs3
   ];
 
-  home.stateVersion  = "24.11";
+  home = {
+    username      = "drama";
+    homeDirectory = "/home/drama";
+    stateVersion  = "24.11";
+  };
 }
