@@ -39,7 +39,6 @@
     # inputs.nix-gaming.packages.${system}.osu-lazer-bin
     moonlight-qt
     prismlauncher
-    blender
 
     brightnessctl
   ];
