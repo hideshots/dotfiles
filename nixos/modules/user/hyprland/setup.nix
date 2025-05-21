@@ -26,6 +26,7 @@
         "hyprctl reload"
         "dbus-launch --exit-with-session"
         "nm-applet &"
+        "hyprsunset &"
         "hyprpaper & waybar & swaync &"
         "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP"
 

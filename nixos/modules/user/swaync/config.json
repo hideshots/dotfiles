@@ -72,9 +72,9 @@
           "tooltip": "DND"
         },
         {
-          "label": "",
-          "command": "hyprlock",
-          "tooltip": "Lock"
+          "label": "",
+          "command": "~/.dotfiles/nixos/modules/user/scripts/toggle-hyprsunset.sh",
+          "tooltip": "Toggle Blue‑Light Filter"
         },
         {
           "label": "󰜉",
