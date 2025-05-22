@@ -3,8 +3,18 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixos-wsl.url = "github:nix-community/NixOS-WSL/main";
 
+    stylix = {
+      url = "github:danth/stylix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     home-manager = {
       url = "github:nix-community/home-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    minimal-tmux = {
+      url = "github:niksingh710/minimal-tmux-status";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -19,18 +29,13 @@
     };
   };
 
-  outputs = { self, nixpkgs, nixos-wsl, home-manager, ... }@inputs:
+  outputs = { self, nixpkgs, nixos-wsl, home-manager, stylix, ... }@inputs:
   let
     system          = "x86_64-linux";
     lib             = nixpkgs.lib;
     pkgs            = import nixpkgs {
       system = system;
       config.allowUnfree = true;
-      nixpkgs.overlays = [
-        (final: prev: {
-          nvchad = inputs.nvchad4nix.packages."${pkgs.system}".nvchad;
-        })
-      ];
     };
     specialArgs     = { inherit system inputs; };
     extraSpecialArgs = { inherit system inputs; };
@@ -40,6 +45,7 @@
         inherit specialArgs;
         modules = [
           ./configuration.nix
+          stylix.nixosModules.stylix
           ({ config, pkgs, ... }: {
             networking.hostName = "nixos";
             nixpkgs.hostPlatform = system;

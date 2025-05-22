@@ -28,7 +28,9 @@
 
       # Enable Telescope extensions
       extensions = {
+        # https://github.com/nvim-telescope/telescope-fzf-native.nvim
         fzf-native.enable = true;
+        # https://github.com/nvim-telescope/telescope-ui-select.nvim
         ui-select.enable = true;
       };
 
@@ -91,7 +93,7 @@
             desc = "[S]earch [R]esume";
           };
         };
-        "<leader>s" = {
+        "<leader>s." = {
           mode = "n";
           action = "oldfiles";
           options = {

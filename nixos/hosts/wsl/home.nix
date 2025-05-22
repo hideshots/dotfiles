@@ -1,4 +1,4 @@
-{ config, pkgs, inputs, ... }:
+{ config, pkgs, inputs, lib, ... }:
 
 {
   imports = [
@@ -12,7 +12,6 @@
   home.username      = "nixos";
   home.homeDirectory = "/home/nixos";
 
-  
   programs.git = {
     enable = true;
     userName = "wsl";

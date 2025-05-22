@@ -1,14 +1,23 @@
 { pkgs, inputs, ... }: {
   imports = [
+    # NOTE: The first thing you will want to do is uncommented on of the three imports below
+    # depending on which module you chose to use to install Nixvim.
+    #
+    # Uncomment if you are using the home-manager module
     inputs.nixvim.homeManagerModules.nixvim
+    # Uncomment if you are using the nixos module
+    #inputs.nixvim.nixosModules.nixvim
+    # Uncomment if you are using the nix-darwin module
+    #inputs.nixvim.nixDarwinModules.nixvim
 
     # Plugins
     ./plugins/gitsigns.nix
     ./plugins/which-key.nix
     ./plugins/telescope.nix
-    ./plugins/conform.nix
     ./plugins/lsp.nix
+    ./plugins/conform.nix
     ./plugins/nvim-cmp.nix
+    ./plugins/todo-comments.nix
     ./plugins/mini.nix
     ./plugins/treesitter.nix
 
@@ -17,11 +26,11 @@
     #  Here are some example plugins that I've included in the Kickstart repository.
     #  Uncomment any of the lines below to enable them (you will need to restart nvim).
     #
-    ./plugins/kickstart/plugins/debug.nix
-    ./plugins/kickstart/plugins/indent-blankline.nix
-    ./plugins/kickstart/plugins/lint.nix
-    ./plugins/kickstart/plugins/autopairs.nix
-    ./plugins/kickstart/plugins/neo-tree.nix
+    # ./plugins/kickstart/plugins/debug.nix
+    # ./plugins/kickstart/plugins/indent-blankline.nix
+    # ./plugins/kickstart/plugins/lint.nix
+    # ./plugins/kickstart/plugins/autopairs.nix
+    # ./plugins/kickstart/plugins/neo-tree.nix
     #
     # NOTE: Configure your own plugins `see https://nix-community.github.io/nixvim/`
     # Add your plugins to ./plugins/custom/plugins and import them below
@@ -133,7 +142,7 @@
       maplocalleader = " ";
 
       # Set to true if you have a Nerd Font installed and selected in the terminal
-      have_nerd_font = true;
+      have_nerd_font = false;
     };
 
     #  See `:help 'clipboard'`
@@ -172,7 +181,7 @@
       # Save undo history
       undofile = true;
 
-      # Case-insensitive searching UNLESS \C or one or more capital letters in search term
+      # Case-insensitive searching UNLESS \C or one or more capital letters in the search term
       ignorecase = true;
       smartcase = true;
 
@@ -192,19 +201,24 @@
 
       # Sets how neovim will display certain whitespace characters in the editor
       #  See `:help 'list'`
-      #  See `:help 'listchars'`
+      #  and `:help 'listchars'`
       list = true;
       # NOTE: .__raw here means that this field is raw lua code
       listchars.__raw = "{ tab = '» ', trail = '·', nbsp = '␣' }";
 
-      # Preview subsitutions live, as you type!
+      # Preview substitutions live, as you type!
       inccommand = "split";
 
       # Show which line your cursor is on
       cursorline = true;
 
-      # Minimal number of screen lines to keep above and below the cursor
+      # Minimal number of screen lines to keep above and below the cursor.
       scrolloff = 10;
+
+      # if performing an operation that would fail due to unsaved changes in the buffer (like `:q`),
+      # instead raise a dialog asking if you wish to save the current file(s)
+      # See `:help 'confirm'`
+      confirm = true;
 
       # See `:help hlsearch`
       hlsearch = true;
@@ -329,15 +343,6 @@
       # https://nix-community.github.io/nixvim/plugins/sleuth/index.html
       sleuth = {
         enable = true;
-      };
-
-      # Highlight todo, notes, etc in comments
-      # https://nix-community.github.io/nixvim/plugins/todo-comments/index.html
-      todo-comments = {
-        settings = {
-          enable = true;
-          signs = true;
-        };
       };
     };
 
