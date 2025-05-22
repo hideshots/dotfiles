@@ -23,6 +23,7 @@
 
     exec-once = [
       "iio-hyprland"     # automatic screen rotation
+      "sudo mouseless -c ~/.dotfiles/nixos/modules/user/mouseless/laptop.yaml"
     ];
 
     bind = [
@@ -39,6 +40,7 @@
     # inputs.nix-gaming.packages.${system}.osu-lazer-bin
     moonlight-qt
     prismlauncher
+    mouseless
 
     brightnessctl
   ];

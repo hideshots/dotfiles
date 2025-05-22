@@ -1,10 +1,5 @@
 #!/usr/bin/env bash
-#
-# cycle-hyprsunset.sh — Cycle 5500→3500→2000→1000 K via hyprctl IPC,
-# storing state in ~/.cache/hyprsunset_cycle.
-
-# Cycle array
-temps=(5500 3500 2000 1000)
+temps=(5500 3500 2500 2000 1000)
 
 state_file="$HOME/.cache/hyprsunset_cycle"
 

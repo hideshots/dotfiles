@@ -1,0 +1,25 @@
+baseMouseSpeed: 750.0
+baseScrollSpeed: 10.0
+
+layers:
+  - name: initial
+    bindings:
+      tab: tap-hold-next tab ; toggle-layer mouse ; 500
+  - name: mouse
+    passThrough: true
+    bindings:
+      esc: layer initial
+      # space: layer mouse
+      l: move  1  0
+      h: move -1  0
+      j: move  0  1
+      k: move  0 -1
+      i: scroll up
+      u: scroll down
+      space: speed 4.0
+      leftalt: speed 0.3
+      e: speed 0.3
+      a: speed 0.1
+      w: button left
+      s: button middle
+      q: button right

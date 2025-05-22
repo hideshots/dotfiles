@@ -2,8 +2,8 @@
 
 {
   imports = [
-    ./hypridle.nix
-    ./hyprlock.nix
+    # ./hypridle.nix
+    # ./hyprlock.nix
     ../swaync/setup.nix
     ../waybar/setup.nix
   ];
@@ -133,6 +133,17 @@
         accel_profile = "flat";
         force_no_accel = 1;
         sensitivity = 0.000000;
+        touchpad = {
+          disable_while_typing = false;
+          scroll_factor = 1.0;
+          tap_button_map = "lrm";
+          clickfinger_behavior = false;
+          tap-to-click = true;
+          drag_lock = false;
+          tap-and-drag = true;
+          flip_x = false;
+          flip_y = false;
+        };
       };
 
       gestures = {
@@ -142,7 +153,7 @@
       "$mainMod" = "WIN";
 
       bind = [
-        "WIN, F1, exec, ~/.dotfiles/nixos/modules/user/hyprland/gamemode.sh"
+        "WIN, F6, exec, ~/.dotfiles/nixos/modules/user/scripts/toggle-touchpad.sh"
         "$mainMod, Q, exec, $terminal"
         "$mainMod SHIFT, Q, killactive,"
         "$mainMod SHIFT, E, exit,"
