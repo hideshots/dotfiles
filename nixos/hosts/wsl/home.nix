@@ -12,6 +12,13 @@
   home.username      = "nixos";
   home.homeDirectory = "/home/nixos";
 
+    stylix.targets = {
+      nixvim = { 
+        enable = true;
+        transparentBackground.main = true;
+      };
+    };
+
   programs.git = {
     enable = true;
     userName = "wsl";

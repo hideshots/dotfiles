@@ -37,56 +37,56 @@
       # You can put your default mappings / updates / etc. in here
       #  See `:help telescope.builtin`
       keymaps = {
-        "<leader>sh" = {
+        "<leader>fh" = {
           mode = "n";
           action = "help_tags";
           options = {
             desc = "[S]earch [H]elp";
           };
         };
-        "<leader>sk" = {
+        "<leader>fk" = {
           mode = "n";
           action = "keymaps";
           options = {
             desc = "[S]earch [K]eymaps";
           };
         };
-        "<leader>sf" = {
+        "<leader>ff" = {
           mode = "n";
           action = "find_files";
           options = {
             desc = "[S]earch [F]iles";
           };
         };
-        "<leader>ss" = {
+        "<leader>fs" = {
           mode = "n";
           action = "builtin";
           options = {
             desc = "[S]earch [S]elect Telescope";
           };
         };
-        "<leader>sw" = {
+        "<leader>fw" = {
           mode = "n";
           action = "grep_string";
           options = {
             desc = "[S]earch current [W]ord";
           };
         };
-        "<leader>sg" = {
+        "<leader>fg" = {
           mode = "n";
           action = "live_grep";
           options = {
             desc = "[S]earch by [G]rep";
           };
         };
-        "<leader>sd" = {
+        "<leader>fd" = {
           mode = "n";
           action = "diagnostics";
           options = {
             desc = "[S]earch [D]iagnostics";
           };
         };
-        "<leader>sr" = {
+        "<leader>fr" = {
           mode = "n";
           action = "resume";
           options = {
@@ -97,7 +97,7 @@
           mode = "n";
           action = "oldfiles";
           options = {
-            desc = "[S]earch Recent Files ('.' for repeat)";
+           desc = "[S]earch Recent Files ('.' for repeat)";
           };
         };
         "<leader><leader>" = {
@@ -118,7 +118,7 @@
       # Slightly advanced example of overriding default behavior and theme
       {
         mode = "n";
-        key = "<leader>/";
+        key = "<leader>fc";
         # You can pass additional configuration to Telescope to change the theme, layout, etc.
         action.__raw = ''
           function()

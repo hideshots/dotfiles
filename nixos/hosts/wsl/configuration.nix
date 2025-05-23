@@ -1,10 +1,11 @@
 { config, lib, pkgs, ... }:
 
 {
+  nix.settings.experimental-features = [ "nix-command" "flakes" ];
   stylix = {
     enable = true;
     autoEnable = false;
-    image = ../../../wallpapers/aletiune_3.png;
+    image = ../../../wallpapers/aletiune_6.png;
     polarity = "dark";
 
     homeManagerIntegration = {
@@ -31,6 +32,9 @@
 
   environment.systemPackages = with pkgs; [
     git
+    xclip
+    wl-clipboard
+    nautilus
     neovim
     wget
   ];

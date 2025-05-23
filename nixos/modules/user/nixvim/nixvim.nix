@@ -11,15 +11,17 @@
     #inputs.nixvim.nixDarwinModules.nixvim
 
     # Plugins
-    ./plugins/gitsigns.nix
     ./plugins/which-key.nix
     ./plugins/telescope.nix
-    ./plugins/lsp.nix
-    ./plugins/conform.nix
-    ./plugins/nvim-cmp.nix
-    ./plugins/todo-comments.nix
-    ./plugins/mini.nix
+    ./plugins/comment.nix
     ./plugins/treesitter.nix
+    ./plugins/nvim-cmp.nix
+    ./plugins/lsp.nix
+    ./plugins/gitsigns.nix
+    ./plugins/toggleterm.nix
+    ./plugins/mini.nix
+    # ./plugins/conform.nix
+    # ./plugins/todo-comments.nix
 
     # NOTE: Add/Configure additional plugins for Kickstart.nixvim
     #
@@ -122,17 +124,8 @@
     # Don't forget to disable the colorschemes you arent using
     #
     # If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
-    colorschemes = {
-      # https://nix-community.github.io/nixvim/colorschemes/tokyonight/index.html
-      tokyonight = {
-        enable = true;
-        settings = {
-          # Like many other themes, this one has different styles, and you could load
-          # any other, such as 'storm', 'moon', or 'day'.
-          style = "night";
-        };
-      };
-    };
+    # colorschemes = {
+    # };
 
     # https://nix-community.github.io/nixvim/NeovimOptions/index.html?highlight=globals#globals
     globals = {
@@ -142,7 +135,7 @@
       maplocalleader = " ";
 
       # Set to true if you have a Nerd Font installed and selected in the terminal
-      have_nerd_font = false;
+      have_nerd_font = true;
     };
 
     #  See `:help 'clipboard'`
@@ -180,20 +173,12 @@
 
       # Save undo history
       undofile = true;
-
-      # Case-insensitive searching UNLESS \C or one or more capital letters in the search term
-      ignorecase = true;
-      smartcase = true;
-
-      # Keep signcolumn on by default
-      signcolumn = "yes";
-
       # Decrease update time
       updatetime = 250;
 
       # Decrease mapped sequence wait time
       # Displays which-key popup sooner
-      timeoutlen = 300;
+      timeoutlen = 600;
 
       # Configure how new splits should be opened
       splitright = true;
@@ -210,7 +195,7 @@
       inccommand = "split";
 
       # Show which line your cursor is on
-      cursorline = true;
+      cursorline = false;
 
       # Minimal number of screen lines to keep above and below the cursor.
       scrolloff = 10;
@@ -310,30 +295,38 @@
     ];
 
     # https://nix-community.github.io/nixvim/NeovimOptions/autoGroups/index.html
-    autoGroups = {
-      kickstart-highlight-yank = {
-        clear = true;
-      };
-    };
+    # autoGroups = {
+      # kickstart-highlight-yank = {
+        # clear = true;
+      # };
+    # };
+
+    # [[ Basic Autocommands ]]
+    # https://nix-community.github.io/nixvim/NeovimOptions/autoGroups/index.html
+    # autoGroups = {
+      # kickstart-highlight-yank = {
+        # clear = true;
+      # };
+    # };
 
     # [[ Basic Autocommands ]]
     #  See `:help lua-guide-autocommands`
     # https://nix-community.github.io/nixvim/NeovimOptions/autoCmd/index.html
-    autoCmd = [
-      # Highlight when yanking (copying) text
-      #  Try it with `yap` in normal mode
-      #  See `:help vim.highlight.on_yank()`
-      {
-        event = ["TextYankPost"];
-        desc = "Highlight when yanking (copying) text";
-        group = "kickstart-highlight-yank";
-        callback.__raw = ''
-          function()
-            vim.highlight.on_yank()
-          end
-        '';
-      }
-    ];
+    # autoCmd = [
+      # # Highlight when yanking (copying) text
+      # #  Try it with `yap` in normal mode
+      # #  See `:help vim.highlight.on_yank()`
+      # {
+        # event = ["TextYankPost"];
+        # desc = "Highlight when yanking (copying) text";
+        # group = "kickstart-highlight-yank";
+        # callback.__raw = ''
+          # function()
+            # vim.highlight.on_yank()
+          # end
+        # '';
+      # }
+    # ];
 
     plugins = {
       # Adds icons for plugins to utilize in ui
