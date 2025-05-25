@@ -17,12 +17,14 @@
       ../../modules/system/bluetooth.nix
     ];
 
-  stylix.image = lib.mkForce ../../../wallpapers/aletiune_6.png;
+  boot.kernelPackages = pkgs.linuxPackages_latest;
 
-  home-manager.backupFileExtension = "backup";
+  stylix.image = lib.mkForce ../../../wallpapers/aletiune_6.png;
 
   hardware.sensor.iio.enable = true;
   programs.iio-hyprland.enable = true;
+
+  home-manager.backupFileExtension = "backup";
 
   users.users.lenovo = {
     isNormalUser            = true;

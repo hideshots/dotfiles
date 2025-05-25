@@ -59,6 +59,7 @@
     git
     zsh
     jq
+
     image-roll
     nautilus
     playerctl
