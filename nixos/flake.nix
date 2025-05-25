@@ -9,6 +9,11 @@
     appleEmoji.url    = "github:samuelngs/apple-emoji-linux";
     nix-gaming.url    = "github:fufexan/nix-gaming";
 
+    nixvim = {
+      url = "github:nix-community/nixvim";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     stylix = {
       url = "github:danth/stylix";
       inputs.nixpkgs.follows = "nixpkgs";
