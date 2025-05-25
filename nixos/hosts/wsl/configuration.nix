@@ -31,12 +31,14 @@
   };
 
   environment.systemPackages = with pkgs; [
-    git
-    xclip
+    ffmpegthumbnailer
     wl-clipboard
-    nautilus
+    mediainfo
     neovim
+    ffmpeg
+    xclip
     wget
+    git
   ];
 
   # vscode workaround

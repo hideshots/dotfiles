@@ -4,8 +4,8 @@
   imports = [
     ../home-common.nix
     ../../modules/user/gimp.nix
+    ../../modules/user/nixvim/nixvim.nix
   ];
-
 
   programs.git = {
     enable = true;
@@ -19,9 +19,9 @@
   # Hyprland configuration overrides.
   wayland.windowManager.hyprland.settings = {
     monitor = lib.mkForce [
-      "Virtual-3, 1920x1080@60 ,0x0,1"
-      "Virtual-1, 1920x1080@60 ,1920x0,1"
-      "Virtual-2, 1920x1080@60 ,3840x0,1"
+      "Virtual-3, 1920x1080@60, 0x0,1"
+      "Virtual-1, 1920x1080@60, 1920x0,1"
+      "Virtual-2, 1920x1080@60, 3840x0,1"
     ];
     workspace = [
       "1, monitor:Virtual-1"

@@ -10,7 +10,7 @@
       autoLoad = true;
 
       settings = {
-        open_mapping    = "";  # no default so we can bind Alt-keys
+        open_mapping    = "";
         direction       = "horizontal";
         size            = 8;
         close_on_exit   = true;

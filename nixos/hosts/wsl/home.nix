@@ -9,15 +9,13 @@
     inputs.nix-yazi-plugins.legacyPackages.x86_64-linux.homeManagerModules.default
   ];
 
-  home.username      = "nixos";
-  home.homeDirectory = "/home/nixos";
-
-    stylix.targets = {
-      nixvim = { 
-        enable = true;
-        transparentBackground.main = true;
-      };
+  stylix.targets = {
+    kitty = { enable = true; };
+    nixvim = { 
+      enable = true;
+      transparentBackground.main = true;
     };
+  };
 
   programs.git = {
     enable = true;
@@ -31,5 +29,9 @@
   home.packages = with pkgs; [
   ];
 
-  home.stateVersion  = "24.11";
+  home = {
+    username      = "nixos";
+    homeDirectory = "/home/nixos";
+    stateVersion  = "24.11";
+  };
 }

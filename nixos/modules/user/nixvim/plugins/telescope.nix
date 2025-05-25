@@ -37,6 +37,11 @@
       # You can put your default mappings / updates / etc. in here
       #  See `:help telescope.builtin`
       keymaps = {
+        "<leader>ca" = {
+          mode    = "n";
+          action  = "lsp_code_actions";
+          options = { desc = "[C]ode [A]ctions (Telescope)"; };
+        };
         "<leader>fh" = {
           mode = "n";
           action = "help_tags";

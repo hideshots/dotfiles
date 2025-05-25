@@ -4,6 +4,7 @@
   imports = [
     ../home-common.nix
     ../../modules/user/mangohud.nix
+    ../../modules/user/nixvim/nixvim.nix
   ];
 
   programs.git = {

@@ -13,19 +13,23 @@
     inputs.spicetify-nix.homeManagerModules.default
   ];
 
-    stylix.targets = {
-      hyprland = {
-        enable    = true;
-        hyprpaper = { enable = true; };
-      };
-      xresources          = { enable = true; };
-      nixos-icons         = { enable = true; };
-      kitty               = { enable = true; };
-      yazi                = { enable = true; };
-      foot                = { enable = true; };
-      gtk                 = { enable = true; };
-      qt                  = { enable = true; };
+  stylix.targets = {
+    hyprland = {
+      enable    = true;
+      hyprpaper = { enable = true; };
     };
+    nixvim = { 
+      enable = true;
+      transparentBackground.main = true;
+    };
+    xresources          = { enable = true; };
+    nixos-icons         = { enable = true; };
+    kitty               = { enable = true; };
+    yazi                = { enable = true; };
+    foot                = { enable = true; };
+    gtk                 = { enable = true; };
+    qt                  = { enable = true; };
+  };
 
   home.packages = with pkgs; [
     # General apps

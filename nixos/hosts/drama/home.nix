@@ -3,6 +3,7 @@
 {
   imports = [
     ../home-common.nix
+    ../../modules/user/nixvim/nixvim.nix
   ];
 
   programs.git = {

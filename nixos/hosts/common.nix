@@ -55,7 +55,6 @@
     gnome-keyring
     home-manager
     mousam
-    nvchad
     wget
     git
     zsh
@@ -66,13 +65,6 @@
     pavucontrol
 
     adwaita-icon-theme
-  ];
-
-  # NVChad overlay.
-  nixpkgs.overlays = [
-    (final: prev: {
-      nvchad = inputs.nvchad4nix.packages."${pkgs.system}".nvchad;
-    })
   ];
 
   services.printing.enable = true;
