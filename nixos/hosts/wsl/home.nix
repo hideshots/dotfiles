@@ -9,6 +9,14 @@
     inputs.nix-yazi-plugins.legacyPackages.x86_64-linux.homeManagerModules.default
   ];
 
+  # Obsidian vault path override
+  programs.nixvim.plugins.obsidian.settings.workspaces = lib.mkForce [
+    {
+      name = "Personal";
+      path = "/mnt/d/Documents/Vaults/Personal";
+    }
+  ];
+
   stylix.targets = {
     kitty = { enable = true; };
     nixvim = { 
