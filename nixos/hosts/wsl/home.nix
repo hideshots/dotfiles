@@ -27,6 +27,7 @@
   };
 
   home.packages = with pkgs; [
+    fastfetch
   ];
 
   home = {

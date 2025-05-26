@@ -55,6 +55,16 @@
         ts_ls = {
           enable = true;
         };
+
+        marksman = {
+          enable = true;
+          settings = {
+            marksman = {
+              validate = true;
+            };
+          };
+        };
+
         lua_ls = {
           enable = true;
           # cmd = {

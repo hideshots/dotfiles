@@ -22,6 +22,8 @@
     ./plugins/barbar.nix
     ./plugins/dashboard.nix
     ./plugins/lualine.nix
+    ./plugins/obsidian.nix
+    ./plugins/render-markdown.nix
     # ./plugins/conform.nix
     # ./plugins/todo-comments.nix
 
@@ -65,6 +67,8 @@
       number = true;
       termguicolors = true;
       mouse = "a";
+
+      conceallevel = 1;
 
       # Don't show the mode, since it's already in the statusline
       showmode = false;

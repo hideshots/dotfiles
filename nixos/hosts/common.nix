@@ -54,6 +54,7 @@
     networkmanagerapplet
     gnome-keyring
     home-manager
+    fastfetch
     mousam
     wget
     git

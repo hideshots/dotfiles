@@ -1,7 +1,11 @@
 { config, lib, pkgs, ... }:
 
 {
+  nixpkgs.config.allowUnfree = true;
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
+
+  virtualisation.docker.enable = true;
+
   stylix = {
     enable = true;
     autoEnable = false;
@@ -34,10 +38,13 @@
     ffmpegthumbnailer
     wl-clipboard
     mediainfo
+    obsidian
+    wsl-open
     neovim
     ffmpeg
     xclip
     wget
+    mpv
     git
   ];
 
@@ -55,7 +62,7 @@
     description             = "nixos";
     shell                   = pkgs.zsh;
     ignoreShellProgramCheck = true;
-    extraGroups             = [ "networkmanager" "wheel" ];
+    extraGroups             = [ "networkmanager" "wheel" "docker" ];
   };
 
   system.stateVersion = "24.11";
