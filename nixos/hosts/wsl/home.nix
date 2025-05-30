@@ -5,6 +5,7 @@
     ../../modules/user/shell.nix
     ../../modules/user/tmux.nix
     ../../modules/user/yazi.nix
+    ../../modules/user/fastfetch.nix
     ../../modules/user/nixvim/nixvim.nix
     inputs.nix-yazi-plugins.legacyPackages.x86_64-linux.homeManagerModules.default
   ];
@@ -35,7 +36,6 @@
   };
 
   home.packages = with pkgs; [
-    fastfetch
   ];
 
   home = {

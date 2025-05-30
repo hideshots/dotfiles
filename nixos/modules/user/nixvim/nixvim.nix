@@ -6,24 +6,30 @@
     #inputs.nixvim.nixDarwinModules.nixvim
 
     # Plugins
-    ./plugins/which-key.nix
-    ./plugins/telescope.nix
-    ./plugins/comment.nix
-    ./plugins/treesitter.nix
-    ./plugins/nvim-cmp.nix
-    ./plugins/lsp.nix
-    ./plugins/gitsigns.nix
-    ./plugins/toggleterm.nix
-    ./plugins/mini.nix
-    ./plugins/ccc.nix
-    ./plugins/neogit.nix
     ./plugins/tmux-navigator.nix
-    ./plugins/neo-tree.nix
-    ./plugins/barbar.nix
+    ./plugins/toggleterm.nix
+    ./plugins/which-key.nix
     ./plugins/dashboard.nix
-    ./plugins/lualine.nix
+    ./plugins/telescope.nix
+    ./plugins/neo-tree.nix
     ./plugins/obsidian.nix
+    ./plugins/lualine.nix
+    ./plugins/neogit.nix
+    ./plugins/barbar.nix
+    ./plugins/flash.nix
+    ./plugins/ccc.nix
+
+    ./plugins/markdown-preview.nix
     ./plugins/render-markdown.nix
+    ./plugins/treesitter.nix
+    ./plugins/gitsigns.nix
+    ./plugins/nvim-cmp.nix
+    ./plugins/comment.nix
+    ./plugins/mini.nix
+    ./plugins/lsp.nix
+    ./plugins/noice.nix
+    ./plugins/notify.nix
+
     # ./plugins/conform.nix
     # ./plugins/todo-comments.nix
 
@@ -35,7 +41,6 @@
     # ./plugins/kickstart/plugins/debug.nix
     # ./plugins/kickstart/plugins/indent-blankline.nix
     # ./plugins/kickstart/plugins/lint.nix
-    # ./plugins/kickstart/plugins/autopairs.nix
     #
     # NOTE: Configure your own plugins `see https://nix-community.github.io/nixvim/`
     # Add your plugins to ./plugins/custom/plugins and import them below
@@ -64,7 +69,8 @@
     };
 
     opts = {
-      number = true;
+      # number = true;
+      relativenumber = true;
       termguicolors = true;
       mouse = "a";
 
@@ -165,6 +171,18 @@
         options = {
           desc = "Move focus to the upper window";
         };
+      }
+    ];
+
+    autoCmd = [
+      {
+        event = ["TextYankPost"];
+        desc = "Highlight when yanking (copying) text";
+        callback.__raw = ''
+          function()
+            vim.highlight.on_yank()
+          end
+        '';
       }
     ];
 

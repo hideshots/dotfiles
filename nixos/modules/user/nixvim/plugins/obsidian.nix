@@ -12,6 +12,25 @@ in {
       enable   = true;
       autoLoad = true;
       settings.workspaces = obsWorkspaces;
+      settings = {
+        note_id_func = ''
+          function(title)
+              if title then
+                return title
+                  :gsub(" ", "-")
+                  :gsub("[^A-Za-z0-9-]", "")
+                  :lower()
+              else
+                return tostring(os.time())
+              end
+            end
+              '';
+              note_path_func = ''
+          function(spec)
+            return (spec.dir / spec.id):with_suffix(".md")
+          end
+        '';
+      };
     };
 
     keymaps = [

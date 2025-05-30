@@ -11,6 +11,8 @@
       autoload -Uz add-zsh-hook
       unsetopt beep
 
+      alias vim='nvim'
+
       # Yazi wrapper function
       y() {
         local tmp="$(mktemp -t "yazi-cwd.XXXXXX")" cwd

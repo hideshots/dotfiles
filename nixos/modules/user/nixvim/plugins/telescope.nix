@@ -98,7 +98,7 @@
             desc = "[S]earch [R]esume";
           };
         };
-        "<leader>s." = {
+        "<leader>f." = {
           mode = "n";
           action = "oldfiles";
           options = {
@@ -141,7 +141,7 @@
       }
       {
         mode = "n";
-        key = "<leader>s/";
+        key = "<leader>f/";
         # It's also possible to pass additional configuration options.
         #  See `:help telescope.builtin.live_grep()` for information about particular keys
         action.__raw = ''
@@ -159,7 +159,7 @@
       # Shortcut for searching your Neovim configuration files
       {
         mode = "n";
-        key = "<leader>sn";
+        key = "<leader>fn";
         action.__raw = ''
           function()
             require('telescope.builtin').find_files {

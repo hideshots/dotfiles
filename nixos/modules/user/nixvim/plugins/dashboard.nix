@@ -107,16 +107,37 @@
           ];
         };
       };
+    luaConfig.post = ''
+      vim.api.nvim_set_hl(0, "DashboardHeader", {
+        fg = "${config.lib.stylix.colors.withHashtag.base0A}",
+        bg = "NONE"
+      })
+      vim.api.nvim_set_hl(0, "DashboardFooter", {
+        fg = "${config.lib.stylix.colors.withHashtag.base0A}",
+        bg = "NONE"
+      })
+
+      -- Re-apply colors when DashboardReady event fires
+      vim.api.nvim_create_autocmd("User", {
+        pattern = "DashboardReady",
+        callback = function()
+          local color = "${config.lib.stylix.colors.withHashtag.base0A}"
+          vim.cmd(string.format("highlight DashboardHeader guifg=%s guibg=NONE", color))
+          vim.cmd(string.format("highlight DashboardFooter guifg=%s guibg=NONE", color))
+        end,
+      })
+    '';
     };
     keymaps = [
       {
-        mode    = "n";                    # Normal mode
-        key     = "<leader>db";           # Press leader + d + b
+        mode    = "n";
+        key     = "<leader>db";
         action  = "<cmd>Dashboard<CR>";
         options = {
-          desc = "[D]ashboard";           # Description shown in which-key, etc.
+          desc = "[D]ashboard";
         };
       }
     ];
+
   };
 }
