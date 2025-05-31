@@ -12,6 +12,13 @@
           lsp_doc_border = true;
         };
 
+        routes = [
+          {
+            view   = "notify";
+            filter = { event = "msg_showmode"; };
+          }
+        ];
+
         cmdline = {
           enabled = true;
           view = "cmdline_popup";

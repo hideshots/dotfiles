@@ -9,6 +9,7 @@
     ../modules/user/tmux.nix
     ../modules/user/yazi.nix
     ../modules/user/rofi.nix
+    ../modules/user/fastfetch.nix
     inputs.nix-yazi-plugins.legacyPackages.x86_64-linux.homeManagerModules.default
     inputs.spicetify-nix.homeManagerModules.default
   ];
