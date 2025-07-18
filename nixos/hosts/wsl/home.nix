@@ -36,6 +36,9 @@
   };
 
   home.packages = with pkgs; [
+    ctop
+    ternimal
+    clang
   ];
 
   home = {
