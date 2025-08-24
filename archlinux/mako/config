@@ -1,0 +1,16 @@
+anchor=bottom-right
+default-timeout=6000
+
+font=SF-Pro 10
+
+margin=0,0,0,0 
+padding=15,20,15,20
+width=350
+height=100
+
+background-color=#000000ff
+border-color=#000000ff
+border-radius=0
+
+[app-name=Spotify]
+invisible=1

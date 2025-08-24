@@ -12,6 +12,11 @@
       unsetopt beep
 
       alias vim='nvim'
+      alias vi='nvim'
+
+      if [ -e "$HOME/.nix-profile/etc/profile.d/nix.sh" ]; then
+        . "$HOME/.nix-profile/etc/profile.d/nix.sh"
+      fi
 
       # Yazi wrapper function
       y() {
@@ -35,7 +40,6 @@
       cursor_trail_start_threshold = 0;
       cursor_trail_decay = "0.01 0.25";
       cursor_shape = "block";
-      cursor_blink = true;
 
       confirm_os_window_close = 0;
       scrollback_lines = 10000;

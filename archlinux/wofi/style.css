@@ -1,0 +1,47 @@
+#window {
+  font-size: 13px;
+font-family: "Terminus", "Verdana", "DejaVu Sans", monospace;
+  background-color: #000000;
+  color: #e0e0e0;
+}
+
+#entry {
+  background-color: #000000;
+  padding: 4px 0px 4px 8px;
+  margin: 0px;
+}
+
+#entry:selected {
+  background-color: #340000;
+  color: #ffffff;
+}
+
+#entry:unselected {
+  background-color: #000000;
+  color: #aaaaaa;
+}
+
+#button {
+  background-color: #121212;
+  border-radius: 6px;
+  padding: 6px;
+  margin: 5px;
+  color: #bbbbbb;
+}
+
+#input {
+  background-color: #000000;
+  color: #e0e0e0;
+  border: 1px solid #000000;
+  border-rounding: 0px;
+}
+
+#separator {
+  background-color: #222222;
+  margin: 8px 0;
+}
+
+#prompt {
+  color: #999999;
+  font-style: italic;
+}

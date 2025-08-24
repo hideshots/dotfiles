@@ -1,0 +1,4 @@
+[mgr]
+show_hidden = true
+cache_dir = "~/.cache/yazi"
+

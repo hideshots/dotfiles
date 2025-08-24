@@ -20,7 +20,7 @@
     ];
 
     extraConfig = ''
-      set -ga terminal-overrides ",xterm-256color:Tc"
+      set -as terminal-overrides ',*:Tc'
       set -g default-terminal "tmux-256color"
       set -g history-limit 5000
       set -g base-index 1
