@@ -3,10 +3,14 @@
 .pause win + shift + p
 .pause_hook glazewm.exe command wm-toggle-pause
 
+win + r                 : C:\Users\drama\AppData\Local\FlowLauncher\Flow.Launcher.exe
+
 # Launch Terminal
-win + q             : cmd /c start "" /B wezterm start
-win + n             : cmd /c start "" /B wezterm start -- wsl
-win + r             : C:\Users\drama\AppData\Local\FlowLauncher\Flow.Launcher.exe 
+win + q                 : cmd /c start "" /B wezterm start
+win + n                 : cmd /c start "" /B wezterm start -- wsl
+win + alt + v           : glazewm.exe command set-title-bar-visibility shown 
+win + alt + h           : glazewm.exe command set-title-bar-visibility hidden 
+win + alt + l           : nircmd.exe monitor off 
 
 # Focus windows
 win + h                 : glazewm.exe command focus --direction left
@@ -23,14 +27,15 @@ win + shift + j         : glazewm.exe command move --direction down
 # Resize focused window
 win + u                 : glazewm.exe command resize --width -2%
 win + p                 : glazewm.exe command resize --width +2%
-win + o                 : glazewm.exe command resize --height +2%
-win + i                 : glazewm.exe command resize --height -2%
+win + o                 : glazewm.exe command resize --height -2%
+win + i                 : glazewm.exe command resize --height +2%
 
 # Toggle Floating/Tiling
 win + c                 : glazewm.exe command toggle-floating --centered
 win + d                 : glazewm.exe command toggle-tiling
 win + f                 : glazewm.exe command toggle-fullscreen
 win + m                 : glazewm.exe command toggle-minimized
+win + VK_TAB            : glazewm.exe command focus --recent-workspace
 
 # Window management
 win + shift + q         : glazewm.exe command close
@@ -49,6 +54,9 @@ win + 6                 : glazewm.exe command focus --workspace 6
 win + 7                 : glazewm.exe command focus --workspace 7
 win + 8                 : glazewm.exe command focus --workspace 8
 win + 9                 : glazewm.exe command focus --workspace 9
+win + 0                 : glazewm.exe command focus --workspace 0
+win + VK_OEM_4          : glazewm.exe command focus --workspace left
+win + VK_OEM_6          : glazewm.exe command focus --workspace right
 
 # Move window to workspace and switch to it
 win + shift + 1         : glazewm.exe command move --workspace 1; glazewm.exe command focus --workspace 1
@@ -60,12 +68,9 @@ win + shift + 6         : glazewm.exe command move --workspace 6; glazewm.exe co
 win + shift + 7         : glazewm.exe command move --workspace 7; glazewm.exe command focus --workspace 7
 win + shift + 8         : glazewm.exe command move --workspace 8; glazewm.exe command focus --workspace 8
 win + shift + 9         : glazewm.exe command move --workspace 9; glazewm.exe command focus --workspace 9
-
-# Move workspace across monitors
-win + shift + a         : glazewm.exe command move-workspace --direction left
-win + shift + f         : glazewm.exe command move-workspace --direction right
-win + shift + d         : glazewm.exe command move-workspace --direction up
-win + shift + s         : glazewm.exe command move-workspace --direction down
+win + shift + 0         : glazewm.exe command move --workspace 0; glazewm.exe command focus --workspace 0
+win + shift + VK_OEM_4  : glazewm.exe command move --workspace left; glazewm.exe command focus --workspace left
+win + shift + VK_OEM_6  : glazewm.exe command move --workspace right; glazewm.exe command focus --workspace right
 
 # Taskbar Toggle
 win + shift + t         : taskbartoggle

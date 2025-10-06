@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Base styles for consistency -->
+    <link rel="stylesheet" type="text/css" href="../normalize.css" />
+    <!-- Custom styles -->
+    <link rel="stylesheet" type="text/css" href="./macosish.css" />
+
+    <!-- Babel for buildless React -->
+    <script
+      src="https://unpkg.com/@babel/standalone@7.25.6/babel.min.js"
+      integrity="sha256-aS0B0wnsaDByLfE16h4MDCP1fQFccysd1YWOcV+gbBo="
+      crossorigin="anonymous"
+    ></script>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module">
+      import React, { useState, useEffect } from 'https://esm.sh/react@18?dev';
+      import { createRoot } from 'https://esm.sh/react-dom@18/client?dev';
+      import * as zebar from 'https://esm.sh/zebar@3';
+
+      // Configuration
+      const USE_DARK_THEME = true;
+      const SHOW_NETWORK = false;
+      const SHOW_MEMORY = false;
+      const SHOW_CPU = false;
+      const USE_CELSIUS = false;
+
+      const providers = zebar.createProviderGroup({
+        // network: { type: 'network' },
+        glazewm: { type: 'glazewm' },
+        // cpu: { type: 'cpu' },
+        date: { type: 'date', formatting: 'EEE MMM d'},
+        media: { type: 'media' },
+        // memory: { type: 'memory' },
+        weather: { type: 'weather', latitude: 45.0355, longitude: 38.9753 },
+        time: { type: 'date', formatting: 'h:mm a'},
+      });
+
+      createRoot(document.getElementById('root')).render(<App />);
+
+      function App() {
+        const [output, setOutput] = useState(providers.outputMap);
+        const [isDarkTheme, setIsDarkTheme] = useState(USE_DARK_THEME);
+        const [showWeatherText, setShowWeatherText] = useState(false);
+        const [showDate, setShowDate] = useState(true); // New state for date visibility
+
+        useEffect(() => {
+          providers.onOutput(() => setOutput(providers.outputMap));
+          
+          document.body.className = isDarkTheme ? 'dark-theme' : 'light-theme';
+        }, [isDarkTheme]);
+
+        const getWorkspaceIndicatorClass = (workspace) => {
+          let className = 'workspace-indicator';
+          if (workspace.hasFocus) {
+            className += ' active';
+            if (output.glazewm?.isPaused) {
+              className += ' paused';
+            }
+          }
+          return className;
+        };
+
+        // Weather status to icon
+        const getWeatherIcon = (weatherOutput) => {
+          if (!weatherOutput) return '􀇂'; // Default cloud icon
+          
+          const icons = {
+            clear_day: '􀆮',
+            clear_night: '􀆺',
+            cloudy_day: '􀇕',
+            cloudy_night: '􀇛',
+            light_rain_day: '􀇅',
+            light_rain_night: '􀇝',
+            heavy_rain_day: '􀇉',
+            heavy_rain_night: '􀇉',
+            snow_day: '􀇏',
+            snow_night: '􀇏',
+            thunder_day: '􀇟',
+            thunder_night: '􀇟',
+            drizzle_day: '􀇄',
+            drizzle_night: '􀇄',
+            mist_day: '��',
+            mist_night: '􀇋',
+            smoke_day: '􀇣',
+            smoke_night: '􀇣',
+            haze_day: '􀆸',
+            haze_night: '􁑰',
+            dust_day: '􀆶',
+            dust_night: '􁶾',
+            sand_day: '􀇤',
+            sand_night: '􀇤',
+            ash_day: '􀇤',
+            ash_night: '􀇤',
+            fog_day: '􀇋',
+            fog_night: '􀇋',
+            squall_day: '􀇉',
+            squall_night: '􀇉',
+            tornado_day: '􀇟',
+            tornado_night: '􀇟',
+          };
+          
+          return icons[weatherOutput.status] || '􀇂';
+        };
+
+        // Weather status to text
+        function getWeatherText(weatherOutput) {
+          const textMapping = {
+            clear_day: 'Clear',
+            clear_night: 'Clear',
+            cloudy_day: 'Cloudy',
+            cloudy_night: 'Cloudy',
+            light_rain_day: 'Light Rain',
+            light_rain_night: 'Light Rain',
+            heavy_rain_day: 'Heavy',
+            heavy_rain_night: 'Heavy',
+            snow_day: 'Snow',
+            snow_night: 'Snow',
+            thunder_day: 'Thunder',
+            thunder_night: 'Thunder',
+            drizzle_day: 'Drizzle',
+            drizzle_night: 'Drizzle',
+            mist_day: 'Mist',
+            mist_night: 'Mist',
+            smoke_day: 'Smoke',
+            smoke_night: 'Smoke',
+            haze_day: 'Haze',
+            haze_night: 'Haze',
+            dust_day: 'Dust',
+            dust_night: 'Dust',
+            sand_day: 'Sand',
+            sand_night: 'Sand',
+            ash_day: 'Ash',
+            ash_night: 'Ash',
+            fog_day: 'Fog',
+            fog_night: 'Fog',
+            squall_day: 'Squall',
+            squall_night: 'Squall',
+            tornado_day: 'Tornado',
+            tornado_night: 'Tornado',
+          };
+          return textMapping[weatherOutput.status];
+        }
+
+        // Toggle theme
+        const toggleTheme = () => {
+          setIsDarkTheme(!isDarkTheme);
+        };
+
+        return (
+          <div className={`menu-bar ${isDarkTheme ? 'dark-theme' : 'light-theme'}`}>
+            <div className="group-leading">
+              
+              {/* Workspace indicators (restored from backup) */}
+              {output.glazewm && (
+                <div
+                  className="workspaces"
+                  onWheel={(event) => {
+                    const focusedWorkspace = output.glazewm.currentWorkspaces.find(ws => ws.hasFocus);
+                    if (!focusedWorkspace) return;
+                    
+                    const workspacesOnSameMonitor = output.glazewm.currentWorkspaces.filter(
+                      ws => ws.monitorIndex === focusedWorkspace.monitorIndex
+                    );
+                    
+                    workspacesOnSameMonitor.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+                    
+                    const currentIndex = workspacesOnSameMonitor.findIndex(ws => ws.name === focusedWorkspace.name);
+                    if (currentIndex === -1) return;
+                    
+                    let nextIndex;
+                    if (event.deltaY > 0) {
+                      nextIndex = (currentIndex + 1) % workspacesOnSameMonitor.length;
+                    } else {
+                      nextIndex = (currentIndex - 1 + workspacesOnSameMonitor.length) % workspacesOnSameMonitor.length;
+                    }
+                    
+                    const nextWorkspace = workspacesOnSameMonitor[nextIndex];
+                    output.glazewm.runCommand(`focus --workspace ${nextWorkspace.name}`);
+                  }}
+                >
+                  {output.glazewm.currentWorkspaces.map((workspace) => (
+                    <div
+                      key={workspace.name}
+                      className={getWorkspaceIndicatorClass(workspace)}
+                      onClick={() =>
+                        output.glazewm.runCommand(
+                          `focus --workspace ${workspace.name}`
+                        )
+                      }
+                    ></div>
+                  ))}
+                </div>
+              )}
+              
+              {/* Network widget */}
+              {SHOW_NETWORK && output.network && (
+                <div className="network-macos widget-hover">
+                  {/* Upload */}
+                  <div className="upload">
+                    <i className="nf nf-cod-arrow_small_up"></i>
+                    <span>
+                      {(() => {
+                        const bytes = output.network.traffic?.transmitted?.bytes || 0;
+                        const kbps = bytes / 1024;
+                        return `${kbps < 0.01 ? '0' : kbps.toFixed(2)} KB/s`;
+                      })()}
+                    </span>
+                  </div>
+                  {/* Download */}
+                  <div className="download">
+                    <i className="nf nf-cod-arrow_small_down"></i>
+                    <span>
+                      {(() => {
+                        const bytes = output.network.traffic?.received?.bytes || 0;
+                        const kbps = bytes / 1024;
+                        return `${kbps < 0.01 ? '0' : kbps.toFixed(2)} KB/s`;
+                      })()}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div className="center">
+            </div>
+            
+            <div className="frame-trailing">
+              {/* Media controls */}
+              {output.media?.session && (
+                <div
+                  className={`media ${
+                    output.media.session?.artist?.length +
+                      output.media.session?.title?.length >=
+                    35
+                      ? 'scrollable'
+                      : ''
+                  }`}
+                >
+                  {output.media.session?.artist && output.media.session?.title ? (
+                    output.media.session.artist.length +
+                      output.media.session.title.length >=
+                    35 ? (
+                      <div className="scroll">
+                        <div className="content">
+                          {output.media.session.artist} -{' '}
+                          {output.media.session.title}&nbsp;&nbsp;
+                        </div>
+                        <div className="content duplicate">
+                          {output.media.session.artist} -{' '}
+                          {output.media.session.title}&nbsp;&nbsp;
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="media-static-text">
+                        {output.media.session.artist} -{' '}
+                        {output.media.session.title}
+                      </span>
+                    )
+                  ) : (
+                    <span> </span>
+                  )}
+
+                  <div className="media-controls">
+                    <span
+                      className="div"
+                      onClick={() => output.media.previous()}>􀊎</span>
+                    <span
+                      className="div"
+                      onClick={() => output.media.togglePlayPause()}>
+                      {output.media.session?.isPlaying ? '􀊆' : '􀊄'}
+                    </span>
+                    <span
+                      className="div"
+                      onClick={() => output.media.next()}>􀊐</span>
+                  </div>
+                </div>
+              )}
+              
+              {/* Weather */}
+              {output.weather && (
+                <div 
+                  className="menu-label-wrapper"
+                  onClick={() => setShowWeatherText(!showWeatherText)}
+                >
+                  <div className="div">
+                    {getWeatherIcon(output.weather)}
+                    {showWeatherText ? 
+                      ` ${getWeatherText(output.weather)}` : 
+                      <span className="temperature-value">{` ${Math.round(USE_CELSIUS ? output.weather.celsiusTemp : output.weather.fahrenheitTemp)}`}</span>
+                    }{<span className="temperature-unit">{USE_CELSIUS ? '􂧤' : '􂧣'}</span>}
+                  </div>
+                </div>
+              )}
+
+              {/* Windows Tray */}
+              <div
+                className="menu-label-wrapper"
+                onClick={() =>
+                  output.glazewm?.runCommand(
+                    'shell-exec nircmd.exe sendkeypress lwin+b & nircmd.exe sendkeypress enter'
+                  )
+                }
+              >
+                <div className="div">􀈤</div>
+              </div>
+              
+              {/* Spotlight */}
+              <div 
+                className="menu-label-wrapper"
+                onClick={() => output.glazewm?.runCommand(
+                  'shell-exec C:\\Users\\drama\\AppData\\Local\\FlowLauncher\\Flow.Launcher.exe'
+                )}
+              >
+                <div className="div">􀊫</div>
+              </div>
+               
+              {/* Menu */}
+              <div 
+                className="menu-label-wrapper"
+                onClick={() => output.glazewm?.runCommand(
+                  'shell-exec nircmd.exe sendkeypress lwin+a'
+                )}
+              >
+                <div className="div">􀜊</div>
+              </div>
+               
+              {/* Notifications */}
+              <div 
+                className="menu-label-wrapper"
+                onClick={() => output.glazewm?.runCommand(
+                  'shell-exec ms-actioncenter:')}
+              >
+                <div className="div">􀋚</div>
+              </div>
+              
+              {/* Date & Time */}
+              <div 
+                className="div-wrapper"
+                onClick={() => setShowDate(!showDate)}
+              >
+                {showDate && <div className="menu-label-2 date-display">{output.date?.formatted || ''}</div>}
+                <div className="menu-label-2">{output.time?.formatted || ''}</div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+    </script>
+  </body>
+</html>

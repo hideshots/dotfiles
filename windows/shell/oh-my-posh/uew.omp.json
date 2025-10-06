@@ -6,33 +6,22 @@
         "newline": true,
         "segments": [
           {
-            "foreground": "green",
-            "leading_diamond":"<blue>~</> ",
+            "foreground": "white",
+            "style": "plain",
             "properties": {
               "display_host": true
             },
-            "style": "diamond",
-            "template": "{{ .UserName }} ",
+            "template": "{{ .UserName }}@{{ .HostName }} ",
             "type": "session"
           },
           {
-            "foreground": "yellow",
+            "foreground": "white",
             "properties": {
-              "branch_icon": "\ue725 ",
-              "fetch_stash_count": true,
-              "fetch_status": true,
-              "fetch_upstream_icon": true,
-              "fetch_worktree_count": true
+              "style": "agnoster_full"
             },
-            "style": "diamond",
-            "template": "<#fff>{{ .UpstreamIcon }}</>{{ .HEAD }}",
-            "type": "git"
-          },
-          {
-            "foreground": "yellow",
-            "style": "powerline",
-            "template": " <#fff>\uf120</> {{ .Name }} ",
-            "type": "shell"
+            "style": "plain",
+            "template": "{{ .Path }}",
+            "type": "path"
           }
         ],
         "type": "prompt"
@@ -41,42 +30,13 @@
         "alignment": "right",
         "segments": [
           {
-            "foreground": "#fff",
+            "foreground": "white",
+            "properties": {
+              "time_format": "[15:04:05]"
+            },
             "style": "plain",
-            "type": "text"
-          },
-          {
-            "foreground": "#fff",
-            "properties": {
-              "style": "dallas",
-              "threshold": 0
-            },
-            "style": "diamond",
-            "template": " <green>{{ .FormattedMs }}s</> <#fff>\udb80\udddd</>",
-            "type": "executiontime"
-          },
-          {
-            "foreground": "green",
-            "properties": {
-              "time_format": "Monday <#fff>at</> 3:04 PM"
-            },
-            "style": "diamond",
-            "template": " {{ .CurrentDate | date .Format }} ",
+            "template": "{{ .CurrentDate | date .Format }}",
             "type": "time"
-          },
-          {
-            "properties": {
-              "root_icon": "\uf292 "
-            },
-            "style": "diamond",
-            "template": " \uf0e7",
-            "type": "root"
-          },
-          {
-            "foreground": "yellow",
-            "style": "diamond",
-            "template": " <#fff>\ue718</> {{ if .PackageManagerIcon }}{{ .PackageManagerIcon }} {{ end }}{{ .Full }} ",
-            "type": "node"
           }
         ],
         "type": "prompt"
@@ -86,40 +46,51 @@
         "newline": true,
         "segments": [
           {
-            "foreground": "red",
-            "leading_diamond": "<blue>~</>",
-            "properties": {
-              "folder_icon": "\u002F",
-              "folder_separator_icon": " \u002F ",
-              "home_icon": "home",
-              "style": "agnoster_full"
-            },
-            "style": "diamond",
-            "template": " \ue5ff {{ .Path }}",
-            "trailing_diamond": "",
-            "type": "path"
-          },
-          {
-            "foreground": "blue",
+            "foreground": "green",
             "foreground_templates": [
-              "{{ if gt .Code 0 }}#fff{{ end }}"
+              "{{ if eq .Code 0 }}green{{ end }}",
+              "{{ if gt .Code 0 }}red{{ end }}"
             ],
             "properties": {
               "always_enabled": true
             },
             "style": "plain",
-            "template": " \u007E ",
+            "template": "> {{ if .Root }}#{{ else }}${{ end }} ",
             "type": "status"
           }
         ],
         "type": "prompt"
+      },
+      {
+        "alignment": "right",
+        "segments": [
+          {
+            "foreground": "white",
+            "foreground_templates": [
+              "{{ if or (.Working.Changed) (.Staging.Changed) }}yellow{{ end }}",
+              "{{ if and (not .Working.Changed) (not .Staging.Changed) }}green{{ end }}"
+            ],
+            "properties": {
+              "fetch_status": true,
+              "fetch_stash_count": true,
+              "branch_ahead_icon": "▴",
+              "branch_behind_icon": "▾",
+              "branch_icon": "",
+              "branch_identical_icon": ""
+            },
+            "style": "plain",
+            "template": "[<green>±</><white>{{ .HEAD }}</>{{ if or (.Working.Changed) (.Staging.Changed) (gt .Ahead 0) (gt .Behind 0) (gt .StashCount 0) }} {{ end }}{{ if gt .Ahead 0 }}<cyan>▴</>{{ end }}{{ if gt .Behind 0 }}<magenta>▾</>{{ end }}{{ if .Staging.Changed }}<green>●</>{{ end }}{{ if .Working.Modified }}<yellow>●</>{{ end }}{{ if .Working.Untracked }}<red>●</>{{ end }}{{ if gt .StashCount 0 }}<blue>(✹)</>{{ end }}{{ if and (not .Working.Changed) (not .Staging.Changed) }}<green>✓</>{{ end }}]",
+            "type": "git"
+          }
+        ],
+        "type": "rprompt"
       }
     ],
-    "console_title_template": "{{ .Folder }}",
+    "console_title_template": "{{ .Shell }} in {{ .Folder }}",
     "transient_prompt": {
       "background": "transparent",
-      "foreground": "#FEF5ED",
-      "template": "\ue285 "
+      "foreground": "green",
+      "template": "> $ "
     },
     "version": 2
-  }F
+  }

@@ -25,6 +25,7 @@
     import { createRoot } from 'https://esm.sh/react-dom@18/client?dev';
     import * as zebar from 'https://esm.sh/zebar@2';
 
+    // Register providers: workspaces, date/time, memory, network, weather, and media.
     const providers = zebar.createProviderGroup({
       glazewm: { type: 'glazewm' },
       date: { type: 'date', formatting: 'yyyy-MM-dd HH:mm:ss' },
@@ -40,10 +41,12 @@
     function App() {
       const [output, setOutput] = useState(providers.outputMap);
 
+      // Update component state whenever Zebar’s providers send new data
       useEffect(() => {
         providers.onOutput(() => setOutput(providers.outputMap));
       }, []);
 
+      // Handle scroll wheel over the workspaces to switch
       function handleWorkspaceScroll(event) {
         if (!output.glazewm) return;
         if (event.deltaY > 0) {
