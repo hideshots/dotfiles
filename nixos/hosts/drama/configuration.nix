@@ -17,7 +17,7 @@
       ../../modules/system/qemu.nix
     ];
 
-  stylix.image = lib.mkForce ../../../wallpapers/aletiune_3.png;
+  stylix.image = lib.mkForce ../../../wallpapers/aletiune_1.png;
 
   # environment.systemPackages = with pkgs; [
   #   (discord-canary.override {

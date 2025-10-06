@@ -19,7 +19,7 @@
 
   boot.kernelPackages = pkgs.linuxPackages_latest;
 
-  stylix.image = lib.mkForce ../../../wallpapers/aletiune_6.png;
+  stylix.image = lib.mkForce ../../../wallpapers/aletiune_1.png;
 
   hardware.sensor.iio.enable = true;
   programs.iio-hyprland.enable = true;
