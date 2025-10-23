@@ -1,4 +1,3 @@
--- lua/plugins/colorpicker.lua
 return {
   "uga-rosa/ccc.nvim",
   event = "BufRead",

@@ -8,7 +8,7 @@ return {
   end,
   opts = {
     preset = "helix",
-    
+
     win = {
       border = "none",
       padding = { 0, 0, 0, 0 },
@@ -17,12 +17,12 @@ return {
       },
       title = false,
     },
-    
+
     layout = {
       width = { min = 0, max = 50 },
       height = { min = 0, max = 25 },
     },
-    
+
     keys = {
       scroll_down = "<Down>",
       scroll_up = "<Up>",
@@ -31,11 +31,11 @@ return {
     icons = {
       separator = "::",
     },
-    
+
     show_help = false,
     show_keys = false,
   },
-  
+
   keys = {
     {
       "<leader>?",
