@@ -13,7 +13,7 @@
       ../../modules/system/vpns.nix
     ];
 
-  stylix.image = lib.mkForce ../../../wallpapers/aletiune_4.png;
+  stylix.image = lib.mkForce ../../../wallpapers/aletiune_1.png;
 
   virtualisation.vmware.guest.enable = true;
 

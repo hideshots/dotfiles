@@ -1,0 +1,497 @@
+@import url("https://cdnjs.cloudflare.com/ajax/libs/meyer-reset/2.0/reset.min.css");
+@import url("https://www.nerdfonts.com/assets/css/webfont.css");
+
+* {
+  -webkit-font-smoothing: antialiased;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0px;
+  height: 100%;
+  font-family: "SF Pro Text Medium", "FiraCode Nerd Font", -apple-system, BlinkMacSystemFont, sans-serif;
+  box-shadow: 0 1px 6px 0 rgba(255, 0, 0, 0.2);
+  font-size: 13px;
+  font-weight: 500;
+  font-style:medium;
+  user-select: none;
+}
+
+/* Focus style */
+button:focus-visible {
+  outline: 2px solid #4a90e2 !important;
+  outline: -webkit-focus-ring-color auto 5px !important;
+}
+
+a {
+  text-decoration: none;
+}
+
+/* Dark theme styles */
+body.dark-theme .menu-bar {
+  background-blend-mode: darken;
+}
+
+body.dark-theme .menu-bar .text-wrapper,
+body.dark-theme .menu-bar .menu-label,
+body.dark-theme .menu-bar .div,
+body.dark-theme .menu-bar .menu-label-2 {
+  color: #ffffff;
+  box-shadow:0 1px 6px 0rgba(0, 0, 0, 0.2);
+}
+
+body.dark-theme .menu-bar .div {
+  color: #ffffffd9;
+}
+
+body.dark-theme .media,
+body.dark-theme .media .media-controls i {
+  color: #ffffff;
+  text-shadow: 0px 1px 4px #00000033;
+}
+
+body.dark-theme .media .media-controls i:hover {
+  color: #d8d8d8;
+}
+
+body.dark-theme .menu-label-wrapper.active,
+body.dark-theme .menu-item-trailing.active,
+body.dark-theme .apple-logo.active {
+  background-color: #ffffff33;
+}
+
+/* Light theme styles */
+body.light-theme .menu-bar {
+}
+
+body.light-theme .menu-bar .text-wrapper,
+body.light-theme .menu-bar .menu-label,
+body.light-theme .menu-bar .div,
+body.light-theme .menu-bar .menu-label-2 {
+  color: #000000;
+}
+
+body.light-theme .media,
+body.light-theme .media .media-controls i {
+  color: #000000;
+  text-shadow: none;
+}
+
+body.light-theme .media .media-controls i:hover {
+  color: #222222;
+}
+
+body.light-theme .media .media-controls .div {
+  color: rgb(0, 0, 0);
+}
+
+body.light-theme .media .media-controls .div:hover {
+  color: rgb(22, 22, 22);
+  scale: 0.95;
+  transition: scale 0.1s ease;
+}
+
+body.light-theme .menu-label-wrapper.active,
+body.light-theme .menu-item-trailing.active,
+body.light-theme .apple-logo.active {
+  background-color: #e6e6e6;
+}
+
+/* Common menu bar styles */
+.menu-bar {
+  position: relative;
+  width: 100%;
+  height: 32px;
+  transition: background-color 0.3s ease;
+  overflow: hidden;
+  -webkit-backdrop-filter: blur(15px);
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1.5fr;
+  align-items: center;
+  padding: 0 8px; /* Added padding here */
+}
+
+.menu-bar .group-leading {
+  display: inline-flex;
+  align-items: center;
+  padding: 0px 4px;
+  position: relative;
+  height: 100%;
+}
+
+.menu-bar .apple-logo {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 2px 11px;
+  position: relative;
+  flex: 0 0 auto;
+  margin-top: -1.00px;
+  margin-bottom: -1.00px;
+  margin-left: -1.00px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.menu-bar .apple-logo:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.menu-bar .text-wrapper {
+  position: relative;
+  width: fit-content;
+  font-weight: 400;
+  font-size: 16.3px;
+  text-align: center;
+  letter-spacing: 0;
+  line-height: 20px;
+  white-space: nowrap;
+}
+
+.menu-bar .menu-item-leading {
+  margin-left: -4px;
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 4px 11px;
+  position: relative;
+  flex: 0 0 auto;
+  margin-top: -1.00px;
+  margin-bottom: -1.00px;
+  border-radius: 4px;
+}
+
+.menu-bar .menu-label {
+  position: relative;
+  width: fit-content;
+  font-weight: 400;
+  font-size: 13px;
+  text-align: center;
+  letter-spacing: 0;
+  line-height: 16px;
+  white-space: nowrap;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.menu-bar .menu-label-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 4px 11px;
+  position: relative;
+  flex: 0 0 auto;
+  margin-top: -1.00px;
+  margin-bottom: -1.00px;
+  margin-left: -4px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.menu-bar .menu-label-wrapper:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.menu-bar .div-wrapper {
+  margin-right: -1.00px;
+  margin-left: -4px;
+  display: inline-flex;
+  align-items: flex-start;
+  padding: 4px 11px;
+  position: relative;
+  flex: 0 0 auto;
+  margin-top: -1.00px;
+  margin-bottom: -1.00px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.menu-bar .div-wrapper:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.menu-bar .div-wrapper .menu-label-2:first-child {
+}
+
+.menu-bar .center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menu-bar .frame-trailing {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  position: relative;
+  height: 100%;
+}
+
+.menu-bar .menu-item-trailing {
+  margin-left: -1.00px;
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 4px 11px;
+  position: relative;
+  flex: 0 0 auto;
+  margin-top: -1.00px;
+  margin-bottom: -1.00px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.menu-bar .menu-item-trailing:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.menu-bar .div {
+  position: relative;
+  width: fit-content;
+  font-weight: 400;
+  font-size: 13px;
+  text-align: center;
+  letter-spacing: 0;
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+.menu-bar .temperature-value {
+  font-size: 13px;
+  align-items: center;
+}
+
+.menu-bar .temperature-unit {
+  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.media {
+  position: relative;
+  display: flex;
+  overflow: hidden;
+  white-space: nowrap;
+  max-width: 250px;
+  padding: 4px 8px;
+  mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 90%, transparent);
+  transition: filter 0.5s ease, mask-image 0.5s ease, -webkit-mask-image 0.5s ease;
+  text-shadow: 0 0 12px rgba(0, 0, 0, 0.51);
+}
+
+.media .media-controls {
+  display: flex;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.99);
+  gap: 24px;
+  z-index: 1;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.5s ease, visibility 0.5s;
+}
+
+.media .media-controls .div {
+  font-size: 12px;
+  cursor: pointer;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+.media .media-controls .div:hover {
+  color: #d8d8d8;
+}
+
+.media:hover .media-controls {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+  visibility: visible;
+}
+
+.media:hover .scroll,
+.media:hover .media-static-text {
+  transition: filter 0.5s ease;
+  filter: blur(2.5px);
+  mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+}
+
+.media:not(:hover) .scroll,
+.media:not(:hover) .media-static-text {
+  filter: blur(0);
+  transition: filter 0.7s ease;
+}
+
+.media:not(:hover) .media-controls {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.9);
+  transition: filter 0.8s ease;
+}
+
+@keyframes seamless-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
+}
+
+.scroll {
+  display: flex;
+  position: relative;
+  width: max-content;
+}
+
+.scroll .content {
+  display: inline-block;
+  white-space: nowrap;
+  animation: seamless-scroll 10s linear infinite;
+  padding-right: 20px;
+}
+
+.scroll .content.duplicate {
+  position: absolute;
+  left: 100%;
+}
+
+.media span {
+  display: inline-block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.media.scrollable {
+  max-width: 300px;
+}
+
+.media:not(.scrollable) {
+  mask-image: none;
+  -webkit-mask-image: none;
+}
+
+.menu-bar .menu-item-trailing-2 {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 4px 11px;
+  position: relative;
+  flex: 0 0 auto;
+  margin-top: -1.00px;
+  margin-bottom: -1.00px;
+  margin-left: -4px;
+  border-radius: 4px;
+}
+
+.menu-bar .menu-label-2 {
+  position: relative;
+  width: fit-content;
+  font-weight: 400;
+  font-size: 13px;
+  text-align: center;
+  letter-spacing: 0;
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+.menu-bar .date-display {
+  margin-right: 5px;
+}
+
+/* Workspace styles */
+.workspaces {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  padding-right: 0;
+  height: 24px;
+  transition: all 0.75s cubic-bezier(0, 0.66, 1, 1);
+}
+
+.workspace-indicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #797979;
+  margin-right: 7px;
+  cursor: pointer;
+  transition: all 0.75s cubic-bezier(0, 0.27, 0.09, 1.02);
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.51);
+  filter: blur(0);
+}
+
+.workspace-indicator.active {
+  width: 26px;
+  height: 8px;
+  border-radius: 50px;
+  background-color: #f2f2f2;
+}
+
+body.light-theme .workspace-indicator {
+  background-color: #a0a0a0;
+}
+
+body.light-theme .workspace-indicator.active {
+  background-color: #333333;
+}
+
+.workspace-indicator.active.paused {
+  background-color: #797979;
+}
+
+.focused-workspace {
+  opacity: 1;
+  transition: opacity 1.0s cubic-bezier(0, 1.06, 0.35, 0.96);
+  max-width: 500px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.focused-workspace.paused {
+  opacity: 0;
+}
+
+/* Network widget */
+.network-macos {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0px;
+  padding: 0 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.network-macos .upload,
+.network-macos .download {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+}
+
+.network-macos .download {
+  margin-top: -3px;
+}
+
+.network-macos .upload i,
+.network-macos .download i {
+  font-size: 14px;
+}
+
+.widget-hover {
+  background: transparent;
+  border-radius: 6px;
+  padding: 4px 8px;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  cursor: pointer;
+}
+
+.widget-hover:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}

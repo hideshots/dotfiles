@@ -1,0 +1,7 @@
+title-hidden = true
+srgb = false
+wsl = false
+
+[font]
+normal = ["Iosevka Nerd Font"]
+size = 16.0

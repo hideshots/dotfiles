@@ -1,9 +1,5 @@
-# Initialize Oh My Posh
 & ([ScriptBlock]::Create((oh-my-posh init pwsh --config "$env:USERPROFILE\.dotfiles\windows\shell\oh-my-posh\uew.omp.json" --print) -join "`n"))
 $env:__SuppressProfilesLoadingMessage = $true
-
-# Set the KOMOREBI_CONFIG_HOME environment variable
-$Env:KOMOREBI_CONFIG_HOME = "$($Env:USERPROFILE)"
 
 # Import the Chocolatey Profile for tab-completion support
 $ChocolateyProfile = "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"

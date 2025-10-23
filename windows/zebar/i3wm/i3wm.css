@@ -64,10 +64,13 @@ body {
 .disk.i3widget {
   color: #e30000;
 }
-
+/* Workspaces */
 .workspaces {
   display: flex;
   font-size: 10px;
+}
+
+.workspaces-container {
 }
 
 .workspace {
