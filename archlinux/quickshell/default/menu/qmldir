@@ -1,0 +1,6 @@
+module menu
+Menu 1.0 Menu.qml
+MenuItem 1.0 MenuItem.qml
+MenuSeparator 1.0 MenuSeparator.qml
+MenuHeader 1.0 MenuHeader.qml
+MenuPopup 1.0 MenuPopup.qml

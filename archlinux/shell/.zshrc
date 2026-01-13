@@ -3,8 +3,6 @@ ZSH_THEME="bureau"
 
 plugins=(
   git
-  docker
-  kubectl
   sudo
   colored-man-pages
   command-not-found
@@ -47,16 +45,8 @@ alias df='df -h'
 alias du='du -h'
 alias free='free -h'
 
-alias hms='home-manager switch --flake ~/.dotfiles/archlinux'
+alias hms='home-manager switch --flake ~/dotfiles/archlinux'
 alias ncdum='sudo ncdu --exclude /mnt /'
-alias gs='git status'
-alias ga='git add'
-alias gc='git commit'
-alias gp='git push'
-alias gl='git pull'
-alias gd='git diff'
-alias gco='git checkout'
-alias gb='git branch'
 
 y() {
     local tmp="$(mktemp -t "yazi-cwd.XXXXXX")"

@@ -1,0 +1,166 @@
+import QtQuick
+import Qt5Compat.GraphicalEffects
+import ".."
+
+Rectangle {
+    id: root
+
+    property var itemData: ({})
+    property bool isHovered: false
+    property bool isSelected: false
+    property bool isSubmenuOpen: false
+    property var contentWidth: 12 + 6 + 12 + 6 + labelText.implicitWidth + 24 + shortcutRow.width + (hasSubmenu ? 18 : 0) + 14
+    implicitWidth: contentWidth
+
+    // Computed properties
+    property bool hasSubmenu: itemData.submenu !== undefined
+    property bool isDisabled: itemData.disabled || false
+    property bool isChecked: itemData.checked || false
+    property string icon: itemData.icon || ""
+    property string label: itemData.label || ""
+    property var shortcut: itemData.shortcut || []
+
+    height: Theme.menuItemHeight
+    width: parent.width
+    color: "transparent"
+    radius: Theme.menuItemBorderRadius
+
+    // Highlight background
+    Rectangle {
+        id: highlightBg
+        anchors.fill: parent
+        anchors.leftMargin: -7
+        anchors.rightMargin: -7
+        radius: Theme.menuItemBorderRadius
+        color: {
+            if (root.isDisabled) return "transparent"
+            if (root.isSelected || root.isHovered) {
+                return Theme.menuHighlight
+            }
+            if (root.isSubmenuOpen) {
+                return Qt.rgba(1, 1, 1, 0.1)
+            }
+            return "transparent"
+        }
+        visible: root.isHovered || root.isSelected || root.isSubmenuOpen
+
+        Behavior on color {
+            ColorAnimation { duration: Theme.animationDuration }
+        }
+    }
+
+    Row {
+        anchors.fill: parent
+        anchors.verticalCenter: parent.verticalCenter
+        spacing: 6
+
+        // Checkmark area (for toggle items)
+        Item {
+            width: 12
+            height: parent.height
+            visible: root.isChecked
+
+            Text {
+                anchors.centerIn: parent
+                text: "􀆅"
+                font.family: Theme.fontFamily
+                font.pixelSize: 10
+                color: (root.isHovered || root.isSelected)
+                    ? "#ffffff"
+                    : (root.isDisabled ? Theme.menuTextDisabled : Theme.menuText)
+                renderType: Text.NativeRendering
+            }
+        }
+
+        // Icon
+        Item {
+            width: 12
+            height: parent.height
+
+            Text {
+                anchors.centerIn: parent
+                text: root.icon
+                font.family: Theme.fontFamily
+                font.pixelSize: 13
+                color: (root.isHovered || root.isSelected)
+                    ? "#ffffff"
+                    : (root.isDisabled ? Theme.menuTextDisabled : Theme.menuText)
+                renderType: Text.NativeRendering
+                visible: root.icon !== ""
+            }
+        }
+
+        // Label
+        Text {
+            id: labelText
+            height: parent.height
+            verticalAlignment: Text.AlignVCenter
+            text: root.label
+            font.family: Theme.fontFamily
+            font.pixelSize: Theme.fontSize
+            font.weight: Font.Medium
+            color: (root.isHovered || root.isSelected)
+                ? "#ffffff"
+                : (root.isDisabled ? Theme.menuTextDisabled : Theme.menuText)
+            elide: Text.ElideRight
+            renderType: Text.NativeRendering
+        }
+
+        // Flexible spacer
+        Item {
+            // Adaptive width logic: if parent provides width, use it. If not (implicit), use min width.
+            // But here inside Row, we want to fill available space.
+            // If parent has explicit width, Row fills it.
+            // If parent has implicit width (based on this Row), this item needs a preferred width?
+            // Row implicit width sum.
+            // We set root.implicitWidth above.
+            // When rendered, width will be set by MenuPopup.
+            width: Math.max(24, parent.width - 12 - 12 - labelText.implicitWidth - shortcutRow.width - (root.hasSubmenu ? 18 : 0) - 24)
+            height: 1
+        }
+
+        // Shortcuts
+        Row {
+            id: shortcutRow
+            height: parent.height
+            spacing: 1
+            visible: root.shortcut.length > 0 && !root.hasSubmenu
+
+            Repeater {
+                model: root.shortcut
+
+                Text {
+                    height: parent.height
+                    width: 12
+                    verticalAlignment: Text.AlignVCenter
+                    horizontalAlignment: Text.AlignHCenter
+                    text: modelData
+                    font.family: Theme.fontFamily
+                    font.pixelSize: 13
+                    font.weight: Font.Medium
+                    color: (root.isHovered || root.isSelected)
+                        ? "#ffffff"
+                        : Theme.menuShortcutText
+                    renderType: Text.NativeRendering
+                }
+            }
+        }
+
+        // Submenu chevron
+        Text {
+            height: parent.height
+            width: 12
+            verticalAlignment: Text.AlignVCenter
+            horizontalAlignment: Text.AlignHCenter
+            text: "􀆊"
+            font.family: Theme.fontFamily
+            font.pixelSize: 13
+            font.weight: Font.DemiBold
+            color: (root.isHovered || root.isSelected)
+                ? "#ffffff"
+                : (root.isDisabled ? Theme.menuTextDisabled : Theme.menuText)
+            visible: root.hasSubmenu
+            renderType: Text.NativeRendering
+        }
+    }
+}
