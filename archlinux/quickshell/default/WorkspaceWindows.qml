@@ -7,12 +7,17 @@ Row {
     id: root
     spacing: 0
 
+    // The ShellScreen the bar is on (e.g. name "DP-1")
+    required property var screen
+    readonly property string screenName: screen?.name ?? ""
+
     // Counter to force re-evaluation of largestWindow
     property int refreshCounter: 0
 
     Component.onCompleted: {
-        // Refresh toplevel data on startup to populate lastIpcObject
+        // Populate lastIpcObject etc.
         Hyprland.refreshToplevels()
+        Hyprland.refreshWorkspaces()
     }
 
     // Refresh when workspaces change
@@ -20,10 +25,12 @@ Row {
         target: Hyprland.workspaces
         function onObjectInsertedPost() {
             Hyprland.refreshToplevels()
+            Hyprland.refreshWorkspaces()
             root.refreshCounter++
         }
         function onObjectRemovedPost() {
             Hyprland.refreshToplevels()
+            Hyprland.refreshWorkspaces()
             root.refreshCounter++
         }
     }
@@ -33,19 +40,20 @@ Row {
         target: Hyprland.toplevels
         function onObjectInsertedPost() {
             Hyprland.refreshToplevels()
+            Hyprland.refreshWorkspaces()
             root.refreshCounter++
         }
         function onObjectRemovedPost() {
             Hyprland.refreshToplevels()
+            Hyprland.refreshWorkspaces()
             root.refreshCounter++
         }
     }
 
-    // Listen to all Hyprland events for window changes
+    // Listen to Hyprland events for window/workspace changes
     Connections {
         target: Hyprland
         function onRawEvent(event) {
-            // Events that affect window sizes or workspace contents
             const refreshEvents = [
                 "movewindow",
                 "resizewindow",
@@ -53,11 +61,14 @@ Row {
                 "fullscreen",
                 "movetoworkspace",
                 "movetoworkspacesilent",
-                "workspacev2"
+                "workspacev2",
+                "moveworkspace",
+                "moveworkspacev2"
             ]
 
             if (refreshEvents.includes(event.name)) {
                 Hyprland.refreshToplevels()
+                Hyprland.refreshWorkspaces()
                 root.refreshCounter++
             }
         }
@@ -91,7 +102,10 @@ Row {
     }
 
     Repeater {
-        model: Hyprland.workspaces.values
+        // Only workspaces that are on the same monitor as this bar
+        model: Hyprland.workspaces.values.filter(ws =>
+            ws.monitor && ws.monitor.name === root.screenName
+        )
 
         delegate: Rectangle {
             required property var modelData

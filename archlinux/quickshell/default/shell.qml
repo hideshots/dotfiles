@@ -91,9 +91,10 @@ ShellRoot {
                             }
                         }
 
-                        // Workspace windows
+                        // Workspace windows (filtered per monitor)
                         WorkspaceWindows {
                             height: parent.height
+                            screen: modelData
                         }
                     }
 
