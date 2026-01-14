@@ -12,6 +12,7 @@ in {
  	home.file.".zshrc".source     = link "${home}/dotfiles/archlinux/shell/.zshrc";
  	# home.file.".tmux.conf".source = link "${home}/dotfiles/archlinux/tmux/.tmux.conf";
   xdg.configFile."yazi".source  = link "${home}/dotfiles/archlinux/yazi";
+  xdg.configFile."foot".source  = link "${home}/dotfiles/archlinux/foot";
   xdg.configFile."nvim".source  = link "${home}/dotfiles/archlinux/neovim";
   xdg.configFile."quickshell".source  = link "${home}/dotfiles/archlinux/quickshell";
   xdg.configFile."rofi".source  = link "${home}/dotfiles/archlinux/rofi";

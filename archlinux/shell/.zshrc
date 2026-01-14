@@ -29,6 +29,7 @@ zstyle ':completion:*' menu select
 zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'
 
 alias man='qman'
+alias yay='paru'
 alias vim='nvim'
 alias vi='nvim'
 alias ll='ls -alF'
