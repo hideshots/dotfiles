@@ -7,102 +7,178 @@ Row {
     id: root
     spacing: 0
 
-    // The ShellScreen the bar is on (e.g. name "DP-1")
     required property var screen
     readonly property string screenName: screen?.name ?? ""
 
-    // Counter to force re-evaluation of largestWindow
     property int refreshCounter: 0
 
-    Component.onCompleted: {
-        // Populate lastIpcObject etc.
-        Hyprland.refreshToplevels()
-        Hyprland.refreshWorkspaces()
+    property var classLabelOverrides: ({
+        "org.gnome.Nautilus": "Files"
+    })
+
+    property bool refreshQueued: false
+    property bool needWorkspaceRefresh: false
+
+    property string pulseWorkspaceName: ""
+    property bool pulseActive: false
+
+    property int refreshDebounceMs: 120
+
+    function windowClass(toplevel) {
+        const ipc = toplevel?.lastIpcObject ?? null
+        return ipc?.initialClass ?? ipc?.class ?? toplevel?.wayland?.appId ?? ""
     }
 
-    // Refresh when workspaces change
+    function displayText(toplevel) {
+        if (!toplevel) return ""
+        const ipc = toplevel.lastIpcObject ?? null
+        const cls = windowClass(toplevel)
+        const override = classLabelOverrides[cls]
+        if (override) return override
+        return ipc?.initialTitle ?? toplevel.wayland?.appId ?? toplevel.title ?? ""
+    }
+
+    function activeWorkspaceNameOnThisMonitor() {
+        const ws = Hyprland.workspaces.values.find(w =>
+            w.monitor && w.monitor.name === root.screenName && w.focused
+        )
+        return ws?.name ?? ws?.lastIpcObject?.name ?? ""
+    }
+
+    function pulseWorkspaceByName(name) {
+        if (!name) return
+        root.pulseWorkspaceName = name
+        root.pulseActive = true
+        pulseTimer.restart()
+    }
+
+    Timer {
+        id: pulseTimer
+        interval: 180
+        repeat: false
+        onTriggered: root.pulseActive = false
+    }
+
+    function queueRefresh(refreshWorkspaces) {
+        if (refreshWorkspaces)
+            root.needWorkspaceRefresh = true
+        if (root.refreshQueued)
+            return
+        root.refreshQueued = true
+        refreshTimer.restart()
+    }
+
+    Timer {
+        id: refreshTimer
+        interval: root.refreshDebounceMs
+        repeat: false
+        onTriggered: {
+            Hyprland.refreshToplevels()
+            if (root.needWorkspaceRefresh)
+                Hyprland.refreshWorkspaces()
+
+            root.needWorkspaceRefresh = false
+            Qt.callLater(() => {
+                root.refreshCounter++
+                root.refreshQueued = false
+            })
+        }
+    }
+
+    Component.onCompleted: {
+        root.queueRefresh(true)
+    }
+
     Connections {
         target: Hyprland.workspaces
-        function onObjectInsertedPost() {
-            Hyprland.refreshToplevels()
-            Hyprland.refreshWorkspaces()
-            root.refreshCounter++
-        }
-        function onObjectRemovedPost() {
-            Hyprland.refreshToplevels()
-            Hyprland.refreshWorkspaces()
-            root.refreshCounter++
-        }
+        function onObjectInsertedPost() { root.queueRefresh(true) }
+        function onObjectRemovedPost() { root.queueRefresh(true) }
     }
 
-    // Refresh when toplevels (windows) change
     Connections {
         target: Hyprland.toplevels
-        function onObjectInsertedPost() {
-            Hyprland.refreshToplevels()
-            Hyprland.refreshWorkspaces()
-            root.refreshCounter++
-        }
-        function onObjectRemovedPost() {
-            Hyprland.refreshToplevels()
-            Hyprland.refreshWorkspaces()
-            root.refreshCounter++
-        }
+        function onObjectInsertedPost() { root.queueRefresh(true) }
+        function onObjectRemovedPost() { root.queueRefresh(true) }
     }
 
-    // Listen to Hyprland events for window/workspace changes
     Connections {
         target: Hyprland
         function onRawEvent(event) {
-            const refreshEvents = [
+            const n = event.name
+
+            const pulseEvents = [
                 "movewindow",
-                "resizewindow",
                 "changefloatingmode",
                 "fullscreen",
-                "movetoworkspace",
-                "movetoworkspacesilent",
-                "workspacev2",
-                "moveworkspace",
-                "moveworkspacev2"
+                "urgent",
+                "pin",
+                "minimized",
+                "configreloaded"
             ]
 
-            if (refreshEvents.includes(event.name)) {
-                Hyprland.refreshToplevels()
-                Hyprland.refreshWorkspaces()
-                root.refreshCounter++
+            const workspaceRefreshEvents = [
+                "movewindow",
+                "workspace",
+                "workspacev2",
+                "focusedmon",
+                "focusedmonv2",
+                "createworkspace",
+                "createworkspacev2",
+                "destroyworkspace",
+                "destroyworkspacev2",
+                "moveworkspace",
+                "moveworkspacev2",
+                "renameworkspace"
+            ]
+
+            if (pulseEvents.includes(n)) {
+                root.pulseWorkspaceByName(root.activeWorkspaceNameOnThisMonitor())
+                root.queueRefresh(workspaceRefreshEvents.includes(n))
+                return
+            }
+
+            if (n === "custom") {
+                root.pulseWorkspaceByName(root.activeWorkspaceNameOnThisMonitor())
+                root.queueRefresh(false)
+                return
             }
         }
     }
 
-    // Function to find the largest window in a workspace
-    function getLargestWindow(workspace) {
-        if (!workspace || !workspace.toplevels) return null
+function getLargestWindow(workspace) {
+    if (!workspace || !workspace.toplevels) return null
 
-        const toplevels = workspace.toplevels.values
-        if (!toplevels || toplevels.length === 0) return null
+    const toplevels = workspace.toplevels.values
+    if (!toplevels || toplevels.length === 0) return null
 
-        let largest = null
-        let maxArea = 0
+    let best = null
+    let bestArea = -1
+    let bestX = Number.POSITIVE_INFINITY
 
-        for (let i = 0; i < toplevels.length; i++) {
-            const toplevel = toplevels[i]
-            if (!toplevel || !toplevel.lastIpcObject) continue
+    for (let i = 0; i < toplevels.length; i++) {
+        const t = toplevels[i]
+        const ipc = t?.lastIpcObject
+        if (!ipc) continue
 
-            const size = toplevel.lastIpcObject.size
-            if (!size || size.length < 2) continue
+        const size = ipc.size
+        if (!size || size.length < 2) continue
 
-            const area = size[0] * size[1]
-            if (area > maxArea) {
-                maxArea = area
-                largest = toplevel
-            }
+        const area = size[0] * size[1]
+
+        const at = ipc.at
+        const x = (at && at.length >= 1) ? at[0] : Number.POSITIVE_INFINITY
+
+        if (area > bestArea || (area === bestArea && x < bestX)) {
+            bestArea = area
+            bestX = x
+            best = t
         }
-
-        return largest
     }
+
+    return best
+}
 
     Repeater {
-        // Only workspaces that are on the same monitor as this bar
         model: Hyprland.workspaces.values.filter(ws =>
             ws.monitor && ws.monitor.name === root.screenName
         )
@@ -110,16 +186,23 @@ Row {
         delegate: Rectangle {
             required property var modelData
 
-            // Include refreshCounter in binding to force re-evaluation
             property var largestWindow: {
-                root.refreshCounter // Force dependency
+                root.refreshCounter
                 return root.getLargestWindow(modelData)
             }
+
+            property bool pulsing: root.pulseActive && (modelData.name === root.pulseWorkspaceName)
 
             visible: largestWindow !== null && windowText.text !== ""
             height: root.height
             width: widthCalculator.width + (Theme.itemPadding * 2)
-            color: windowMouseArea.containsMouse ? Qt.rgba(255, 255, 255, 0.1) : "transparent"
+
+            color: windowMouseArea.containsMouse
+                ? Qt.rgba(1, 1, 1, 0.1)
+                : (pulsing
+                    ? Qt.rgba(Theme.menuHighlight.r, Theme.menuHighlight.g, Theme.menuHighlight.b, 0.7)
+                    : "transparent")
+
             radius: Theme.borderRadius
 
             Behavior on color {
@@ -129,11 +212,10 @@ Row {
                 }
             }
 
-            // Hidden text for width calculation (always bold)
             Text {
                 id: widthCalculator
                 visible: false
-                text: largestWindow ? (largestWindow.wayland?.appId ?? largestWindow.title ?? "") : ""
+                text: root.displayText(largestWindow)
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSize
                 font.weight: Font.Bold
@@ -142,7 +224,7 @@ Row {
             Text {
                 id: windowText
                 anchors.centerIn: parent
-                text: largestWindow ? (largestWindow.wayland?.appId ?? largestWindow.title ?? "") : ""
+                text: root.displayText(largestWindow)
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSize
                 renderType: Text.NativeRendering

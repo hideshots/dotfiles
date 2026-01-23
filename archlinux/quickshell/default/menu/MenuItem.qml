@@ -115,7 +115,14 @@ Rectangle {
             // Row implicit width sum.
             // We set root.implicitWidth above.
             // When rendered, width will be set by MenuPopup.
-            width: Math.max(24, parent.width - 12 - 12 - labelText.implicitWidth - shortcutRow.width - (root.hasSubmenu ? 18 : 0) - 24)
+            width: Math.max(0,
+            parent.width
+            - 12 - 12
+            - labelText.implicitWidth
+            - shortcutRow.width
+            - (root.hasSubmenu ? 18 : 0)
+            - 8 // right padding; tweak (0..12)
+          )
             height: 1
         }
 

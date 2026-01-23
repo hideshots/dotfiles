@@ -49,7 +49,7 @@ QtObject {
     readonly property color menuBackground: isDark
         ? Qt.rgba(0.15, 0.15, 0.15, 0.85)
         : Qt.rgba(0.96, 0.96, 0.96, 0.84)
-    readonly property color menuHighlight: "#0088ff"
+    readonly property color menuHighlight: "#9E7354"
     readonly property color menuText: isDark ? "#ffffff" : "#4c4c4c"
     readonly property color menuTextDisabled: "#c6c6c6"
     readonly property color menuShortcutText: "#c6c6c6"
