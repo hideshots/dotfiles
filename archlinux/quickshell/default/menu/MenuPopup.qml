@@ -1,4 +1,5 @@
 import Quickshell
+import Quickshell.Hyprland
 import QtQuick
 import Qt5Compat.GraphicalEffects
 import ".."
@@ -16,6 +17,30 @@ PopupWindow {
     // Signals
     signal itemClicked(var item, int index)
 
+    property PopupWindow topMenu: root
+    readonly property bool isTopMenu: topMenu === root
+    property int grabRev: 0
+
+    surfaceFormat.opaque: false
+    color: "transparent"
+
+    function refreshGrab() { topMenu.grabRev++ }
+
+    function chainWindows() {
+        var wins = [root]
+        if (submenuLoader.active && submenuLoader.item) {
+            wins = wins.concat(submenuLoader.item.chainWindows())
+        }
+        return wins
+    }
+
+    HyprlandFocusGrab {
+        id: focusGrab
+        active: root.isTopMenu && root.visible
+        windows: root.isTopMenu ? (root.topMenu.grabRev, root.topMenu.chainWindows()) : []
+        onCleared: root.topMenu.close()
+    }
+
     // Internal state
     property int hoveredIndex: -1
     property int selectedIndex: -1
@@ -24,9 +49,7 @@ PopupWindow {
     visible: false
     implicitWidth: adaptiveWidth ? menuContent.implicitWidth + 24 : Theme.menuWidth
     implicitHeight: menuContent.height + 10
-    color: "transparent"
 
-    // Position relative to anchor
     anchor.window: anchorItem ? anchorItem.QsWindow.window : null
     anchor.rect.x: {
         if (!anchorItem) return 0
@@ -55,7 +78,7 @@ PopupWindow {
         Keys.onReturnPressed: {
             if (hoveredIndex >= 0) activateItem(hoveredIndex)
         }
-        Keys.onEscapePressed: close()
+        Keys.onEscapePressed: root.topMenu.close()
 
         // Glass effect background
         Rectangle {
@@ -64,7 +87,7 @@ PopupWindow {
             radius: Theme.menuBorderRadius
             color: Theme.menuBackground
 
-            layer.enabled: true
+            layer.enabled: false
             layer.effect: DropShadow {
                 horizontalOffset: 0
                 verticalOffset: 4
@@ -74,7 +97,6 @@ PopupWindow {
                 spread: 0
             }
 
-            // Inner border highlights (simulating glass effect)
             Rectangle {
                 anchors.fill: parent
                 anchors.margins: 1
@@ -85,7 +107,6 @@ PopupWindow {
             }
         }
 
-        // Content column
         Column {
             id: menuContent
             anchors.left: parent.left
@@ -121,14 +142,18 @@ PopupWindow {
             active: false
             source: "MenuPopup.qml"
             onLoaded: {
+                item.topMenu = root.topMenu
                 item.placement = "right"
                 item.yOffset = 0
                 item.adaptiveWidth = true
-                item.itemClicked.connect(function(item, index) {
-                    root.itemClicked(item, index)
-                    root.close()
+
+                item.itemClicked.connect(function(clickedItem, index) {
+                    root.itemClicked(clickedItem, index)
+                    root.topMenu.close()
                 })
+
                 item.open()
+                root.refreshGrab()
             }
         }
     }
@@ -138,6 +163,7 @@ PopupWindow {
         root.visible = true
         focusScope.forceActiveFocus()
         hoveredIndex = findFirstSelectableIndex()
+        root.refreshGrab()
     }
 
     function close() {
@@ -146,10 +172,11 @@ PopupWindow {
         selectedIndex = -1
         activeSubmenuIndex = -1
         submenuLoader.active = false
+        root.refreshGrab()
     }
 
     function toggle() {
-        if (root.visible) close()
+        if (root.visible) root.topMenu.close()
         else open()
     }
 
@@ -193,7 +220,7 @@ PopupWindow {
             selectedIndex = index
             itemClicked(item, index)
             if (item.action) item.action()
-            close()
+            root.topMenu.close()
         }
     }
 
@@ -201,11 +228,11 @@ PopupWindow {
     Component {
         id: menuItemComponent
 
-            MenuItem {
-                itemData: parent.itemData
-                isHovered: parent.isHovered || mouseArea.containsMouse
-                isSelected: parent.isSelected
-                isSubmenuOpen: root.activeSubmenuIndex === parent.itemIndex
+        MenuItem {
+            itemData: parent.itemData
+            isHovered: parent.isHovered || mouseArea.containsMouse
+            isSelected: parent.isSelected
+            isSubmenuOpen: root.activeSubmenuIndex === parent.itemIndex
 
             MouseArea {
                 id: mouseArea
@@ -216,17 +243,21 @@ PopupWindow {
                 onEntered: {
                     if (!parent.itemData.disabled) {
                         root.hoveredIndex = parent.parent.itemIndex
-                        
+
                         // Handle submenu opening
                         if (parent.itemData.submenu) {
                             root.activeSubmenuIndex = parent.parent.itemIndex
                             submenuLoader.active = false // Reset
                             submenuLoader.active = true
-                            submenuLoader.item.model = parent.itemData.submenu
-                            submenuLoader.item.anchorItem = parent
+                            if (submenuLoader.item) {
+                                submenuLoader.item.model = parent.itemData.submenu
+                                submenuLoader.item.anchorItem = parent
+                                root.refreshGrab()
+                            }
                         } else {
                             root.activeSubmenuIndex = -1
                             submenuLoader.active = false
+                            root.refreshGrab()
                         }
                     }
                 }

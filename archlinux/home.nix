@@ -7,6 +7,7 @@ in {
   xdg.configFile."wal/templates".source = link "${home}/dotfiles/archlinux/pywal";
  	xdg.configFile."MangoHud/MangoHud.conf".source = link "${home}/.cache/wal/MangoHud.conf";
  	home.file.".tmux.conf".source = link "${home}/.cache/wal/.tmux.conf";
+  xdg.configFile."obs-studio/themes/wal.ovt".source = link "${home}/.cache/wal/obs.ovt";
 
   xdg.configFile."kitty".source = link "${home}/dotfiles/archlinux/kitty";
  	home.file.".zshrc".source     = link "${home}/dotfiles/archlinux/shell/.zshrc";

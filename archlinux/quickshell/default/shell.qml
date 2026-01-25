@@ -1,14 +1,19 @@
 import Quickshell
 import Quickshell.Hyprland
+import Quickshell.Wayland
 import QtQuick
 import Qt5Compat.GraphicalEffects
+
+import "notifications"
 import "menu"
 
 ShellRoot {
+  // Notifications { }
     Variants {
         model: Quickshell.screens
 
         PanelWindow {
+          WlrLayershell.namespace: "qsbar"
             required property var modelData
             screen: modelData
 

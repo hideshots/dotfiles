@@ -47,13 +47,13 @@ QtObject {
 
     // Menu colors
     readonly property color menuBackground: isDark
-        ? Qt.rgba(0.15, 0.15, 0.15, 0.85)
-        : Qt.rgba(0.96, 0.96, 0.96, 0.84)
+        ? Qt.rgba(0.15, 0.15, 0.15, 0.25)
+        : Qt.rgba(0.96, 0.96, 0.96, 0.64)
     readonly property color menuHighlight: "#9E7354"
     readonly property color menuText: isDark ? "#ffffff" : "#4c4c4c"
     readonly property color menuTextDisabled: "#c6c6c6"
     readonly property color menuShortcutText: "#c6c6c6"
-    readonly property color menuSeparator: isDark ? Qt.rgba(1, 1, 1, 0.1) : "#e6e6e6"
+    readonly property color menuSeparator: isDark ? Qt.rgba(1, 1, 1, 0.1) : "#bababa"
     readonly property color menuHeaderText: "#808080"
 
     // Menu sizing

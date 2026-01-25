@@ -13,7 +13,9 @@ Row {
     property int refreshCounter: 0
 
     property var classLabelOverrides: ({
-        "org.gnome.Nautilus": "Files"
+        "org.gnome.Nautilus": "Files",
+        "com.obsproject.Studio": "OBS Studio",
+        "spotify": "Spotify"
     })
 
     property bool refreshQueued: false
