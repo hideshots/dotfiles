@@ -4,9 +4,7 @@ img="$1"
 
 wal -n -s -i "$img" -q
 
-pkill -USR2 waybar 2>/dev/null || true
-
-kitty @ set-colors -a ~/.cache/wal/colors-kitty.conf 2>/dev/null || true
+pkill -USR1 -f kitty
 
 if tmux has-session 2>/dev/null; then
   tmux source-file "${TMUX_CONF:-$HOME/.tmux.conf}"

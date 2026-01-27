@@ -15,7 +15,10 @@ Row {
     property var classLabelOverrides: ({
         "org.gnome.Nautilus": "Files",
         "com.obsproject.Studio": "OBS Studio",
+        "org.prismlauncher.PrismLauncher": "Prism Launcher",
+        "Vmware": "VMware Workstation Pro",
         "spotify": "Spotify"
+
     })
 
     property bool refreshQueued: false
