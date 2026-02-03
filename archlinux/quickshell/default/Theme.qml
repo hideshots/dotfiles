@@ -34,7 +34,7 @@ QtObject {
     // Spacing and sizing
     readonly property int itemPadding: 11
     readonly property int itemVerticalPadding: 4
-    readonly property int borderRadius: 4
+    readonly property int borderRadius: 99
 
     // Material background effects (from CSS variables)
     readonly property color materialUltraThick: isDark
@@ -51,8 +51,8 @@ QtObject {
         : Qt.rgba(0.96, 0.96, 0.96, 0.64)
     readonly property color menuHighlight: "#0088FF"
     readonly property color menuText: isDark ? "#ffffff" : "#4c4c4c"
-    readonly property color menuTextDisabled: "#c6c6c6"
-    readonly property color menuShortcutText: "#c6c6c6"
+    readonly property color menuTextDisabled: "#636363"
+    readonly property color menuShortcutText: "#636363"
     readonly property color menuSeparator: isDark ? Qt.rgba(1, 1, 1, 0.1) : "#bababa"
     readonly property color menuHeaderText: "#808080"
 

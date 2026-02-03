@@ -131,7 +131,7 @@ ShellRoot {
                             yOffset: 8
 
                             model: [
-                                { type: "action", icon: "􀣺", label: "About This Mac" },
+                                { type: "action", icon: "􀙗", label: "About This Mac" },
                                 { type: "separator" },
                                 { type: "action", icon: "􀈎", label: "System Settings...", shortcut: ["􀆔", ","] },
                                 { type: "action", icon: "􁣡", label: "App Store..." },

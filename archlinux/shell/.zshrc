@@ -1,11 +1,11 @@
 export ZSH="$HOME/.oh-my-zsh"
 ZSH_THEME="bureau"
 
-fastfetch
-
 export ANTHROPIC_BASE_URL="https://agentrouter.org/"
 export ANTHROPIC_AUTH_TOKEN="sk-RDmSextbUTN9wShyAuNAv5WZWyw7XiRlUvVyk1IFkwDYYboH"
 export ANTHROPIC_MODEL="glm-4.6"
+
+export MPD_HOST="$HOME/.config/mpd/socket"
 
 plugins=(
   git
@@ -51,6 +51,14 @@ alias mkdir='mkdir -pv'
 alias df='df -h'
 alias du='du -h'
 alias free='free -h'
+
+nvdots() {
+  command nvim +"lua vim.schedule(function()
+    local keys = vim.api.nvim_replace_termcodes('<Space>e', true, false, true)
+    vim.api.nvim_feedkeys(keys, 'm', false)
+  end)" ~/dotfiles/archlinux/home.nix
+}
+alias dfn='nvdots'
 
 alias hms='home-manager switch --flake ~/dotfiles/archlinux'
 alias ncdum='sudo ncdu --exclude /mnt /'

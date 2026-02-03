@@ -25,6 +25,13 @@ return {
         capabilities = capabilities,
       })
 
+      vim.lsp.config('qmlls', {
+        capabilities = capabilities,
+        cmd = { "qmlls6" },
+        filetypes = { "qml", "qmljs" },
+        single_file_support = true,
+      })
+
       vim.lsp.config('nil_ls', {
         capabilities = capabilities,
       })
@@ -128,6 +135,7 @@ return {
         'yamlls',
         'clangd',
         'pylsp',
+        'qmlls',
         'marksman',
         'omnisharp',
       })

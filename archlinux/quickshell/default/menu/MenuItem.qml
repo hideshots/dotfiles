@@ -9,7 +9,8 @@ Rectangle {
     property bool isHovered: false
     property bool isSelected: false
     property bool isSubmenuOpen: false
-    property var contentWidth: 12 + 6 + 12 + 6 + labelText.implicitWidth + 24 + shortcutRow.width + (hasSubmenu ? 18 : 0) + 14
+    // property var contentWidth: 12 + 6 + 12 + 6 + labelText.implicitWidth + 24 + shortcutRow.width + (hasSubmenu ? 18 : 0) + 14
+    property var contentWidth: 12 + 6 + 12 + 6 + labelText.implicitWidth + shortcutRow.width + (hasSubmenu ? 18 : 0) 
     implicitWidth: contentWidth
 
     // Computed properties
@@ -81,7 +82,7 @@ Rectangle {
                 anchors.centerIn: parent
                 text: root.icon
                 font.family: Theme.fontFamily
-                font.pixelSize: 13
+                font.pixelSize: 10
                 color: (root.isHovered || root.isSelected)
                     ? "#ffffff"
                     : (root.isDisabled ? Theme.menuTextDisabled : Theme.menuText)
@@ -108,21 +109,14 @@ Rectangle {
 
         // Flexible spacer
         Item {
-            // Adaptive width logic: if parent provides width, use it. If not (implicit), use min width.
-            // But here inside Row, we want to fill available space.
-            // If parent has explicit width, Row fills it.
-            // If parent has implicit width (based on this Row), this item needs a preferred width?
-            // Row implicit width sum.
-            // We set root.implicitWidth above.
-            // When rendered, width will be set by MenuPopup.
             width: Math.max(0,
-            parent.width
-            - 12 - 12
-            - labelText.implicitWidth
-            - shortcutRow.width
-            - (root.hasSubmenu ? 18 : 0)
-            - 8 // right padding; tweak (0..12)
-          )
+                parent.width
+                - 12 - 12
+                - labelText.implicitWidth
+                - shortcutRow.width
+                - (root.hasSubmenu ? 18 : 0)
+                - 8 // right padding; tweak (0..12)
+            )
             height: 1
         }
 

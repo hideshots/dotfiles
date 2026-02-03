@@ -17,6 +17,9 @@ Row {
         "com.obsproject.Studio": "OBS Studio",
         "org.prismlauncher.PrismLauncher": "Prism Launcher",
         "Vmware": "VMware Workstation Pro",
+        "obsidian": "Obsidian",
+        "org.gnome.Loupe": "Preview",
+        "kitty": "Terminal",
         "spotify": "Spotify"
 
     })

@@ -144,7 +144,7 @@ Item {
             anchors.top: parent.top
             anchors.topMargin: 17
             anchors.horizontalCenter: parent.horizontalCenter
-            text: Qt.formatDateTime(root.now, "h:mm")
+            text: Qt.formatTime(root.now, "h:mm AP").split(" ")[0]
             color: theme.white
             font.pixelSize: 150
             font.family: theme.fontUI

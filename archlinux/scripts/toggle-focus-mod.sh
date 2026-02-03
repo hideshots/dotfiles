@@ -1,16 +1,9 @@
-#!/bin/bash
-# File to store current state
-STATE_FILE="$HOME/.cache/hyprland_performance_mode"
+#!/usr/bin/env sh
 
-if [[ -f "$STATE_FILE" ]]; then
-    hyprctl reload
-    rm "$STATE_FILE"
+ANIMS_ENABLED=$(hyprctl getoption animations:enabled | awk 'NR==1{print $2}')
+
+if [ "$ANIMS_ENABLED" = "1" ]; then
+    hyprctl --batch "keyword general:gaps_in 2; keyword general:gaps_out 0; keyword general:border_size 1; keyword decoration:rounding 3; keyword decoration:blur:enabled 1; keyword decoration:blur:size 0; keyword decoration:blur:passes 1; keyword decoration:blur:contrast 1.5; keyword decoration:blur:brightness 0; keyword decoration:fullscreen_opacity 1; keyword decoration:active_opacity 1; keyword decoration:inactive_opacity 1; keyword animations:enabled 0"
 else
-    hyprctl --batch "
-        keyword animations:enabled false;
-        keyword decoration:rounding 11;
-        keyword general:gaps_in 2;
-        keyword general:gaps_out 5;
-    "
-    touch "$STATE_FILE"
+    hyprctl reload
 fi
