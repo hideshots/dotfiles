@@ -9,6 +9,7 @@ Row {
 
     required property var screen
     readonly property string screenName: screen?.name ?? ""
+    property var highlightState: null
 
     property int refreshCounter: 0
 
@@ -192,6 +193,7 @@ function getLargestWindow(workspace) {
         )
 
         delegate: Rectangle {
+            id: delegateRoot
             required property var modelData
 
             property var largestWindow: {
@@ -205,19 +207,28 @@ function getLargestWindow(workspace) {
             height: root.height
             width: widthCalculator.width + (Theme.itemPadding * 2)
 
-            color: windowMouseArea.containsMouse
-                ? Qt.rgba(1, 1, 1, 0.1)
-                : (pulsing
-                    ? Qt.rgba(Theme.menuHighlight.r, Theme.menuHighlight.g, Theme.menuHighlight.b, 0.7)
-                    : "transparent")
+            color: "transparent"
 
             radius: Theme.borderRadius
-
-            Behavior on color {
-                ColorAnimation {
-                    duration: Theme.animationDuration
-                    easing.type: Theme.animationEasing
+            onPulsingChanged: {
+                if (!root.highlightState) return
+                if (pulsing) {
+                    root.highlightState.pulseTarget = delegateRoot
+                } else if (root.highlightState.pulseTarget === delegateRoot) {
+                    root.highlightState.pulseTarget = null
                 }
+            }
+            Component.onCompleted: {
+                if (!root.highlightState) return
+                if (pulsing)
+                    root.highlightState.pulseTarget = delegateRoot
+            }
+            Component.onDestruction: {
+                if (!root.highlightState) return
+                if (root.highlightState.activeTarget === delegateRoot)
+                    root.highlightState.activeTarget = null
+                if (root.highlightState.pulseTarget === delegateRoot)
+                    root.highlightState.pulseTarget = null
             }
 
             Text {

@@ -8,6 +8,9 @@ QtObject {
     // Background colors (transparent)
     readonly property color background: "transparent"
 
+    // How much the hover background should extend left/right beyond the hovered item.
+    readonly property int hoverOverlap: 6
+
     // Text colors
     readonly property color textPrimary: isDark ? "#ffffff" : "#000000"
     readonly property color textSecondary: isDark ? "#ffffff" : "#000000"

@@ -4,7 +4,6 @@ import Quickshell.Wayland
 import QtQuick
 import Qt5Compat.GraphicalEffects
 
-import "notifications"
 import "menu"
 
 ShellRoot {
@@ -64,65 +63,97 @@ ShellRoot {
                         anchors.bottomMargin: 5
                         spacing: 0
 
-                        Row {
-                            id: leftSection
-                            spacing: 0
-                            height: parent.height
+Item {
+    id: leftSection
+    height: parent.height
+    width: leftRow.implicitWidth
 
-                            // Apple logo
-                            Rectangle {
-                                id: logoRect
-                                width: 35
-                                height: 26
-                                color: logoMouseArea.containsMouse || logoMenu.visible
-                                    ? Qt.rgba(255, 255, 255, 0.1)
-                                    : (logoMouseArea.pressed ? Qt.rgba(255, 255, 255, 0.05) : "transparent")
-                                radius: Theme.borderRadius
+    QtObject {
+        id: leftHi
+        property Item activeTarget: null
+        property Item pulseTarget: null
+        property bool pressed: false
+    }
 
-                                Behavior on color {
-                                    ColorAnimation {
-                                        duration: Theme.animationDuration
-                                        easing.type: Theme.animationEasing
-                                    }
-                                }
+    // The macOS-like hover/pulse background ("pill")
+    Rectangle {
+        id: leftPill
+        z: 0
+        radius: Theme.borderRadius
 
-                                Text {
-                                    id: logoText
-                                    anchors.centerIn: parent
-                                    text: "􀆿"
-                                    font.family: Theme.fontFamily
-                                    font.pixelSize: Theme.iconSize
-                                    renderType: Text.NativeRendering
-                                    color: Theme.textPrimary
-                                }
+        property Item target: leftHi.activeTarget ?? leftHi.pulseTarget
 
-                                DropShadow {
-                                    anchors.fill: logoText
-                                    source: logoText
-                                    visible: Theme.isDark
-                                    horizontalOffset: Theme.shadowHorizontalOffset
-                                    verticalOffset: Theme.shadowVerticalOffset
-                                    radius: Theme.shadowRadius
-                                    samples: 16
-                                    spread: 0
-                                    color: Theme.shadowColor
-                                }
+        x: target ? target.mapToItem(leftSection, 0, 0).x - Theme.hoverOverlap : 0
+        y: 0
+        width: target ? target.width + (Theme.hoverOverlap * 2) : 0
+        height: parent.height
 
-                                MouseArea {
-                                    id: logoMouseArea
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: logoMenu.toggle()
-                                }
-                            }
+        color: leftHi.activeTarget
+            ? Qt.rgba(1, 1, 1, 0.10)
+            : (leftHi.pulseTarget
+                ? Qt.rgba(Theme.menuHighlight.r, Theme.menuHighlight.g, Theme.menuHighlight.b, 0.70)
+                : "transparent")
 
-                            // Workspace windows (filtered per monitor)
-                            WorkspaceWindows {
-                                height: parent.height
-                                screen: modelData
-                            }
-                        }
+        opacity: target ? 1 : 0
+    }
+
+    Row {
+        id: leftRow
+        z: 1
+        spacing: 0
+        height: parent.height
+
+        // Apple logo (remove per-item hover bg; let leftPill handle it)
+        Rectangle {
+            id: logoRect
+            width: 35
+            height: parent.height
+            color: "transparent"
+            radius: Theme.borderRadius
+
+            Text {
+                id: logoText
+                anchors.centerIn: parent
+                text: "􀆿"
+                font.family: Theme.fontFamily
+                font.pixelSize: Theme.iconSize
+                renderType: Text.NativeRendering
+                color: Theme.textPrimary
+            }
+
+            DropShadow {
+                anchors.fill: logoText
+                source: logoText
+                visible: Theme.isDark
+                horizontalOffset: Theme.shadowHorizontalOffset
+                verticalOffset: Theme.shadowVerticalOffset
+                radius: Theme.shadowRadius
+                samples: 16
+                spread: 0
+                color: Theme.shadowColor
+            }
+
+            MouseArea {
+                id: logoMouseArea
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+
+                onPressed: leftHi.pressed = true
+                onReleased: leftHi.pressed = false
+
+                onClicked: logoMenu.toggle()
+            }
+        }
+
+        // Workspace windows (pass the state object down)
+        WorkspaceWindows {
+            height: parent.height
+            screen: modelData
+            highlightState: leftHi
+        }
+    }
+}
 
                         // Logo Menu - positioned as a popup window
                         MenuPopup {
@@ -161,6 +192,12 @@ ShellRoot {
                                 console.log("Menu item clicked:", item.label)
                             }
                         }
+                        Connections {
+                            target: logoMenu
+                            function onVisibleChanged() {
+                                leftHi.activeTarget = logoMenu.visible ? logoRect : null
+                            }
+                        }
 
                         // Spacer to push right section to the end
                         Item {
@@ -169,17 +206,51 @@ ShellRoot {
                         }
 
                         // Right section - System controls
-                        Row {
+                        Item {
                             id: rightSection
-                            spacing: 0
                             height: parent.height
+                            width: rightRow.implicitWidth
 
-                            IconButton { icon: "􀙇"; onClicked: {} }
-                            IconButton { icon: "􀊫"; onClicked: {} }
-                            IconButton { icon: "􀉭"; onClicked: {} }
-                            IconButton { icon: "􀜊"; onClicked: {} }
+                            QtObject {
+                                id: rightHi
+                                property Item activeTarget: null
+                                property Item pulseTarget: null
+                            }
 
-                            TimeDisplay { height: parent.height }
+                            Rectangle {
+                                id: rightPill
+                                z: 0
+                                radius: Theme.borderRadius
+
+                                property Item target: rightHi.activeTarget ?? rightHi.pulseTarget
+
+                                x: target ? target.mapToItem(rightSection, 0, 0).x - Theme.hoverOverlap : 0
+                                y: 0
+                                width: target ? target.width + (Theme.hoverOverlap * 2) : 0
+                                height: parent.height
+
+                                color: rightHi.activeTarget
+                                    ? Qt.rgba(1, 1, 1, 0.10)
+                                    : (rightHi.pulseTarget
+                                        ? Qt.rgba(Theme.menuHighlight.r, Theme.menuHighlight.g, Theme.menuHighlight.b, 0.70)
+                                        : "transparent")
+
+                                opacity: target ? 1 : 0
+                            }
+
+                            Row {
+                                id: rightRow
+                                z: 1
+                                spacing: 0
+                                height: parent.height
+
+                                IconButton { icon: "􀙇"; highlightState: rightHi; onClicked: {} }
+                                IconButton { icon: "􀊫"; highlightState: rightHi; onClicked: {} }
+                                IconButton { icon: "􀉭"; highlightState: rightHi; onClicked: {} }
+                                IconButton { icon: "􀜊"; highlightState: rightHi; onClicked: {} }
+
+                                TimeDisplay { height: parent.height; highlightState: rightHi }
+                            }
                         }
                     }
                 }

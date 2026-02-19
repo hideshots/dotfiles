@@ -5,21 +5,13 @@ Rectangle {
     id: root
 
     property string icon: ""
+    property var highlightState: null
     signal clicked()
 
     height: parent.height
     width: iconText.width + (Theme.itemPadding * 2)
-    color: mouseArea.containsMouse
-        ? Qt.rgba(255, 255, 255, 0.1)
-        : (mouseArea.pressed ? Qt.rgba(255, 255, 255, 0.05) : "transparent")
+    color: "transparent"
     radius: Theme.borderRadius
-
-    Behavior on color {
-        ColorAnimation {
-            duration: Theme.animationDuration
-            easing.type: Theme.animationEasing
-        }
-    }
 
     Text {
         id: iconText

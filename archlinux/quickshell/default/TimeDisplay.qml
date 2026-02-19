@@ -4,20 +4,12 @@ import Quickshell
 
 Rectangle {
     id: root
+    property var highlightState: null
 
     height: parent.height
     width: timeText.width + (Theme.itemPadding * 2)
-    color: timeMouseArea.containsMouse
-        ? Qt.rgba(255, 255, 255, 0.1)
-        : (timeMouseArea.pressed ? Qt.rgba(255, 255, 255, 0.05) : "transparent")
+    color: "transparent"
     radius: Theme.borderRadius
-
-    Behavior on color {
-        ColorAnimation {
-            duration: Theme.animationDuration
-            easing.type: Theme.animationEasing
-        }
-    }
 
     SystemClock {
         id: clock
