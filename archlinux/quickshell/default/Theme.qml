@@ -34,6 +34,9 @@ QtObject {
     readonly property int animationDuration: 90
     readonly property int animationEasing: Easing.OutCubic
 
+    // Workspace window display mode: "classic" | "macos"
+    property string workspaceWindowsMode: "macos"
+
     // Spacing and sizing
     readonly property int itemPadding: 11
     readonly property int itemVerticalPadding: 4
