@@ -31,14 +31,14 @@ QtObject {
     readonly property real activeOpacity: 0.6
 
     // Animation settings
-    readonly property int animationDuration: 90
+    readonly property int animationDuration: 0
     readonly property int animationEasing: Easing.OutCubic
 
     // Workspace window display mode: "classic" | "macos"
     property string workspaceWindowsMode: "macos"
 
     // Spacing and sizing
-    readonly property int itemPadding: 11
+    readonly property int itemPadding: 10
     readonly property int itemVerticalPadding: 4
     readonly property int borderRadius: 99
 

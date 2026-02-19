@@ -244,9 +244,9 @@ Item {
                                 spacing: 0
                                 height: parent.height
 
-                                IconButton { icon: "􀙇"; highlightState: rightHi; onClicked: {} }
-                                IconButton { icon: "􀊫"; highlightState: rightHi; onClicked: {} }
-                                IconButton { icon: "􀉭"; highlightState: rightHi; onClicked: {} }
+                                // IconButton { icon: "􀙇"; highlightState: rightHi; onClicked: {} }
+                                // IconButton { icon: "􀊫"; highlightState: rightHi; onClicked: {} }
+                                // IconButton { icon: "􀉭"; highlightState: rightHi; onClicked: {} }
                                 IconButton { icon: "􀜊"; highlightState: rightHi; onClicked: {} }
 
                                 TimeDisplay { height: parent.height; highlightState: rightHi }
