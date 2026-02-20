@@ -1,2 +1,3 @@
 module widgets
 WeatherWidget 1.0 weather/WeatherWidget.qml
+CalendarWidget 1.0 calendar/CalendarWidget.qml

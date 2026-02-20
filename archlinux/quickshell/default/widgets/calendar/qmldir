@@ -1,0 +1,2 @@
+module widgets.calendar
+CalendarWidget 1.0 CalendarWidget.qml

@@ -11,6 +11,10 @@ ShellRoot {
     id: shell
     // Notifications { }
     property bool weatherEnabled: true
+    property bool calendarEnabled: true
+    property int weatherPanelTopMargin: 50
+    property int weatherPanelLeftMargin: 10
+    property int calendarPanelGap: 10
     property string weatherLocation: "Krasnodar"
     property string weatherDisplayLocation: "Richmond"
     property string weatherUnits: "u"
@@ -22,8 +26,8 @@ ShellRoot {
 
         anchors.top: true
         anchors.left: true
-        margins.top: 50
-        margins.left: 10
+        margins.top: shell.weatherPanelTopMargin
+        margins.left: shell.weatherPanelLeftMargin
         exclusionMode: ExclusionMode.Ignore
 
         color: "transparent"
@@ -81,6 +85,38 @@ ShellRoot {
                     action: function() { shell.weatherVariant = "medium"; }
                 }
             ]
+        }
+    }
+
+    PanelWindow {
+        id: calendarPanel
+        visible: shell.weatherEnabled && shell.calendarEnabled
+
+        anchors.top: true
+        anchors.left: true
+        margins.top: shell.weatherPanelTopMargin + weatherWidget.implicitHeight + shell.calendarPanelGap
+        margins.left: shell.weatherPanelLeftMargin
+        exclusionMode: ExclusionMode.Ignore
+
+        color: "transparent"
+        surfaceFormat.opaque: false
+        focusable: false
+        WlrLayershell.layer: WlrLayer.Background
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+        WlrLayershell.namespace: "quickshell:calendar"
+        HyprlandWindow.visibleMask: calendarMask
+
+        implicitWidth: calendarWidget.implicitWidth
+        implicitHeight: calendarWidget.implicitHeight
+
+        Region {
+            id: calendarMask
+            item: calendarWidget
+        }
+
+        Widgets.CalendarWidget {
+            id: calendarWidget
+            anchors.fill: parent
         }
     }
 
@@ -151,7 +187,6 @@ Item {
         property bool pressed: false
     }
 
-    // The macOS-like hover/pulse background ("pill")
     Rectangle {
         id: leftPill
         z: 0
