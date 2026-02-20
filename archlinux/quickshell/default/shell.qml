@@ -4,7 +4,7 @@ import Quickshell.Wayland
 import QtQuick
 import Qt5Compat.GraphicalEffects
 
-import "menu"
+import "menu" as Menu
 import "widgets" as Widgets
 
 ShellRoot {
@@ -49,9 +49,38 @@ ShellRoot {
             displayLocation: shell.weatherDisplayLocation
             units: shell.weatherUnits
             variant: shell.weatherVariant
-            onVariantSelected: function(value) {
-                shell.weatherVariant = value;
+            onRequestContextMenu: function(x, y) {
+                weatherSizeMenu.anchorPointX = x + 4;
+                weatherSizeMenu.anchorPointY = y + 8;
+                weatherSizeMenu.anchor.updateAnchor();
+                if (weatherSizeMenu.visible) {
+                    weatherSizeMenu.close();
+                }
+                weatherSizeMenu.open();
             }
+        }
+
+        Menu.MenuPopup {
+            id: weatherSizeMenu
+            anchorItem: weatherWidget
+            yOffset: 8
+            adaptiveWidth: true
+            model: [
+                {
+                    type: "action",
+                    label: "Small",
+                    reserveCheckmark: true,
+                    checked: shell.weatherVariant === "small",
+                    action: function() { shell.weatherVariant = "small"; }
+                },
+                {
+                    type: "action",
+                    label: "Medium",
+                    reserveCheckmark: true,
+                    checked: shell.weatherVariant === "medium",
+                    action: function() { shell.weatherVariant = "medium"; }
+                }
+            ]
         }
     }
 
@@ -203,7 +232,7 @@ Item {
 }
 
                         // Logo Menu - positioned as a popup window
-                        MenuPopup {
+                        Menu.MenuPopup {
                             id: logoMenu
                             anchorItem: logoRect
                             yOffset: 8

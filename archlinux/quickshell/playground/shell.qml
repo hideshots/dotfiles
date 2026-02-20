@@ -4,7 +4,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Wayland
-import "widgets" as Widgets
+import widgets as Widgets
 
 ShellRoot {
     id: shell

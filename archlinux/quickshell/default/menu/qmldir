@@ -1,5 +1,5 @@
 module menu
-Menu 1.0 Menu.qml
+singleton Theme 1.0 ../Theme.qml
 MenuItem 1.0 MenuItem.qml
 MenuSeparator 1.0 MenuSeparator.qml
 MenuHeader 1.0 MenuHeader.qml

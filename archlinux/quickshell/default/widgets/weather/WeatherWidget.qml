@@ -2,15 +2,12 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import Quickshell.Widgets
-import "." as Weather
-import "services" as Services
-import "../../menu" as Menu
 
 Rectangle {
     id: root
 
-    implicitWidth: isMedium ? 338 : 164
-    implicitHeight: isMedium ? 158 : 164
+    implicitWidth: isMedium ? 344 : 164
+    implicitHeight: isMedium ? 164 : 164
     radius: 22
     clip: false
 
@@ -18,6 +15,7 @@ Rectangle {
     property string displayLocation: ""
     property string units: "m"
     property string variant: "small"
+    signal requestContextMenu(real x, real y)
     signal variantSelected(string value)
     property alias service: weatherService
     property real materialOpacity: 1.0
@@ -38,7 +36,7 @@ Rectangle {
 
     color: "transparent"
 
-    Services.WttrService {
+    WttrService {
         id: weatherService
         location: root.location
         units: root.units
@@ -79,7 +77,7 @@ Rectangle {
             }
         }
 
-        Weather.EdgeRimEffect {
+        EdgeRimEffect {
             anchors.fill: parent
             radius: root.radius
             rimWidthPx: root.rimWidthPx
@@ -131,13 +129,7 @@ Rectangle {
             acceptedButtons: Qt.LeftButton | Qt.RightButton
             onPressed: function(mouse) {
                 if (mouse.button === Qt.RightButton) {
-                    sizeMenu.anchorPointX = mouse.x + 4;
-                    sizeMenu.anchorPointY = mouse.y + 8;
-                    sizeMenu.anchor.updateAnchor();
-                    if (sizeMenu.visible) {
-                        sizeMenu.close();
-                    }
-                    sizeMenu.open();
+                    root.requestContextMenu(mouse.x, mouse.y);
                 }
             }
             onClicked: function(mouse) {
@@ -146,29 +138,6 @@ Rectangle {
                     return;
                 }
             }
-        }
-
-        Menu.MenuPopup {
-            id: sizeMenu
-            anchorItem: root
-            yOffset: 8
-            adaptiveWidth: true
-            model: [
-                {
-                    type: "action",
-                    label: "Small",
-                    reserveCheckmark: true,
-                    checked: root.variant === "small",
-                    action: function() { root.variantSelected("small"); }
-                },
-                {
-                    type: "action",
-                    label: "Medium",
-                    reserveCheckmark: true,
-                    checked: root.variant === "medium",
-                    action: function() { root.variantSelected("medium"); }
-                }
-            ]
         }
 
         Column {
@@ -191,10 +160,11 @@ Rectangle {
                             ? root.displayLocation
                             : weatherService.data.city
                         color: "#FFFFFF"
+                        opacity: 0.75
                         elide: Text.ElideRight
                         width: 100
                         font.family: "SF Pro Text"
-                        font.weight: Font.Bold
+                        font.weight: Font.ExtraBold
                         font.pixelSize: 14
                     }
 
@@ -218,6 +188,7 @@ Rectangle {
                         ? "—"
                         : weatherService.data.temp + "°"
                     color: "#FFFFFF"
+                    opacity: 0.75
                     font.family: "SF Pro Display"
                     font.pixelSize: 42
                     font.weight: Font.Normal
@@ -233,6 +204,7 @@ Rectangle {
                     height: 19
                     text: weatherService.data.symbol
                     color: "#FFFFFF"
+                    opacity: 0.75
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                     font.family: "SF Pro"
@@ -243,6 +215,7 @@ Rectangle {
                 Text {
                     text: weatherService.data.condition
                     color: "#FFFFFF"
+                    opacity: 0.75
                     font.family: "SF Pro Text"
                     font.pixelSize: 13
                     font.weight: Font.Bold
@@ -257,7 +230,8 @@ Rectangle {
 
                 Text {
                     text: "H:" + weatherService.data.high + "° L:" + weatherService.data.low + "°"
-                    color: "#D9D9D9"
+                    color: "#FFFFFF"
+                    opacity: 0.75
                     font.family: "SF Pro Text"
                     font.pixelSize: 13
                     font.weight: Font.Bold
@@ -270,7 +244,7 @@ Rectangle {
             visible: root.isMedium
             anchors.fill: parent
             anchors.margins: 16
-            spacing: 16
+            spacing: 4
 
             Row {
                 width: parent.width
@@ -288,10 +262,11 @@ Rectangle {
                                 ? root.displayLocation
                                 : weatherService.data.city
                             color: "#FFFFFF"
+                            opacity: 0.75
                             elide: Text.ElideRight
                             width: 112
                             font.family: "SF Pro Text"
-                            font.weight: Font.Bold
+                            font.weight: Font.ExtraBold
                             font.pixelSize: 14
                         }
 
@@ -310,6 +285,7 @@ Rectangle {
                             ? "—"
                             : weatherService.data.temp + "°"
                         color: "#FFFFFF"
+                        opacity: 0.75
                         font.family: "SF Pro Display"
                         font.pixelSize: 42
                         font.weight: Font.Normal
@@ -319,11 +295,12 @@ Rectangle {
 
                 Column {
                     width: parent.width - 168
-                    spacing: 2
+                    spacing: 0
 
                     Text {
                         text: weatherService.data.symbol
                         color: "#FFFFFF"
+                        opacity: 0.75
                         horizontalAlignment: Text.AlignRight
                         width: parent.width
                         font.family: "SF Pro"
@@ -331,9 +308,15 @@ Rectangle {
                         font.weight: Font.Normal
                     }
 
+                Item {
+                    width: 2
+                    height: 4
+                }
+
                     Text {
                         text: weatherService.data.condition
                         color: "#FFFFFF"
+                        opacity: 0.75
                         font.family: "SF Pro Text"
                         font.pixelSize: 13
                         font.weight: Font.Bold
@@ -344,7 +327,8 @@ Rectangle {
 
                     Text {
                         text: "H:" + weatherService.data.high + "° L:" + weatherService.data.low + "°"
-                        color: "#D9D9D9"
+                        color: "#FFFFFF"
+                        opacity: 0.75
                         font.family: "SF Pro Text"
                         font.pixelSize: 13
                         font.weight: Font.Bold
@@ -357,7 +341,8 @@ Rectangle {
             Row {
                 id: hourlyRow
                 width: parent.width
-                spacing: 0
+                x: -8
+                spacing: 4
 
                 Repeater {
                     model: 6
@@ -378,10 +363,11 @@ Rectangle {
 
                         Text {
                             text: parent.hourlyEntry.timeLabel || "—"
-                            color: "#AEB4BB"
+                            color: "#FFFFFF"
+                            opacity: 0.6
                             font.family: "SF Pro Text"
-                            font.pixelSize: 10
-                            font.weight: Font.Medium
+                            font.pixelSize: 11
+                            font.weight: Font.Bold
                             horizontalAlignment: Text.AlignHCenter
                             width: parent.width
                         }
@@ -389,8 +375,9 @@ Rectangle {
                         Text {
                             text: parent.hourlyEntry.symbol || "—"
                             color: "#FFFFFF"
+                            opacity: 0.75
                             font.family: "SF Pro"
-                            font.pixelSize: 14
+                            font.pixelSize: 18
                             horizontalAlignment: Text.AlignHCenter
                             width: parent.width
                         }
@@ -398,6 +385,7 @@ Rectangle {
                         Text {
                             text: parent.hourlyEntry.temp === "—" ? "—" : parent.hourlyEntry.temp + "°"
                             color: "#FFFFFF"
+                            opacity: 0.75
                             font.family: "SF Pro Text"
                             font.pixelSize: 12
                             font.weight: Font.Bold

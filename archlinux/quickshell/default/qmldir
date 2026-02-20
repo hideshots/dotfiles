@@ -2,4 +2,3 @@ singleton Theme 1.0 Theme.qml
 WorkspaceWindows 1.0 WorkspaceWindows.qml
 IconButton 1.0 IconButton.qml
 TimeDisplay 1.0 TimeDisplay.qml
-

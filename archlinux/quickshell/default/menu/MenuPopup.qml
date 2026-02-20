@@ -2,7 +2,6 @@ import Quickshell
 import Quickshell.Hyprland
 import QtQuick
 import Qt5Compat.GraphicalEffects
-import ".."
 
 PopupWindow {
     id: root

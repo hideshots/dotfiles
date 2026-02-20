@@ -1,0 +1,4 @@
+module widgets.weather
+WeatherWidget 1.0 WeatherWidget.qml
+EdgeRimEffect 1.0 EdgeRimEffect.qml
+WttrService 1.0 services/WttrService.qml

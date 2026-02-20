@@ -2,13 +2,12 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import Quickshell.Widgets
-import services as Services
 
 Rectangle {
     id: root
 
-    implicitWidth: isMedium ? 338 : 164
-    implicitHeight: isMedium ? 158 : 164
+    implicitWidth: isMedium ? 344 : 164
+    implicitHeight: isMedium ? 164 : 164
     radius: 22
     clip: false
 
@@ -16,6 +15,8 @@ Rectangle {
     property string displayLocation: ""
     property string units: "m"
     property string variant: "small"
+    signal requestContextMenu(real x, real y)
+    signal variantSelected(string value)
     property alias service: weatherService
     property real materialOpacity: 1.0
     property real glassTintOpacity: 0.55
@@ -35,7 +36,7 @@ Rectangle {
 
     color: "transparent"
 
-    Services.WttrService {
+    WttrService {
         id: weatherService
         location: root.location
         units: root.units
@@ -123,8 +124,20 @@ Rectangle {
         }
 
         MouseArea {
+            id: mouseArea
             anchors.fill: parent
-            onClicked: weatherService.refresh()
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
+            onPressed: function(mouse) {
+                if (mouse.button === Qt.RightButton) {
+                    root.requestContextMenu(mouse.x, mouse.y);
+                }
+            }
+            onClicked: function(mouse) {
+                if (mouse.button === Qt.LeftButton) {
+                    weatherService.refresh();
+                    return;
+                }
+            }
         }
 
         Column {
@@ -150,7 +163,7 @@ Rectangle {
                         elide: Text.ElideRight
                         width: 100
                         font.family: "SF Pro Text"
-                        font.weight: Font.Bold
+                        font.weight: Font.ExtraBold
                         font.pixelSize: 14
                     }
 
@@ -226,7 +239,7 @@ Rectangle {
             visible: root.isMedium
             anchors.fill: parent
             anchors.margins: 16
-            spacing: 16
+            spacing: 4
 
             Row {
                 width: parent.width
@@ -247,7 +260,7 @@ Rectangle {
                             elide: Text.ElideRight
                             width: 112
                             font.family: "SF Pro Text"
-                            font.weight: Font.Bold
+                            font.weight: Font.ExtraBold
                             font.pixelSize: 14
                         }
 
@@ -275,7 +288,7 @@ Rectangle {
 
                 Column {
                     width: parent.width - 168
-                    spacing: 2
+                    spacing: 0
 
                     Text {
                         text: weatherService.data.symbol
@@ -286,6 +299,11 @@ Rectangle {
                         font.pixelSize: 16
                         font.weight: Font.Normal
                     }
+
+                Item {
+                    width: 2
+                    height: 4
+                }
 
                     Text {
                         text: weatherService.data.condition
@@ -300,7 +318,7 @@ Rectangle {
 
                     Text {
                         text: "H:" + weatherService.data.high + "° L:" + weatherService.data.low + "°"
-                        color: "#D9D9D9"
+                        color: "#FFFFFF"
                         font.family: "SF Pro Text"
                         font.pixelSize: 13
                         font.weight: Font.Bold
@@ -313,7 +331,8 @@ Rectangle {
             Row {
                 id: hourlyRow
                 width: parent.width
-                spacing: 0
+                x: -8
+                spacing: 4
 
                 Repeater {
                     model: 6
@@ -322,7 +341,7 @@ Rectangle {
                         required property int index
 
                         width: root.isMedium ? (mediumContent.width / 6) : 0
-                        spacing: 4
+                        spacing: 6
 
                         readonly property var hourlyEntry: {
                             const hourly = root.service.data.hourly;
@@ -334,10 +353,11 @@ Rectangle {
 
                         Text {
                             text: parent.hourlyEntry.timeLabel || "—"
-                            color: "#AEB4BB"
+                            color: "#FFFFFF"
+                            opacity: 0.6
                             font.family: "SF Pro Text"
-                            font.pixelSize: 10
-                            font.weight: Font.Medium
+                            font.pixelSize: 11
+                            font.weight: Font.Bold
                             horizontalAlignment: Text.AlignHCenter
                             width: parent.width
                         }
@@ -345,8 +365,9 @@ Rectangle {
                         Text {
                             text: parent.hourlyEntry.symbol || "—"
                             color: "#FFFFFF"
+                            opacity: 0.8
                             font.family: "SF Pro"
-                            font.pixelSize: 14
+                            font.pixelSize: 18
                             horizontalAlignment: Text.AlignHCenter
                             width: parent.width
                         }
@@ -354,6 +375,7 @@ Rectangle {
                         Text {
                             text: parent.hourlyEntry.temp === "—" ? "—" : parent.hourlyEntry.temp + "°"
                             color: "#FFFFFF"
+                            opacity: 0.85
                             font.family: "SF Pro Text"
                             font.pixelSize: 12
                             font.weight: Font.Bold
