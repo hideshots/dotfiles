@@ -49,7 +49,8 @@ QtObject {
         condition: "—",
         high: "—",
         low: "—",
-        symbol: symbolByKey.cloudy_night
+        symbol: symbolByKey.cloudy_night,
+        hourly: []
     })
     property double lastUpdated: 0
 
@@ -110,7 +111,8 @@ QtObject {
             condition: "—",
             high: "—",
             low: "—",
-            symbol: symbolByKey.cloudy_night
+            symbol: symbolByKey.cloudy_night,
+            hourly: []
         };
     }
 
@@ -147,6 +149,43 @@ QtObject {
         }
 
         return hour;
+    }
+
+    function _hourFromWttrTime(value) {
+        if (value === undefined || value === null) {
+            return -1;
+        }
+
+        const raw = String(value).trim();
+        if (raw.length === 0) {
+            return -1;
+        }
+
+        const numeric = parseInt(raw, 10);
+        if (isNaN(numeric)) {
+            return -1;
+        }
+
+        const hour = Math.floor(numeric / 100);
+        if (hour < 0 || hour > 23) {
+            return -1;
+        }
+
+        return hour;
+    }
+
+    function _toAmPmLabel(hour24) {
+        if (hour24 < 0 || hour24 > 23) {
+            return "—";
+        }
+
+        const suffix = hour24 >= 12 ? "PM" : "AM";
+        const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12;
+        return hour12 + suffix;
+    }
+
+    function _isDaytimeHour(hour24) {
+        return hour24 >= 6 && hour24 < 18;
     }
 
     function _isDaytime(current) {
@@ -215,6 +254,51 @@ QtObject {
         return symbolByKey[key] || symbolByKey.cloudy_night;
     }
 
+    function _resolveHourlySymbol(hourlyEntry, conditionRaw, hour24) {
+        const category = _weatherCategory(hourlyEntry.weatherCode, conditionRaw);
+        const suffix = _isDaytimeHour(hour24) ? "day" : "night";
+        const key = category + "_" + suffix;
+        return symbolByKey[key] || symbolByKey.cloudy_night;
+    }
+
+    function _parseHourlyForecast(today) {
+        const hourlyArray = today.hourly;
+        if (!Array.isArray(hourlyArray) || hourlyArray.length === 0) {
+            return [];
+        }
+
+        const nowHour = (new Date()).getHours();
+        let startIndex = 0;
+
+        for (let i = 0; i < hourlyArray.length; i++) {
+            const hour = _hourFromWttrTime(hourlyArray[i].time);
+            if (hour >= nowHour) {
+                startIndex = i;
+                break;
+            }
+            if (i === hourlyArray.length - 1) {
+                startIndex = 0;
+            }
+        }
+
+        const output = [];
+        for (let j = 0; j < 6; j++) {
+            const idx = (startIndex + j) % hourlyArray.length;
+            const entry = hourlyArray[idx] || {};
+            const hour24 = _hourFromWttrTime(entry.time);
+            const conditionRaw = _safeGet(entry, ["weatherDesc", 0, "value"]);
+            const tempRaw = normalizedUnits === "u" ? entry.tempF : entry.tempC;
+
+            output.push({
+                timeLabel: _toAmPmLabel(hour24),
+                temp: _safeValue(tempRaw),
+                symbol: _resolveHourlySymbol(entry, conditionRaw, hour24 >= 0 ? hour24 : 12)
+            });
+        }
+
+        return output;
+    }
+
     function _parseWeatherPayload(payloadText) {
         const parsed = JSON.parse(payloadText);
 
@@ -231,6 +315,7 @@ QtObject {
         const lowRaw = normalizedUnits === "u" ? today.mintempF : today.mintempC;
         const conditionRaw = _safeGet(current, ["weatherDesc", 0, "value"]);
         const symbol = _resolveSymbol(current, conditionRaw);
+        const hourly = _parseHourlyForecast(today);
 
         return {
             city: _safeValue(city),
@@ -238,7 +323,8 @@ QtObject {
             condition: _safeValue(conditionRaw),
             high: _safeValue(highRaw),
             low: _safeValue(lowRaw),
-            symbol: symbol
+            symbol: symbol,
+            hourly: hourly
         };
     }
 
@@ -253,6 +339,7 @@ QtObject {
             high: nextData.high,
             low: nextData.low,
             symbol: nextData.symbol,
+            hourly: nextData.hourly,
             lastUpdated: lastUpdated
         }));
     }
@@ -281,7 +368,8 @@ QtObject {
                     condition: _safeValue(cached.condition),
                     high: _safeValue(cached.high),
                     low: _safeValue(cached.low),
-                    symbol: cached.symbol ? String(cached.symbol) : symbolByKey.cloudy_night
+                    symbol: cached.symbol ? String(cached.symbol) : symbolByKey.cloudy_night,
+                    hourly: Array.isArray(cached.hourly) ? cached.hourly : []
                 };
                 data = _lastGoodData;
                 if (typeof cached.lastUpdated === "number") {

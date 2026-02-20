@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import Quickshell.Widgets
 import "../services" as Services
@@ -5,14 +7,15 @@ import "../services" as Services
 Rectangle {
     id: root
 
-    implicitWidth: 164
-    implicitHeight: 164
+    implicitWidth: isMedium ? 338 : 164
+    implicitHeight: isMedium ? 158 : 164
     radius: 22
     clip: false
 
     property string location: ""
     property string displayLocation: ""
     property string units: "m"
+    property string variant: "small"
     property alias service: weatherService
     property real materialOpacity: 1.0
     property real glassTintOpacity: 0.55
@@ -28,6 +31,7 @@ Rectangle {
     property real noiseOpacity: 0.015
     property real shadowNearOpacity: 0.12
     property real shadowFarOpacity: 0.06
+    readonly property bool isMedium: variant === "medium"
 
     color: "transparent"
 
@@ -90,7 +94,7 @@ Rectangle {
             radius: Math.max(root.radius - 1, 0)
             color: "transparent"
             border.width: 1
-            border.color: Qt.rgba(1, 1, 1, 0.09 * root.materialOpacity)
+            border.color: Qt.rgba(1, 1, 1, root.innerStrokeOpacity * root.materialOpacity)
         }
 
         Canvas {
@@ -124,7 +128,8 @@ Rectangle {
         }
 
         Column {
-            id: contentColumn
+            id: smallContent
+            visible: !root.isMedium
             anchors.top: parent.top
             anchors.left: parent.left
             anchors.right: parent.right
@@ -216,12 +221,148 @@ Rectangle {
             }
         }
 
-        Item {
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.bottom: parent.bottom
-            anchors.bottomMargin: 10
-            width: 58
-            height: 14
+        Column {
+            id: mediumContent
+            visible: root.isMedium
+            anchors.fill: parent
+            anchors.margins: 16
+            spacing: 16
+
+            Row {
+                width: parent.width
+                spacing: 12
+
+                Column {
+                    width: 156
+                    spacing: -2
+
+                    Row {
+                        spacing: 4
+
+                        Text {
+                            text: root.displayLocation.trim().length > 0
+                                ? root.displayLocation
+                                : weatherService.data.city
+                            color: "#FFFFFF"
+                            elide: Text.ElideRight
+                            width: 112
+                            font.family: "SF Pro Text"
+                            font.weight: Font.Bold
+                            font.pixelSize: 14
+                        }
+
+                        Text {
+                            visible: weatherService.offline
+                            text: "Offline"
+                            color: "#D8A5A5"
+                            font.family: "SF Pro Text"
+                            font.pixelSize: 9
+                            font.weight: Font.Bold
+                        }
+                    }
+
+                    Text {
+                        text: weatherService.data.temp === "—"
+                            ? "—"
+                            : weatherService.data.temp + "°"
+                        color: "#FFFFFF"
+                        font.family: "SF Pro Display"
+                        font.pixelSize: 42
+                        font.weight: Font.Normal
+                        lineHeight: 0.9
+                    }
+                }
+
+                Column {
+                    width: parent.width - 168
+                    spacing: 2
+
+                    Text {
+                        text: weatherService.data.symbol
+                        color: "#FFFFFF"
+                        horizontalAlignment: Text.AlignRight
+                        width: parent.width
+                        font.family: "SF Pro"
+                        font.pixelSize: 16
+                        font.weight: Font.Normal
+                    }
+
+                    Text {
+                        text: weatherService.data.condition
+                        color: "#FFFFFF"
+                        font.family: "SF Pro Text"
+                        font.pixelSize: 13
+                        font.weight: Font.Bold
+                        elide: Text.ElideRight
+                        horizontalAlignment: Text.AlignRight
+                        width: parent.width
+                    }
+
+                    Text {
+                        text: "H:" + weatherService.data.high + "° L:" + weatherService.data.low + "°"
+                        color: "#D9D9D9"
+                        font.family: "SF Pro Text"
+                        font.pixelSize: 13
+                        font.weight: Font.Bold
+                        horizontalAlignment: Text.AlignRight
+                        width: parent.width
+                    }
+                }
+            }
+
+            Row {
+                id: hourlyRow
+                width: parent.width
+                spacing: 0
+
+                Repeater {
+                    model: 6
+
+                    Column {
+                        required property int index
+
+                        width: root.isMedium ? (mediumContent.width / 6) : 0
+                        spacing: 4
+
+                        readonly property var hourlyEntry: {
+                            const hourly = root.service.data.hourly;
+                            if (!Array.isArray(hourly) || index >= hourly.length) {
+                                return { timeLabel: "—", symbol: "—", temp: "—" };
+                            }
+                            return hourly[index];
+                        }
+
+                        Text {
+                            text: parent.hourlyEntry.timeLabel || "—"
+                            color: "#AEB4BB"
+                            font.family: "SF Pro Text"
+                            font.pixelSize: 10
+                            font.weight: Font.Medium
+                            horizontalAlignment: Text.AlignHCenter
+                            width: parent.width
+                        }
+
+                        Text {
+                            text: parent.hourlyEntry.symbol || "—"
+                            color: "#FFFFFF"
+                            font.family: "SF Pro"
+                            font.pixelSize: 14
+                            horizontalAlignment: Text.AlignHCenter
+                            width: parent.width
+                        }
+
+                        Text {
+                            text: parent.hourlyEntry.temp === "—" ? "—" : parent.hourlyEntry.temp + "°"
+                            color: "#FFFFFF"
+                            font.family: "SF Pro Text"
+                            font.pixelSize: 12
+                            font.weight: Font.Bold
+                            horizontalAlignment: Text.AlignHCenter
+                            width: parent.width
+                        }
+                    }
+                }
+            }
         }
     }
 }

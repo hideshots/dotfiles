@@ -12,6 +12,7 @@ ShellRoot {
     property string weatherLocation: "Krasnodar"
     property string weatherDisplayLocation: "Richmond"
     property string weatherUnits: "u"
+    property string weatherVariant: "small"
 
     PanelWindow {
         id: weatherPanel
@@ -44,6 +45,7 @@ ShellRoot {
             location: shell.weatherLocation
             displayLocation: shell.weatherDisplayLocation
             units: shell.weatherUnits
+            variant: shell.weatherVariant
         }
     }
 }
