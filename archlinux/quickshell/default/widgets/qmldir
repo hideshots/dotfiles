@@ -1,0 +1,2 @@
+module widgets
+WeatherWidget 1.0 weather/WeatherWidget.qml
