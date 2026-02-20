@@ -22,7 +22,6 @@ Rectangle {
 
     property color calendarBackground: Qt.rgba(20 / 255, 20 / 255, 20 / 255, 0.55)
     property color accentColor: Qt.rgba(1.0, 1.0, 1.0, 0.75)
-    property color todayTextColor: Qt.rgba(0, 0, 0, 1.0)
     property color weekendColor: Qt.rgba(1.0, 1.0, 1.0, 0.50)
     property color dateColor: Qt.rgba(1.0, 1.0, 1.0, 0.75)
 
@@ -98,6 +97,15 @@ Rectangle {
 
     function refreshCells() {
         cells = buildCells(shownYear, shownMonth);
+    }
+
+    function colorToRgbaString(value, opacityScale) {
+        const alpha = Math.max(0, Math.min(1, value.a * opacityScale));
+        return "rgba("
+            + Math.round(value.r * 255) + ","
+            + Math.round(value.g * 255) + ","
+            + Math.round(value.b * 255) + ","
+            + alpha + ")";
     }
 
     Timer {
@@ -326,20 +334,38 @@ Rectangle {
                         width: root.cellSize
                         height: root.cellSize
 
-                        Rectangle {
+                        Canvas {
                             anchors.fill: parent
-                            radius: 9
-                            color: root.accentColor
                             visible: dayCell.modelData.isToday
+                            smooth: true
+                            antialiasing: true
+                            onPaint: {
+                                const ctx = getContext("2d");
+                                ctx.clearRect(0, 0, width, height);
+
+                                ctx.fillStyle = root.colorToRgbaString(root.accentColor, root.materialOpacity);
+                                ctx.beginPath();
+                                ctx.arc(width * 0.5, height * 0.5, Math.min(width, height) * 0.5, 0, Math.PI * 2);
+                                ctx.fill();
+
+                                ctx.globalCompositeOperation = "destination-out";
+                                ctx.fillStyle = "rgba(0,0,0,1)";
+                                ctx.textAlign = "center";
+                                ctx.textBaseline = "middle";
+                                ctx.font = "800 10px 'SF Pro Text'";
+                                ctx.fillText(String(dayCell.modelData.day), width * 0.5, height * 0.5 + 0.5);
+                            }
+                            onWidthChanged: requestPaint()
+                            onHeightChanged: requestPaint()
+                            onVisibleChanged: requestPaint()
+                            Component.onCompleted: requestPaint()
                         }
 
                         Text {
                             anchors.centerIn: parent
                             text: dayCell.modelData.inMonth ? String(dayCell.modelData.day) : ""
-                            visible: dayCell.modelData.inMonth
-                            color: dayCell.modelData.isToday
-                                ? root.todayTextColor
-                                : ((dayCell.col === 0 || dayCell.col === 6) ? root.weekendColor : root.dateColor)
+                            visible: dayCell.modelData.inMonth && !dayCell.modelData.isToday
+                            color: (dayCell.col === 0 || dayCell.col === 6) ? root.weekendColor : root.dateColor
                             font.family: "SF Pro Text"
                             font.weight: Font.ExtraBold
                             font.pixelSize: 10
