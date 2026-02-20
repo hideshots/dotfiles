@@ -10,7 +10,7 @@ ShellRoot {
     id: shell
 
     property string weatherLocation: "Krasnodar"
-    property string weatherDisplayLocation: "Los Angeles"
+    property string weatherDisplayLocation: "Richmond"
     property string weatherUnits: "u"
 
     PanelWindow {

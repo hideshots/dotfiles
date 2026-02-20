@@ -19,8 +19,11 @@ Rectangle {
     property real depthTopOpacity: 0.08
     property real depthBottomOpacity: 0
     property real innerStrokeOpacity: 0.11
-    property real edgeHighlightOpacity: 0.10
-    property real edgeShadeOpacity: 0.10
+    property real edgeHighlightOpacity: 0.14
+    property real edgeShadeOpacity: 0.11
+    property real rimWidthPx: 1.4
+    property real rimGlowWidthPx: 7.0
+    property real rimCornerBoost: 0.28
     property real noiseOpacity: 0.045
     property real shadowNearOpacity: 0.12
     property real shadowFarOpacity: 0.06
@@ -68,23 +71,15 @@ Rectangle {
             }
         }
 
-        Rectangle {
+        EdgeRimEffect {
             anchors.fill: parent
-            color: "transparent"
-            gradient: Gradient {
-                GradientStop {
-                    position: 0.0
-                    color: Qt.rgba(1, 1, 1, root.edgeHighlightOpacity * root.materialOpacity)
-                }
-                GradientStop {
-                    position: 0.45
-                    color: "transparent"
-                }
-                GradientStop {
-                    position: 1.0
-                    color: Qt.rgba(0, 0, 0, root.edgeShadeOpacity * root.materialOpacity)
-                }
-            }
+            radius: root.radius
+            rimWidthPx: root.rimWidthPx
+            glowWidthPx: root.rimGlowWidthPx
+            highlightOpacity: root.edgeHighlightOpacity * root.materialOpacity
+            shadeOpacity: root.edgeShadeOpacity * root.materialOpacity
+            cornerBoost: root.rimCornerBoost
+            enabled: root.materialOpacity > 0
         }
 
         Rectangle {
@@ -93,7 +88,7 @@ Rectangle {
             radius: Math.max(root.radius - 1, 0)
             color: "transparent"
             border.width: 1
-            border.color: Qt.rgba(1, 1, 1, root.innerStrokeOpacity * root.materialOpacity)
+            border.color: Qt.rgba(1, 1, 1, 0.09 * root.materialOpacity)
         }
 
         Canvas {
