@@ -14,6 +14,8 @@ layout(std140, binding = 0) uniform buf {
     float uShadeOpacity;
     float uCornerBoost;
     float uDpr;
+    float uMode;
+    float uDebug;
 };
 
 highp float sdRoundRect(highp vec2 p, highp vec2 halfSize, highp float r) {
@@ -36,10 +38,12 @@ void main() {
     highp float rimW = max(0.001, uRimWidthPx * uDpr);
     highp float glowW = max(rimW, uGlowWidthPx * uDpr);
 
-    highp float rimMask = smoothstep(rimW, 0.0, abs(sd)) * smoothstep(0.0, -rimW, sd);
-    highp float glowMask = smoothstep(glowW, 0.0, sd) * (1.0 - smoothstep(0.0, 1.0, -sd));
+    highp float inside = step(sd, 0.0);
+    highp float outside = 1.0 - inside;
+    highp float rimMask = inside * (1.0 - smoothstep(0.0, rimW, -sd));
+    highp float glowMask = outside * (1.0 - smoothstep(0.0, glowW, sd));
 
-    highp float eps = max(0.5, 0.5 * uDpr);
+    highp float eps = 1.0;
     highp float sdx1 = sdAt(p + vec2(eps, 0.0), halfSize, r);
     highp float sdx2 = sdAt(p - vec2(eps, 0.0), halfSize, r);
     highp float sdy1 = sdAt(p + vec2(0.0, eps), halfSize, r);
@@ -52,13 +56,20 @@ void main() {
     highp float corner = pow(1.0 - abs(dot(n, vec2(1.0, 0.0))), 2.0)
                       * pow(1.0 - abs(dot(n, vec2(0.0, 1.0))), 2.0);
 
+    if (uDebug > 0.5) {
+        fragColor = vec4(rimMask, glowMask, 0.0, 1.0) * qt_Opacity;
+        return;
+    }
+
     highp float highlight = rimMask * facing * uHighlightOpacity;
     highp float shade = rimMask * (1.0 - facing) * uShadeOpacity;
-    highlight += rimMask * corner * uCornerBoost * uHighlightOpacity;
-    highlight += glowMask * 0.25 * uHighlightOpacity;
+    highp float cornerHighlight = rimMask * corner * uCornerBoost * uHighlightOpacity;
 
-    highp float outA = clamp(highlight + shade, 0.0, 1.0);
-    highp vec3 outRgb = vec3(highlight);
-
-    fragColor = vec4(outRgb, outA) * qt_Opacity;
+    if (uMode < 0.5) {
+        highp float a = clamp(highlight + cornerHighlight + glowMask * 0.25 * uHighlightOpacity, 0.0, 1.0);
+        fragColor = vec4(vec3(a), a) * qt_Opacity;
+    } else {
+        highp float a = clamp(shade, 0.0, 1.0);
+        fragColor = vec4(vec3(0.0), a) * qt_Opacity;
+    }
 }

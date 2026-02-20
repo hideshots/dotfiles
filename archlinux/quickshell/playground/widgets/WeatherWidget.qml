@@ -15,16 +15,17 @@ Rectangle {
     property string units: "m"
     property alias service: weatherService
     property real materialOpacity: 1.0
-    property real glassTintOpacity: 0.35
-    property real depthTopOpacity: 0.08
-    property real depthBottomOpacity: 0
+    property real glassTintOpacity: 0.55
+    property real depthTopOpacity: 0.07
+    property real depthBottomOpacity: 0.1
     property real innerStrokeOpacity: 0.11
-    property real edgeHighlightOpacity: 0.14
-    property real edgeShadeOpacity: 0.11
-    property real rimWidthPx: 1.4
-    property real rimGlowWidthPx: 7.0
+    property real edgeHighlightOpacity: 0.6
+    property real edgeShadeOpacity: 0.10
+    property real rimWidthPx: 1.2
+    property real rimGlowWidthPx: 1.0
     property real rimCornerBoost: 0.28
-    property real noiseOpacity: 0.045
+    property bool rimDebug: false
+    property real noiseOpacity: 0.015
     property real shadowNearOpacity: 0.12
     property real shadowFarOpacity: 0.06
 
@@ -79,6 +80,7 @@ Rectangle {
             highlightOpacity: root.edgeHighlightOpacity * root.materialOpacity
             shadeOpacity: root.edgeShadeOpacity * root.materialOpacity
             cornerBoost: root.rimCornerBoost
+            debug: root.rimDebug
             enabled: root.materialOpacity > 0
         }
 
