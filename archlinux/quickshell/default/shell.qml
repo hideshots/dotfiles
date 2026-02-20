@@ -49,6 +49,9 @@ ShellRoot {
             displayLocation: shell.weatherDisplayLocation
             units: shell.weatherUnits
             variant: shell.weatherVariant
+            onVariantSelected: function(value) {
+                shell.weatherVariant = value;
+            }
         }
     }
 

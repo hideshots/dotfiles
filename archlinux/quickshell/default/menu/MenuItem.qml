@@ -17,6 +17,8 @@ Rectangle {
     property bool hasSubmenu: itemData.submenu !== undefined
     property bool isDisabled: itemData.disabled || false
     property bool isChecked: itemData.checked || false
+    property bool reserveCheckmark: itemData.reserveCheckmark || false
+    readonly property bool showCheckColumn: reserveCheckmark || isChecked
     property string icon: itemData.icon || ""
     property string label: itemData.label || ""
     property var shortcut: itemData.shortcut || []
@@ -57,9 +59,8 @@ Rectangle {
 
         // Checkmark area (for toggle items)
         Item {
-            width: 12
+            width: root.showCheckColumn ? 1 : 0
             height: parent.height
-            visible: root.isChecked
 
             Text {
                 anchors.centerIn: parent
@@ -70,6 +71,7 @@ Rectangle {
                     ? "#ffffff"
                     : (root.isDisabled ? Theme.menuTextDisabled : Theme.menuText)
                 renderType: Text.NativeRendering
+                visible: root.isChecked
             }
         }
 

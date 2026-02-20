@@ -10,6 +10,8 @@ PopupWindow {
     // Public API
     property var model: []
     property Item anchorItem: null
+    property real anchorPointX: NaN
+    property real anchorPointY: NaN
     property int yOffset: 6
     property string placement: "bottom" // bottom or right
     property bool adaptiveWidth: false
@@ -50,21 +52,21 @@ PopupWindow {
     implicitWidth: adaptiveWidth ? menuContent.implicitWidth + 24 : Theme.menuWidth
     implicitHeight: menuContent.height + 10
 
-    anchor.window: anchorItem ? anchorItem.QsWindow.window : null
+    anchor.item: anchorItem
+    anchor.rect.width: 1
+    anchor.rect.height: 1
     anchor.rect.x: {
         if (!anchorItem) return 0
-        var pos = anchorItem.mapToItem(null, 0, 0)
-        if (placement === "right") return pos.x + anchorItem.width + 4
-        return pos.x
+        if (!isNaN(anchorPointX) && !isNaN(anchorPointY)) return anchorPointX
+        if (placement === "right") return anchorItem.width + 4
+        return 0
     }
     anchor.rect.y: {
         if (!anchorItem) return 0
-        var pos = anchorItem.mapToItem(null, 0, 0)
-        if (placement === "right") return pos.y - 4
-        return pos.y + anchorItem.height + yOffset
+        if (!isNaN(anchorPointX) && !isNaN(anchorPointY)) return anchorPointY
+        if (placement === "right") return -4
+        return anchorItem.height + yOffset
     }
-    anchor.rect.width: anchorItem ? anchorItem.width : 0
-    anchor.rect.height: 0
 
     // Focus scope for keyboard handling
     FocusScope {

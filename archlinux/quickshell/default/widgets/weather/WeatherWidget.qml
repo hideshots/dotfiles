@@ -4,6 +4,7 @@ import QtQuick
 import Quickshell.Widgets
 import "." as Weather
 import "services" as Services
+import "../../menu" as Menu
 
 Rectangle {
     id: root
@@ -17,6 +18,7 @@ Rectangle {
     property string displayLocation: ""
     property string units: "m"
     property string variant: "small"
+    signal variantSelected(string value)
     property alias service: weatherService
     property real materialOpacity: 1.0
     property real glassTintOpacity: 0.55
@@ -124,8 +126,49 @@ Rectangle {
         }
 
         MouseArea {
+            id: mouseArea
             anchors.fill: parent
-            onClicked: weatherService.refresh()
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
+            onPressed: function(mouse) {
+                if (mouse.button === Qt.RightButton) {
+                    sizeMenu.anchorPointX = mouse.x + 4;
+                    sizeMenu.anchorPointY = mouse.y + 8;
+                    sizeMenu.anchor.updateAnchor();
+                    if (sizeMenu.visible) {
+                        sizeMenu.close();
+                    }
+                    sizeMenu.open();
+                }
+            }
+            onClicked: function(mouse) {
+                if (mouse.button === Qt.LeftButton) {
+                    weatherService.refresh();
+                    return;
+                }
+            }
+        }
+
+        Menu.MenuPopup {
+            id: sizeMenu
+            anchorItem: root
+            yOffset: 8
+            adaptiveWidth: true
+            model: [
+                {
+                    type: "action",
+                    label: "Small",
+                    reserveCheckmark: true,
+                    checked: root.variant === "small",
+                    action: function() { root.variantSelected("small"); }
+                },
+                {
+                    type: "action",
+                    label: "Medium",
+                    reserveCheckmark: true,
+                    checked: root.variant === "medium",
+                    action: function() { root.variantSelected("medium"); }
+                }
+            ]
         }
 
         Column {
@@ -323,7 +366,7 @@ Rectangle {
                         required property int index
 
                         width: root.isMedium ? (mediumContent.width / 6) : 0
-                        spacing: 4
+                        spacing: 6
 
                         readonly property var hourlyEntry: {
                             const hourly = root.service.data.hourly;
