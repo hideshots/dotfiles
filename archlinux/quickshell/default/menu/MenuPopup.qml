@@ -18,41 +18,62 @@ PopupWindow {
     // Signals
     signal itemClicked(var item, int index)
 
-    property PopupWindow topMenu: root
+    property var topMenu: root
     readonly property bool isTopMenu: topMenu === root
-    property int grabRev: 0
 
-    surfaceFormat.opaque: false
-    color: "transparent"
+    property bool debugGrabs: false
+    property bool mouseInThisMenu: menuHoverHandler.hovered
+    readonly property bool mouseInSubmenu: submenuTreeContainsMouse()
+    readonly property bool treeContainsMouse: mouseInThisMenu || mouseInSubmenu
 
-    function refreshGrab() { topMenu.grabRev++ }
+    property bool grabRequested: false
 
-    function chainWindows() {
-        var wins = [root]
-        if (submenuLoader.active && submenuLoader.item) {
-            wins = wins.concat(submenuLoader.item.chainWindows())
-        }
-        return wins
-    }
-
-    HyprlandFocusGrab {
-        id: focusGrab
-        active: root.isTopMenu && root.visible
-        windows: root.isTopMenu ? (root.topMenu.grabRev, root.topMenu.chainWindows()) : []
-        onCleared: root.topMenu.close()
-    }
+    property var pendingSubmenuModel: null
+    property Item pendingSubmenuAnchor: null
 
     // Internal state
     property int hoveredIndex: -1
     property int selectedIndex: -1
     property int activeSubmenuIndex: -1
 
+    surfaceFormat.opaque: false
+    color: "transparent"
+
     visible: false
     implicitWidth: adaptiveWidth ? menuContent.implicitWidth + 24 : Theme.menuWidth
     implicitHeight: menuContent.height + 10
+
     onVisibleChanged: {
-        if (!visible && root.isTopMenu) {
-            MenuState.clearIfCurrent(root)
+        if (!visible) {
+            if (root.isTopMenu) {
+                root.updateFocusGrab(false)
+                MenuState.clearIfCurrent(root)
+            }
+        }
+    }
+
+    onWindowConnected: {
+        if (root.isTopMenu && root.visible) {
+            root.logGrab("windowConnected: refresh focus grab")
+            root.updateFocusGrab(true)
+            if (root.backingWindowVisible) {
+                root.activateFocusGrab()
+            }
+        }
+    }
+
+    onBackingWindowVisibleChanged: {
+        if (root.isTopMenu && root.visible && root.backingWindowVisible) {
+            root.logGrab("backingWindowVisible=true: activate focus grab")
+            root.activateFocusGrab()
+        }
+    }
+
+    onTreeContainsMouseChanged: {
+        if (treeContainsMouse) {
+            submenuBridgeTimer.stop()
+        } else if (submenuLoader.active) {
+            submenuBridgeTimer.restart()
         }
     }
 
@@ -72,19 +93,61 @@ PopupWindow {
         return anchorItem.height + yOffset
     }
 
+    HyprlandFocusGrab {
+        id: focusGrab
+        active: false
+        windows: []
+
+        onActiveChanged: {
+            if (!root.isTopMenu) return
+            root.logGrab("focusGrab.active=" + focusGrab.active)
+        }
+
+        onCleared: {
+            root.logGrab("focusGrab.cleared fired")
+            root.closeTopMenu()
+        }
+    }
+
+    Timer {
+        id: grabActivationCheck
+        interval: 250
+        repeat: false
+        onTriggered: {
+            if (root.isTopMenu && root.visible && root.grabRequested && !focusGrab.active) {
+                console.warn("[MenuPopup] HyprlandFocusGrab inactive after activation attempt. Outside-click dismissal may be unavailable on this compositor/protocol.")
+            }
+        }
+    }
+
+    Timer {
+        id: submenuBridgeTimer
+        interval: 180
+        repeat: false
+        onTriggered: {
+            if (!root.treeContainsMouse) {
+                root.closeSubmenu()
+            }
+        }
+    }
+
     // Focus scope for keyboard handling
     FocusScope {
         id: focusScope
         anchors.fill: parent
         focus: true
 
-        // Keyboard navigation
-        Keys.onUpPressed: navigateUp()
-        Keys.onDownPressed: navigateDown()
-        Keys.onReturnPressed: {
-            if (hoveredIndex >= 0) activateItem(hoveredIndex)
+        HoverHandler {
+            id: menuHoverHandler
         }
-        Keys.onEscapePressed: root.topMenu.close()
+
+        // Keyboard navigation
+        Keys.onUpPressed: root.navigateUp()
+        Keys.onDownPressed: root.navigateDown()
+        Keys.onReturnPressed: {
+            if (root.hoveredIndex >= 0) root.activateItem(root.hoveredIndex)
+        }
+        Keys.onEscapePressed: root.closeTopMenu()
 
         // Glass effect background
         Rectangle {
@@ -147,49 +210,193 @@ PopupWindow {
             id: submenuLoader
             active: false
             source: "MenuPopup.qml"
+
             onLoaded: {
+                if (!item) return
+
                 item.topMenu = root.topMenu
                 item.placement = "right"
                 item.yOffset = 0
                 item.adaptiveWidth = true
+                item.debugGrabs = root.topMenu ? root.topMenu["debugGrabs"] : false
+                var clickedSignal = item["itemClicked"]
+                if (clickedSignal && clickedSignal.connect) {
+                    clickedSignal.connect(function(clickedItem, index) {
+                        root.itemClicked(clickedItem, index)
+                        root.closeTopMenu()
+                    })
+                }
 
-                item.itemClicked.connect(function(clickedItem, index) {
-                    root.itemClicked(clickedItem, index)
-                    root.topMenu.close()
-                })
+                item.model = root.pendingSubmenuModel || []
+                item.anchorItem = root.pendingSubmenuAnchor
+                if (item["open"]) {
+                    item["open"]()
+                }
+                root.invokeTopMenuUpdateGrab(true)
+            }
 
-                item.open()
-                root.refreshGrab()
+            onActiveChanged: {
+                root.invokeTopMenuUpdateGrab(true)
             }
         }
     }
 
     // Functions
+    function logGrab(message) {
+        if (root.topMenu && root.topMenu["debugGrabs"]) {
+            console.log("[MenuPopup] " + message)
+        }
+    }
+
+    function closeTopMenu() {
+        if (root.topMenu && root.topMenu["close"]) {
+            root.topMenu["close"]()
+        }
+    }
+
+    function invokeTopMenuUpdateGrab(forceRearm) {
+        if (root.topMenu && root.topMenu["updateFocusGrab"]) {
+            root.topMenu["updateFocusGrab"](forceRearm)
+        }
+    }
+
+    function submenuTreeContainsMouse() {
+        if (!submenuLoader.active || !submenuLoader.item) return false
+        return submenuLoader.item["treeContainsMouse"] === true
+    }
+
+    function chainWindows() {
+        var wins = [root]
+        var submenu = submenuLoader.item
+        if (submenuLoader.active && submenu && submenu["visible"] && submenu["chainWindows"]) {
+            wins = wins.concat(submenu["chainWindows"]())
+        }
+        return wins
+    }
+
+    function updateFocusGrab(forceRearm) {
+        if (!root.isTopMenu) {
+            root.invokeTopMenuUpdateGrab(forceRearm)
+            return
+        }
+
+        var wins = root.chainWindows()
+        focusGrab.windows = wins
+        root.logGrab("focus windows=" + wins.length + " objects=" + wins)
+
+        if (!root.visible || !root.grabRequested) {
+            if (focusGrab.active) {
+                focusGrab.active = false
+            }
+            return
+        }
+
+        if (forceRearm && focusGrab.active) {
+            focusGrab.active = false
+            focusGrab.active = true
+            root.logGrab("focus grab rearmed")
+        } else if (root.backingWindowVisible && !focusGrab.active) {
+            focusGrab.active = true
+        }
+    }
+
+    function activateFocusGrab() {
+        if (!root.isTopMenu) return
+
+        root.grabRequested = true
+        root.updateFocusGrab(false)
+
+        focusGrab.active = false
+        focusGrab.active = true
+        root.logGrab("focus grab activation requested")
+
+        grabActivationCheck.restart()
+    }
+
+    function openSubmenuForIndex(index, anchor, submenuModel) {
+        if (!submenuModel) {
+            closeSubmenu()
+            return
+        }
+
+        submenuBridgeTimer.stop()
+        activeSubmenuIndex = index
+
+        pendingSubmenuAnchor = anchor
+        pendingSubmenuModel = submenuModel
+
+        if (submenuLoader.active && submenuLoader.item) {
+            submenuLoader.item.anchorItem = anchor
+            submenuLoader.item.model = submenuModel
+            if (submenuLoader.item["open"]) {
+                submenuLoader.item["open"]()
+            }
+            root.invokeTopMenuUpdateGrab(true)
+            return
+        }
+
+        submenuLoader.active = true
+    }
+
+    function closeSubmenu() {
+        submenuBridgeTimer.stop()
+
+        if (submenuLoader.item) {
+            if (submenuLoader.item["close"]) {
+                submenuLoader.item["close"]()
+            }
+        }
+
+        submenuLoader.active = false
+        pendingSubmenuAnchor = null
+        pendingSubmenuModel = null
+        activeSubmenuIndex = -1
+
+        root.invokeTopMenuUpdateGrab(true)
+    }
+
     function open() {
         if (root.isTopMenu) {
             MenuState.requestOpen(root)
+            root.logGrab("top menu open")
         }
-        root.anchor.updateAnchor()
+
+        if (root.anchor && root.anchor.updateAnchor) {
+            root.anchor.updateAnchor()
+        }
         root.visible = true
         focusScope.forceActiveFocus()
+
         hoveredIndex = findFirstSelectableIndex()
-        root.refreshGrab()
+
+        if (root.isTopMenu) {
+            root.updateFocusGrab(false)
+            if (root.backingWindowVisible) {
+                root.activateFocusGrab()
+            }
+        } else {
+            root.invokeTopMenuUpdateGrab(true)
+        }
     }
 
     function close() {
+        closeSubmenu()
+
         root.visible = false
         hoveredIndex = -1
         selectedIndex = -1
         activeSubmenuIndex = -1
-        submenuLoader.active = false
+
         if (root.isTopMenu) {
+            root.logGrab("top menu close")
+            root.grabRequested = false
+            root.updateFocusGrab(false)
             MenuState.clearIfCurrent(root)
         }
-        root.refreshGrab()
     }
 
     function toggle() {
-        if (root.visible) root.topMenu.close()
+        if (root.visible) root.closeTopMenu()
         else open()
     }
 
@@ -233,7 +440,7 @@ PopupWindow {
             selectedIndex = index
             itemClicked(item, index)
             if (item.action) item.action()
-            root.topMenu.close()
+            root.closeTopMenu()
         }
     }
 
@@ -254,31 +461,30 @@ PopupWindow {
                 cursorShape: parent.itemData.disabled ? Qt.ArrowCursor : Qt.PointingHandCursor
 
                 onEntered: {
-                    if (!parent.itemData.disabled) {
-                        root.hoveredIndex = parent.parent.itemIndex
+                    if (parent.itemData.disabled) return
 
-                        // Handle submenu opening
-                        if (parent.itemData.submenu) {
-                            root.activeSubmenuIndex = parent.parent.itemIndex
-                            submenuLoader.active = false // Reset
-                            submenuLoader.active = true
-                            if (submenuLoader.item) {
-                                submenuLoader.item.model = parent.itemData.submenu
-                                submenuLoader.item.anchorItem = parent
-                                root.refreshGrab()
-                            }
-                        } else {
-                            root.activeSubmenuIndex = -1
-                            submenuLoader.active = false
-                            root.refreshGrab()
-                        }
+                    var index = parent.parent.itemIndex
+                    root.hoveredIndex = index
+
+                    if (parent.itemData.submenu) {
+                        root.openSubmenuForIndex(index, parent, parent.itemData.submenu)
+                    } else {
+                        root.closeSubmenu()
                     }
                 }
+
                 onExited: {
-                    if (root.hoveredIndex === parent.parent.itemIndex) {
+                    var index = parent.parent.itemIndex
+
+                    if (root.hoveredIndex === index && root.activeSubmenuIndex !== index) {
                         root.hoveredIndex = -1
                     }
+
+                    if (parent.itemData.submenu && root.activeSubmenuIndex === index && !root.mouseInSubmenu) {
+                        submenuBridgeTimer.restart()
+                    }
                 }
+
                 onClicked: {
                     if (!parent.itemData.disabled && !parent.itemData.submenu) {
                         root.activateItem(parent.parent.itemIndex)
