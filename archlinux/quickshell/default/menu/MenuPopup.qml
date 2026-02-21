@@ -477,7 +477,7 @@ PopupWindow {
         root.visible = true
         focusScope.forceActiveFocus()
 
-        hoveredIndex = findFirstSelectableIndex()
+        hoveredIndex = root.isTopMenu ? findFirstSelectableIndex() : -1
 
         if (root.isTopMenu) {
             root.updateFocusGrab()
