@@ -68,13 +68,22 @@ QtObject {
     property var _lastGoodData: null
 
     function refresh() {
-        if (isLoading) {
-            return;
-        }
+      if (isLoading) return;
 
-        isLoading = true;
-        error = "";
-        curlProcess.exec(["curl", "-fsSL", requestUrl]);
+      isLoading = true;
+      error = "";
+
+      curlProcess.exec([
+        "curl",
+        "--http1.1",
+        "-fsSL",
+        "--connect-timeout", "5",
+        "--max-time", "10",
+        "--retry", "2",
+        "--retry-delay", "1",
+        "-A", "Mozilla/5.0",
+        requestUrl
+      ]);
     }
 
     function _safeValue(value) {
@@ -413,7 +422,7 @@ QtObject {
     }
 
     property Timer refreshTimer: Timer {
-        interval: 10 * 60 * 1000
+        interval: 30 * 60 * 1000
         repeat: true
         running: true
         onTriggered: root.refresh()

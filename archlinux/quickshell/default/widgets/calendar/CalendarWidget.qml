@@ -29,7 +29,7 @@ Rectangle {
     property real depthTopOpacity: 0.07
     property real depthBottomOpacity: 0.1
     property real innerStrokeOpacity: 0.11
-    property real edgeHighlightOpacity: 0.6
+    property real edgeHighlightOpacity: 0.2
     property real edgeShadeOpacity: 0.10
     property real rimWidthPx: 1.2
     property real rimGlowWidthPx: 1.0
@@ -174,14 +174,14 @@ Rectangle {
         )
 
         // Depth overlays
-        // Rectangle {
-        //     anchors.fill: parent
-        //     gradient: Gradient {
-        //         GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, root.depthTopOpacity * root.materialOpacity) }
-        //         GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, 0.0) }
-        //         GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, root.depthBottomOpacity * root.materialOpacity) }
-        //     }
-        // }
+        Rectangle {
+            anchors.fill: parent
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, root.depthTopOpacity * root.materialOpacity) }
+                GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, 0.0) }
+                GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, root.depthBottomOpacity * root.materialOpacity) }
+            }
+        }
 
         // Rim shader (reuse)
         EdgeRimEffect {

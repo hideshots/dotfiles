@@ -50,6 +50,11 @@ PopupWindow {
     visible: false
     implicitWidth: adaptiveWidth ? menuContent.implicitWidth + 24 : Theme.menuWidth
     implicitHeight: menuContent.height + 10
+    onVisibleChanged: {
+        if (!visible && root.isTopMenu) {
+            MenuState.clearIfCurrent(root)
+        }
+    }
 
     anchor.item: anchorItem
     anchor.rect.width: 1
@@ -161,6 +166,10 @@ PopupWindow {
 
     // Functions
     function open() {
+        if (root.isTopMenu) {
+            MenuState.requestOpen(root)
+        }
+        root.anchor.updateAnchor()
         root.visible = true
         focusScope.forceActiveFocus()
         hoveredIndex = findFirstSelectableIndex()
@@ -173,6 +182,9 @@ PopupWindow {
         selectedIndex = -1
         activeSubmenuIndex = -1
         submenuLoader.active = false
+        if (root.isTopMenu) {
+            MenuState.clearIfCurrent(root)
+        }
         root.refreshGrab()
     }
 

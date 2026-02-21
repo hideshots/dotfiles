@@ -355,6 +355,12 @@ Item {
                                 spacing: 0
                                 height: parent.height
 
+                                Widgets.SystemTrayArea {
+                                    height: parent.height
+                                    highlightState: rightHi
+                                    iconSize: Theme.iconSize
+                                }
+
                                 // IconButton { icon: "􀙇"; highlightState: rightHi; onClicked: {} }
                                 // IconButton { icon: "􀊫"; highlightState: rightHi; onClicked: {} }
                                 // IconButton { icon: "􀉭"; highlightState: rightHi; onClicked: {} }

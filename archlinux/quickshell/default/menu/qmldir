@@ -1,5 +1,6 @@
 module menu
 singleton Theme 1.0 ../Theme.qml
+singleton MenuState 1.0 MenuState.qml
 MenuItem 1.0 MenuItem.qml
 MenuSeparator 1.0 MenuSeparator.qml
 MenuHeader 1.0 MenuHeader.qml
