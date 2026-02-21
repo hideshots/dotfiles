@@ -21,20 +21,36 @@ PopupWindow {
     property var topMenu: root
     readonly property bool isTopMenu: topMenu === root
 
+    // Debug
     property bool debugGrabs: false
-    property bool mouseInThisMenu: menuHoverHandler.hovered
-    readonly property bool mouseInSubmenu: submenuTreeContainsMouse()
-    readonly property bool treeContainsMouse: mouseInThisMenu || mouseInSubmenu
+    property bool debugMenuPerf: false
 
+    // Hover and submenu behavior
+    property bool mouseInsideMenu: menuHoverHandler.hovered
+    readonly property bool mouseInsideSubmenu: submenuTreeContainsMouse()
+    readonly property bool treeContainsMouse: mouseInsideMenu || mouseInsideSubmenu
+
+    property int submenuOpenDelayMs: 180
+    property int submenuSwitchDelayMs: 80
+    property int submenuCloseDelayMs: 180
+
+    // Focus grab state
     property bool grabRequested: false
+    property string grabSig: ""
+    property int grabUpdateAssignments: 0
 
+    // Submenu state
+    property int activeSubmenuIndex: -1
+    property var activeSubmenuModelRef: null
+    property Item activeSubmenuAnchorRef: null
+
+    property int pendingSubmenuIndex: -1
     property var pendingSubmenuModel: null
     property Item pendingSubmenuAnchor: null
 
     // Internal state
     property int hoveredIndex: -1
     property int selectedIndex: -1
-    property int activeSubmenuIndex: -1
 
     surfaceFormat.opaque: false
     color: "transparent"
@@ -44,36 +60,35 @@ PopupWindow {
     implicitHeight: menuContent.height + 10
 
     onVisibleChanged: {
-        if (!visible) {
-            if (root.isTopMenu) {
-                root.updateFocusGrab(false)
-                MenuState.clearIfCurrent(root)
-            }
+        if (!visible && root.isTopMenu) {
+            root.grabRequested = false
+            focusGrab.active = false
+            focusGrab.windows = []
+            root.grabSig = ""
+            MenuState.clearIfCurrent(root)
+            root.logGrab("top menu hidden; focus grab deactivated")
         }
     }
 
     onWindowConnected: {
         if (root.isTopMenu && root.visible) {
-            root.logGrab("windowConnected: refresh focus grab")
-            root.updateFocusGrab(true)
-            if (root.backingWindowVisible) {
-                root.activateFocusGrab()
-            }
+            root.logGrab("windowConnected")
+            root.updateFocusGrab()
+            root.activateFocusGrabIfReady()
         }
     }
 
     onBackingWindowVisibleChanged: {
         if (root.isTopMenu && root.visible && root.backingWindowVisible) {
-            root.logGrab("backingWindowVisible=true: activate focus grab")
-            root.activateFocusGrab()
+            root.logGrab("backingWindowVisible=true")
+            root.updateFocusGrab()
+            root.activateFocusGrabIfReady()
         }
     }
 
     onTreeContainsMouseChanged: {
         if (treeContainsMouse) {
-            submenuBridgeTimer.stop()
-        } else if (submenuLoader.active) {
-            submenuBridgeTimer.restart()
+            submenuCloseTimer.stop()
         }
     }
 
@@ -111,27 +126,41 @@ PopupWindow {
 
     Timer {
         id: grabActivationCheck
-        interval: 250
+        interval: 300
         repeat: false
+
         onTriggered: {
             if (root.isTopMenu && root.visible && root.grabRequested && !focusGrab.active) {
-                console.warn("[MenuPopup] HyprlandFocusGrab inactive after activation attempt. Outside-click dismissal may be unavailable on this compositor/protocol.")
+                console.warn("[MenuPopup] HyprlandFocusGrab did not activate. Outside-click dismissal may be unavailable on this compositor/protocol.")
             }
         }
     }
 
     Timer {
-        id: submenuBridgeTimer
-        interval: 180
+        id: submenuOpenTimer
+        interval: root.submenuOpenDelayMs
         repeat: false
+
         onTriggered: {
+            if (root.pendingSubmenuIndex < 0 || !root.pendingSubmenuModel || !root.pendingSubmenuAnchor) return
+            root.logPerf("submenuOpenTimer fired index=" + root.pendingSubmenuIndex)
+            root.actuallyOpenSubmenu(root.pendingSubmenuIndex, root.pendingSubmenuAnchor, root.pendingSubmenuModel)
+        }
+    }
+
+    Timer {
+        id: submenuCloseTimer
+        interval: root.submenuCloseDelayMs
+        repeat: false
+
+        onTriggered: {
+            root.logPerf("submenuCloseTimer fired")
             if (!root.treeContainsMouse) {
                 root.closeSubmenu()
             }
         }
     }
 
-    // Focus scope for keyboard handling
     FocusScope {
         id: focusScope
         anchors.fill: parent
@@ -141,7 +170,6 @@ PopupWindow {
             id: menuHoverHandler
         }
 
-        // Keyboard navigation
         Keys.onUpPressed: root.navigateUp()
         Keys.onDownPressed: root.navigateDown()
         Keys.onReturnPressed: {
@@ -149,7 +177,6 @@ PopupWindow {
         }
         Keys.onEscapePressed: root.closeTopMenu()
 
-        // Glass effect background
         Rectangle {
             id: glassBackground
             anchors.fill: parent
@@ -205,7 +232,6 @@ PopupWindow {
             }
         }
 
-        // Submenu Loader
         Loader {
             id: submenuLoader
             active: false
@@ -219,6 +245,8 @@ PopupWindow {
                 item.yOffset = 0
                 item.adaptiveWidth = true
                 item.debugGrabs = root.topMenu ? root.topMenu["debugGrabs"] : false
+                item.debugMenuPerf = root.topMenu ? root.topMenu["debugMenuPerf"] : false
+
                 var clickedSignal = item["itemClicked"]
                 if (clickedSignal && clickedSignal.connect) {
                     clickedSignal.connect(function(clickedItem, index) {
@@ -227,16 +255,16 @@ PopupWindow {
                     })
                 }
 
-                item.model = root.pendingSubmenuModel || []
-                item.anchorItem = root.pendingSubmenuAnchor
+                if (root.activeSubmenuModelRef && root.activeSubmenuAnchorRef) {
+                    item.model = root.activeSubmenuModelRef
+                    item.anchorItem = root.activeSubmenuAnchorRef
+                }
+
                 if (item["open"]) {
                     item["open"]()
                 }
-                root.invokeTopMenuUpdateGrab(true)
-            }
 
-            onActiveChanged: {
-                root.invokeTopMenuUpdateGrab(true)
+                root.invokeTopMenuUpdateGrab()
             }
         }
     }
@@ -248,15 +276,21 @@ PopupWindow {
         }
     }
 
+    function logPerf(message) {
+        if (root.topMenu && root.topMenu["debugMenuPerf"]) {
+            console.log("[MenuPopupPerf] " + message)
+        }
+    }
+
     function closeTopMenu() {
         if (root.topMenu && root.topMenu["close"]) {
             root.topMenu["close"]()
         }
     }
 
-    function invokeTopMenuUpdateGrab(forceRearm) {
+    function invokeTopMenuUpdateGrab() {
         if (root.topMenu && root.topMenu["updateFocusGrab"]) {
-            root.topMenu["updateFocusGrab"](forceRearm)
+            root.topMenu["updateFocusGrab"]()
         }
     }
 
@@ -265,73 +299,143 @@ PopupWindow {
         return submenuLoader.item["treeContainsMouse"] === true
     }
 
-    function chainWindows() {
+    function computeWindowsChain() {
         var wins = [root]
         var submenu = submenuLoader.item
-        if (submenuLoader.active && submenu && submenu["visible"] && submenu["chainWindows"]) {
-            wins = wins.concat(submenu["chainWindows"]())
+        if (submenuLoader.active && submenu && submenu["visible"] && submenu["computeWindowsChain"]) {
+            wins = wins.concat(submenu["computeWindowsChain"]())
         }
         return wins
     }
 
-    function updateFocusGrab(forceRearm) {
+    function computeGrabSig(wins) {
+        var parts = []
+        for (var i = 0; i < wins.length; i++) {
+            parts.push(String(wins[i]))
+        }
+        return parts.join("|")
+    }
+
+    function updateFocusGrab() {
         if (!root.isTopMenu) {
-            root.invokeTopMenuUpdateGrab(forceRearm)
+            root.invokeTopMenuUpdateGrab()
             return
         }
 
-        var wins = root.chainWindows()
-        focusGrab.windows = wins
-        root.logGrab("focus windows=" + wins.length + " objects=" + wins)
-
         if (!root.visible || !root.grabRequested) {
-            if (focusGrab.active) {
-                focusGrab.active = false
+            if (focusGrab.windows.length > 0 || root.grabSig !== "") {
+                focusGrab.windows = []
+                root.grabSig = ""
+                root.grabUpdateAssignments++
+                root.logPerf("updateFocusGrab clear assignments=" + root.grabUpdateAssignments)
             }
             return
         }
 
-        if (forceRearm && focusGrab.active) {
-            focusGrab.active = false
-            focusGrab.active = true
-            root.logGrab("focus grab rearmed")
-        } else if (root.backingWindowVisible && !focusGrab.active) {
-            focusGrab.active = true
-        }
-    }
+        var wins = root.computeWindowsChain()
+        var sig = root.computeGrabSig(wins)
 
-    function activateFocusGrab() {
-        if (!root.isTopMenu) return
-
-        root.grabRequested = true
-        root.updateFocusGrab(false)
-
-        focusGrab.active = false
-        focusGrab.active = true
-        root.logGrab("focus grab activation requested")
-
-        grabActivationCheck.restart()
-    }
-
-    function openSubmenuForIndex(index, anchor, submenuModel) {
-        if (!submenuModel) {
-            closeSubmenu()
+        if (sig === root.grabSig) {
             return
         }
 
-        submenuBridgeTimer.stop()
-        activeSubmenuIndex = index
+        focusGrab.windows = wins
+        root.grabSig = sig
+        root.grabUpdateAssignments++
 
-        pendingSubmenuAnchor = anchor
-        pendingSubmenuModel = submenuModel
+        root.logGrab("focus windows=" + wins.length + " sig=" + sig)
+        root.logPerf("updateFocusGrab assign chainLen=" + wins.length + " assignments=" + root.grabUpdateAssignments)
+    }
+
+    function activateFocusGrabIfReady() {
+        if (!root.isTopMenu) return
+        if (!root.visible || !root.grabRequested || !root.backingWindowVisible) return
+        if (focusGrab.active) return
+
+        focusGrab.active = true
+        root.logGrab("focus grab activation requested")
+        grabActivationCheck.restart()
+    }
+
+    function cancelPendingSubmenuOpen() {
+        if (root.pendingSubmenuIndex >= 0) {
+            root.logPerf("cancel pending submenu index=" + root.pendingSubmenuIndex)
+        }
+
+        root.pendingSubmenuIndex = -1
+        root.pendingSubmenuModel = null
+        root.pendingSubmenuAnchor = null
+        submenuOpenTimer.stop()
+    }
+
+    function scheduleSubmenuOpen(index, anchor, submenuModel, delayMs) {
+        if (!submenuModel) {
+            root.cancelPendingSubmenuOpen()
+            root.closeSubmenu()
+            return
+        }
+
+        if (root.activeSubmenuIndex === index
+                && root.activeSubmenuModelRef === submenuModel
+                && submenuLoader.active
+                && submenuLoader.item) {
+            root.activeSubmenuAnchorRef = anchor
+            submenuLoader.item.anchorItem = anchor
+            return
+        }
+
+        root.pendingSubmenuIndex = index
+        root.pendingSubmenuAnchor = anchor
+        root.pendingSubmenuModel = submenuModel
+
+        submenuOpenTimer.interval = Math.max(0, delayMs)
+        if (submenuOpenTimer.interval === 0) {
+            root.logPerf("open submenu immediately index=" + index)
+            root.actuallyOpenSubmenu(index, anchor, submenuModel)
+        } else {
+            submenuOpenTimer.restart()
+            root.logPerf("schedule submenu index=" + index + " delay=" + submenuOpenTimer.interval)
+        }
+    }
+
+    function actuallyOpenSubmenu(index, anchor, submenuModel) {
+        if (!submenuModel || !anchor) return
+
+        if (root.pendingSubmenuIndex === index
+                && root.pendingSubmenuModel === submenuModel
+                && root.pendingSubmenuAnchor === anchor) {
+            root.cancelPendingSubmenuOpen()
+        }
+
+        if (root.activeSubmenuIndex === index
+                && root.activeSubmenuModelRef === submenuModel
+                && submenuLoader.active
+                && submenuLoader.item) {
+            root.activeSubmenuAnchorRef = anchor
+            submenuLoader.item.anchorItem = anchor
+            if (submenuLoader.item.anchor && submenuLoader.item.anchor.updateAnchor) {
+                submenuLoader.item.anchor.updateAnchor()
+            }
+            return
+        }
+
+        root.activeSubmenuIndex = index
+        root.activeSubmenuModelRef = submenuModel
+        root.activeSubmenuAnchorRef = anchor
+        submenuCloseTimer.stop()
+
+        root.logPerf("open submenu index=" + index)
 
         if (submenuLoader.active && submenuLoader.item) {
             submenuLoader.item.anchorItem = anchor
             submenuLoader.item.model = submenuModel
-            if (submenuLoader.item["open"]) {
+            if (submenuLoader.item.anchor && submenuLoader.item.anchor.updateAnchor) {
+                submenuLoader.item.anchor.updateAnchor()
+            }
+            if (!submenuLoader.item["visible"] && submenuLoader.item["open"]) {
                 submenuLoader.item["open"]()
             }
-            root.invokeTopMenuUpdateGrab(true)
+            root.invokeTopMenuUpdateGrab()
             return
         }
 
@@ -339,58 +443,64 @@ PopupWindow {
     }
 
     function closeSubmenu() {
-        submenuBridgeTimer.stop()
+        root.cancelPendingSubmenuOpen()
+        submenuCloseTimer.stop()
 
-        if (submenuLoader.item) {
-            if (submenuLoader.item["close"]) {
-                submenuLoader.item["close"]()
-            }
+        var hadSubmenu = submenuLoader.active || (activeSubmenuIndex >= 0)
+
+        if (submenuLoader.item && submenuLoader.item["close"]) {
+            submenuLoader.item["close"]()
         }
 
         submenuLoader.active = false
-        pendingSubmenuAnchor = null
-        pendingSubmenuModel = null
         activeSubmenuIndex = -1
+        activeSubmenuModelRef = null
+        activeSubmenuAnchorRef = null
 
-        root.invokeTopMenuUpdateGrab(true)
+        if (hadSubmenu) {
+            root.logPerf("close submenu")
+            root.invokeTopMenuUpdateGrab()
+        }
     }
 
     function open() {
         if (root.isTopMenu) {
             MenuState.requestOpen(root)
             root.logGrab("top menu open")
+            root.grabRequested = true
         }
 
         if (root.anchor && root.anchor.updateAnchor) {
             root.anchor.updateAnchor()
         }
+
         root.visible = true
         focusScope.forceActiveFocus()
 
         hoveredIndex = findFirstSelectableIndex()
 
         if (root.isTopMenu) {
-            root.updateFocusGrab(false)
-            if (root.backingWindowVisible) {
-                root.activateFocusGrab()
-            }
+            root.updateFocusGrab()
+            root.activateFocusGrabIfReady()
         } else {
-            root.invokeTopMenuUpdateGrab(true)
+            root.invokeTopMenuUpdateGrab()
         }
     }
 
     function close() {
-        closeSubmenu()
+        root.cancelPendingSubmenuOpen()
+        root.closeSubmenu()
 
         root.visible = false
         hoveredIndex = -1
         selectedIndex = -1
-        activeSubmenuIndex = -1
 
         if (root.isTopMenu) {
             root.logGrab("top menu close")
             root.grabRequested = false
-            root.updateFocusGrab(false)
+            focusGrab.active = false
+            focusGrab.windows = []
+            root.grabSig = ""
             MenuState.clearIfCurrent(root)
         }
     }
@@ -444,7 +554,6 @@ PopupWindow {
         }
     }
 
-    // Menu item component
     Component {
         id: menuItemComponent
 
@@ -467,8 +576,12 @@ PopupWindow {
                     root.hoveredIndex = index
 
                     if (parent.itemData.submenu) {
-                        root.openSubmenuForIndex(index, parent, parent.itemData.submenu)
+                        var delay = (root.activeSubmenuIndex >= 0 && root.activeSubmenuIndex !== index)
+                            ? root.submenuSwitchDelayMs
+                            : root.submenuOpenDelayMs
+                        root.scheduleSubmenuOpen(index, parent, parent.itemData.submenu, delay)
                     } else {
+                        root.cancelPendingSubmenuOpen()
                         root.closeSubmenu()
                     }
                 }
@@ -476,12 +589,8 @@ PopupWindow {
                 onExited: {
                     var index = parent.parent.itemIndex
 
-                    if (root.hoveredIndex === index && root.activeSubmenuIndex !== index) {
+                    if (root.hoveredIndex === index) {
                         root.hoveredIndex = -1
-                    }
-
-                    if (parent.itemData.submenu && root.activeSubmenuIndex === index && !root.mouseInSubmenu) {
-                        submenuBridgeTimer.restart()
                     }
                 }
 
@@ -494,13 +603,11 @@ PopupWindow {
         }
     }
 
-    // Separator component
     Component {
         id: separatorComponent
         MenuSeparator {}
     }
 
-    // Header component
     Component {
         id: headerComponent
         MenuHeader {
