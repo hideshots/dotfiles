@@ -1,8 +1,8 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import Quickshell.Widgets
-import "../weather"
+import Quickshell
+import Quickshell.Wayland
 
 Rectangle {
     id: root
@@ -10,7 +10,7 @@ Rectangle {
     implicitWidth: 164
     implicitHeight: 164
     radius: 22
-    clip: false
+    clip: true
 
     signal requestContextMenu(real x, real y)
 
@@ -20,24 +20,28 @@ Rectangle {
     property int shownYear: (new Date()).getFullYear()
     property int shownMonth: (new Date()).getMonth()
 
-    property color calendarBackground: Qt.rgba(20 / 255, 20 / 255, 20 / 255, 0.55)
+    property color calendarBackground: Qt.rgba(20 / 255, 20 / 255, 20 / 255, 0.00)
     property color accentColor: Qt.rgba(1.0, 1.0, 1.0, 0.75)
     property color weekendColor: Qt.rgba(1.0, 1.0, 1.0, 0.50)
     property color dateColor: Qt.rgba(1.0, 1.0, 1.0, 0.75)
 
     property real materialOpacity: 1.0
-    property real depthTopOpacity: 0.07
-    property real depthBottomOpacity: 0.1
-    property real innerStrokeOpacity: 0.11
-    property real edgeHighlightOpacity: 0.2
-    property real edgeShadeOpacity: 0.10
-    property real rimWidthPx: 1.2
-    property real rimGlowWidthPx: 1.0
-    property real rimCornerBoost: 0.28
-    property bool rimDebug: false
-    property real noiseOpacity: 0.015
-    property real shadowNearOpacity: 0.12
-    property real shadowFarOpacity: 0.06
+
+    // Liquid glass controls
+    property var screen: null
+    property string wallpaperSource: ""
+    readonly property bool useWallpaperSource: root.wallpaperSource.length > 0
+    property real refraction: 0.0
+    property real depth: 0.0
+    property real dispersion: 5
+    property real frost: 0.0
+    property real splay: 5.0
+    property real glassOpacity: 1.0
+    property color glassTint: Qt.rgba(0.92, 0.97, 1.0, 0)
+    property bool liveCapture: false
+    property bool autoRecapture: false
+    property real blurStrength: 0.9
+    property bool glassDebug: false
 
     readonly property int cellSize: 18
     readonly property int rowGap: 6
@@ -50,10 +54,76 @@ Rectangle {
     property int _lastSystemDay: -1
     property int _lastSystemMonth: -1
     property int _lastSystemYear: -1
+    property real _shaderTime: 0.0
+    property bool _capturedOnce: false
+    property bool _captureRequested: false
 
     readonly property var weekdayLabels: ["S", "M", "T", "W", "T", "F", "S"]
 
+    readonly property var _window: QsWindow.window
+    readonly property var _effectiveScreen: root.screen ? root.screen : (root._window ? root._window.screen : null)
+    readonly property real _screenX: root._effectiveScreen ? root._effectiveScreen.x : 0.0
+    readonly property real _screenY: root._effectiveScreen ? root._effectiveScreen.y : 0.0
+    readonly property real _screenLogicalWidth: root._effectiveScreen && root._effectiveScreen.width > 0 ? root._effectiveScreen.width : Math.max(1.0, root.width)
+    readonly property real _screenLogicalHeight: root._effectiveScreen && root._effectiveScreen.height > 0 ? root._effectiveScreen.height : Math.max(1.0, root.height)
+
+    readonly property real _captureWidth: root.useWallpaperSource ? root._screenLogicalWidth : (captureView.sourceSize.width > 0 ? captureView.sourceSize.width : root._screenLogicalWidth)
+    readonly property real _captureHeight: root.useWallpaperSource ? root._screenLogicalHeight : (captureView.sourceSize.height > 0 ? captureView.sourceSize.height : root._screenLogicalHeight)
+    readonly property bool _hasBackgroundTexture: root.useWallpaperSource ? (wallpaperImage.status === Image.Ready) : captureView.hasContent
+
+    readonly property real _logicalToCaptureX: root._captureWidth / Math.max(1.0, root._screenLogicalWidth)
+    readonly property real _logicalToCaptureY: root._captureHeight / Math.max(1.0, root._screenLogicalHeight)
+
+    readonly property real _windowWidth: root._window && root._window.width > 0 ? root._window.width : root.width
+    readonly property real _windowHeight: root._window && root._window.height > 0 ? root._window.height : root.height
+    readonly property real _marginLeft: root._window && root._window.margins ? root._window.margins.left : 0.0
+    readonly property real _marginRight: root._window && root._window.margins ? root._window.margins.right : 0.0
+    readonly property real _marginTop: root._window && root._window.margins ? root._window.margins.top : 0.0
+    readonly property real _marginBottom: root._window && root._window.margins ? root._window.margins.bottom : 0.0
+    readonly property bool _anchorLeft: root._window && root._window.anchors ? root._window.anchors.left : true
+    readonly property bool _anchorRight: root._window && root._window.anchors ? root._window.anchors.right : false
+    readonly property bool _anchorTop: root._window && root._window.anchors ? root._window.anchors.top : true
+    readonly property bool _anchorBottom: root._window && root._window.anchors ? root._window.anchors.bottom : false
+
+    readonly property real _windowXOnOutputLogical: root._anchorLeft ? root._marginLeft : (root._anchorRight ? Math.max(0.0, root._screenLogicalWidth - root._windowWidth - root._marginRight) : 0.0)
+    readonly property real _windowYOnOutputLogical: root._anchorTop ? root._marginTop : (root._anchorBottom ? Math.max(0.0, root._screenLogicalHeight - root._windowHeight - root._marginBottom) : 0.0)
+    readonly property real _itemXOnOutputLogical: root._windowXOnOutputLogical + root.x
+    readonly property real _itemYOnOutputLogical: root._windowYOnOutputLogical + root.y
+
+    readonly property real _itemXOnCapture: root._clamp(root._itemXOnOutputLogical * root._logicalToCaptureX, 0.0, Math.max(0.0, root._captureWidth - 1.0))
+    readonly property real _itemYOnCapture: root._clamp(root._itemYOnOutputLogical * root._logicalToCaptureY, 0.0, Math.max(0.0, root._captureHeight - 1.0))
+    readonly property real _itemWOnCapture: root._clamp(root.width * root._logicalToCaptureX, 1.0, root._captureWidth)
+    readonly property real _itemHOnCapture: root._clamp(root.height * root._logicalToCaptureY, 1.0, root._captureHeight)
+
+    // UV mapping into the captured output texture: (u0, v0, uScale, vScale)
+    readonly property vector4d uvRect: Qt.vector4d(root._itemXOnCapture / Math.max(1.0, root._captureWidth), root._itemYOnCapture / Math.max(1.0, root._captureHeight), root._itemWOnCapture / Math.max(1.0, root._captureWidth), root._itemHOnCapture / Math.max(1.0, root._captureHeight))
+
+    readonly property int _regionTexWidth: Math.max(1, Math.round(root._itemWOnCapture))
+    readonly property int _regionTexHeight: Math.max(1, Math.round(root._itemHOnCapture))
+    readonly property vector2d _blurTexel: Qt.vector2d(1.0 / root._regionTexWidth, 1.0 / root._regionTexHeight)
+
     color: "transparent"
+
+    function _clamp(v, minValue, maxValue) {
+        return Math.max(minValue, Math.min(maxValue, v));
+    }
+
+    function requestCaptureFrame(force) {
+        if (root.useWallpaperSource || root.liveCapture || !root.visible || !captureView.captureSource) {
+            return;
+        }
+
+        if (!root.autoRecapture && root._captureRequested) {
+            return;
+        }
+
+        if (!force && root._capturedOnce && !root.autoRecapture) {
+            return;
+        }
+
+        root._captureRequested = true;
+        captureView.captureFrame();
+    }
 
     function daysInMonth(year, month) {
         return new Date(year, month + 1, 0).getDate();
@@ -101,11 +171,33 @@ Rectangle {
 
     function colorToRgbaString(value, opacityScale) {
         const alpha = Math.max(0, Math.min(1, value.a * opacityScale));
-        return "rgba("
-            + Math.round(value.r * 255) + ","
-            + Math.round(value.g * 255) + ","
-            + Math.round(value.b * 255) + ","
-            + alpha + ")";
+        return "rgba(" + Math.round(value.r * 255) + "," + Math.round(value.g * 255) + "," + Math.round(value.b * 255) + "," + alpha + ")";
+    }
+
+    onLiveCaptureChanged: {
+        if (root.useWallpaperSource) {
+            return;
+        }
+        root._capturedOnce = false;
+        root._captureRequested = false;
+    }
+    onVisibleChanged: {
+        if (root.visible && !root.useWallpaperSource && !root.liveCapture && !root.autoRecapture && !root._captureRequested && !initialCaptureTimer.running) {
+            initialCaptureTimer.restart();
+        }
+        if (root.autoRecapture) {
+            requestCaptureFrame(false);
+        }
+    }
+    onWidthChanged: {
+        if (root.autoRecapture) {
+            requestCaptureFrame(false);
+        }
+    }
+    onHeightChanged: {
+        if (root.autoRecapture) {
+            requestCaptureFrame(false);
+        }
     }
 
     Timer {
@@ -118,9 +210,7 @@ Rectangle {
             const month = now.getMonth();
             const year = now.getFullYear();
 
-            const changed = day !== root._lastSystemDay
-                || month !== root._lastSystemMonth
-                || year !== root._lastSystemYear;
+            const changed = day !== root._lastSystemDay || month !== root._lastSystemMonth || year !== root._lastSystemYear;
 
             if (!changed) {
                 return;
@@ -139,6 +229,14 @@ Rectangle {
         }
     }
 
+    Timer {
+        id: initialCaptureTimer
+        interval: 450
+        repeat: false
+        running: !root.useWallpaperSource
+        onTriggered: root.requestCaptureFrame(false)
+    }
+
     Component.onCompleted: {
         const now = new Date();
         _lastSystemDay = now.getDate();
@@ -147,231 +245,349 @@ Rectangle {
         refreshCells();
     }
 
-    // Shadows (same pattern as WeatherWidget)
-    Rectangle {
-        anchors.fill: glassLayer
-        anchors.margins: -1
-        radius: root.radius + 1
-        color: Qt.rgba(0, 0, 0, root.shadowNearOpacity * root.materialOpacity)
+    NumberAnimation on _shaderTime {
+        from: 0.0
+        to: 10000.0
+        duration: 10000000
+        loops: Animation.Infinite
+        running: root.visible && root.glassDebug
     }
 
-    Rectangle {
-        anchors.fill: glassLayer
-        anchors.margins: -3
-        radius: root.radius + 3
-        color: Qt.rgba(0, 0, 0, root.shadowFarOpacity * root.materialOpacity)
+    Connections {
+        target: root._window
+        ignoreUnknownSignals: true
+        function onMarginsChanged() {
+            if (root.autoRecapture)
+                root.requestCaptureFrame(false);
+        }
+        function onAnchorsChanged() {
+            if (root.autoRecapture)
+                root.requestCaptureFrame(false);
+        }
+        function onWidthChanged() {
+            if (root.autoRecapture)
+                root.requestCaptureFrame(false);
+        }
+        function onHeightChanged() {
+            if (root.autoRecapture)
+                root.requestCaptureFrame(false);
+        }
+        function onScreenChanged() {
+            if (root.autoRecapture)
+                root.requestCaptureFrame(false);
+        }
     }
 
-    ClippingRectangle {
+    Connections {
+        target: root._effectiveScreen
+        ignoreUnknownSignals: true
+        function onGeometryChanged() {
+            if (root.autoRecapture)
+                root.requestCaptureFrame(false);
+        }
+    }
+
+    Item {
         id: glassLayer
         anchors.fill: parent
-        radius: root.radius
-        color: Qt.rgba(
-            root.calendarBackground.r,
-            root.calendarBackground.g,
-            root.calendarBackground.b,
-            root.calendarBackground.a * root.materialOpacity
-        )
+        z: 0
 
-        // Depth overlays
-        Rectangle {
-            anchors.fill: parent
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, root.depthTopOpacity * root.materialOpacity) }
-                GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, 0.0) }
-                GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, root.depthBottomOpacity * root.materialOpacity) }
+        ScreencopyView {
+            id: captureView
+            visible: !root.useWallpaperSource
+            width: Math.max(1, Math.round(root._captureWidth))
+            height: Math.max(1, Math.round(root._captureHeight))
+            live: root.liveCapture
+            paintCursor: false
+            captureSource: root.useWallpaperSource ? null : root._effectiveScreen
+        }
+
+        Item {
+            id: wallpaperSourceItem
+            visible: false
+            width: Math.max(1, Math.round(root._captureWidth))
+            height: Math.max(1, Math.round(root._captureHeight))
+
+            Image {
+                id: wallpaperImage
+                anchors.fill: parent
+                source: root.wallpaperSource
+                fillMode: Image.PreserveAspectCrop
+                smooth: true
+                asynchronous: true
+                cache: true
             }
         }
 
-        // Rim shader (reuse)
-        EdgeRimEffect {
-            anchors.fill: parent
-            radius: root.radius
-            rimWidthPx: root.rimWidthPx
-            glowWidthPx: root.rimGlowWidthPx
-            highlightOpacity: root.edgeHighlightOpacity * root.materialOpacity
-            shadeOpacity: root.edgeShadeOpacity * root.materialOpacity
-            cornerBoost: root.rimCornerBoost
-            debug: root.rimDebug
+        ShaderEffectSource {
+            id: downsampledCapture
+            sourceItem: root.useWallpaperSource ? wallpaperSourceItem : captureView
+            hideSource: true
+            live: true
+            smooth: true
+            mipmap: false
+            sourceRect: Qt.rect(root._itemXOnCapture, root._itemYOnCapture, root._itemWOnCapture, root._itemHOnCapture)
+            textureSize: Qt.size(root._regionTexWidth, root._regionTexHeight)
         }
 
-        // Inner stroke
+        ShaderEffect {
+            id: blurPassH
+            width: root._regionTexWidth
+            height: root._regionTexHeight
+
+            property variant source: downsampledCapture
+            property vector2d texelSize: root._blurTexel
+            property real blurStrength: root.blurStrength * (1.0 + root.frost * 0.8)
+
+            fragmentShader: "../../shaders/blur_h.frag.qsb"
+        }
+
+        ShaderEffectSource {
+            id: blurPassHSource
+            sourceItem: blurPassH
+            hideSource: true
+            live: true
+            smooth: true
+            mipmap: false
+            textureSize: Qt.size(root._regionTexWidth, root._regionTexHeight)
+        }
+
+        ShaderEffect {
+            id: blurPassV
+            width: root._regionTexWidth
+            height: root._regionTexHeight
+
+            property variant source: blurPassHSource
+            property vector2d texelSize: root._blurTexel
+            property real blurStrength: root.blurStrength * (1.0 + root.frost * 0.8)
+
+            fragmentShader: "../../shaders/blur_v.frag.qsb"
+        }
+
+        ShaderEffectSource {
+            id: blurPassVSource
+            sourceItem: blurPassV
+            hideSource: true
+            live: true
+            smooth: true
+            mipmap: false
+            textureSize: Qt.size(root._regionTexWidth, root._regionTexHeight)
+        }
+
+        ShaderEffect {
+            id: liquidGlass
+            anchors.fill: parent
+            visible: root._hasBackgroundTexture && root.glassOpacity > 0.0
+
+            property variant sceneTex: blurPassVSource
+            property vector2d uSize: Qt.vector2d(width, height)
+            property vector4d uUvRect: Qt.vector4d(0.0, 0.0, 1.0, 1.0)
+            property real uRadius: root.radius
+            property real uRefraction: root.refraction
+            property real uDepth: root.depth
+            property real uDispersion: root.dispersion
+            property real uFrost: root.frost
+            property real uSplay: root.splay
+            property real uGlassOpacity: root.glassOpacity * root.materialOpacity
+            property color uTint: root.glassTint
+            property real uTime: root._shaderTime
+            property real uDebug: root.glassDebug ? 1.0 : 0.0
+
+            fragmentShader: "../../shaders/liquid_glass.frag.qsb"
+        }
+
         Rectangle {
             anchors.fill: parent
             radius: root.radius
-            color: "transparent"
-            border.width: 1
-            border.color: Qt.rgba(1, 1, 1, root.innerStrokeOpacity * root.materialOpacity)
+            visible: !root._hasBackgroundTexture || root.glassOpacity <= 0.0
+            color: Qt.rgba(root.calendarBackground.r, root.calendarBackground.g, root.calendarBackground.b, root.calendarBackground.a * root.materialOpacity)
         }
 
-        // Noise
-        Canvas {
+        Rectangle {
             anchors.fill: parent
-            opacity: root.noiseOpacity * root.materialOpacity
-            smooth: false
-            onPaint: {
-                const ctx = getContext("2d");
-                ctx.clearRect(0, 0, width, height);
-                const dotCount = Math.floor(width * height * 0.08);
-                for (let i = 0; i < dotCount; i++) {
-                    const value = Math.floor(Math.random() * 255);
-                    ctx.fillStyle = "rgba(" + value + "," + value + "," + value + ",1)";
-                    ctx.fillRect(
-                        Math.floor(Math.random() * width),
-                        Math.floor(Math.random() * height),
-                        1,
-                        1
-                    );
+            radius: root.radius
+            color: Qt.rgba(root.calendarBackground.r, root.calendarBackground.g, root.calendarBackground.b, root.calendarBackground.a * root.materialOpacity * root.glassOpacity)
+        }
+
+        Connections {
+            target: captureView
+            function onHasContentChanged() {
+                if (root.useWallpaperSource) {
+                    return;
+                }
+                if (root.glassDebug) {
+                    console.log("[CalendarGlass] hasContent:", captureView.hasContent);
+                }
+                if (captureView.hasContent) {
+                    root._capturedOnce = true;
                 }
             }
-            onWidthChanged: requestPaint()
-            onHeightChanged: requestPaint()
-            Component.onCompleted: requestPaint()
+            function onSourceSizeChanged() {
+                if (root.useWallpaperSource) {
+                    return;
+                }
+                if (root.glassDebug) {
+                    console.log("[CalendarGlass] sourceSize:", captureView.sourceSize.width + "x" + captureView.sourceSize.height);
+                }
+            }
         }
 
-        MouseArea {
-            anchors.fill: parent
-            acceptedButtons: Qt.LeftButton | Qt.RightButton
-            onPressed: function(mouse) {
-                if (mouse.button === Qt.RightButton) {
-                    root.requestContextMenu(mouse.x, mouse.y);
+        Connections {
+            target: wallpaperImage
+            function onStatusChanged() {
+                if (!root.glassDebug) {
+                    return;
+                }
+
+                console.log("[CalendarGlass] wallpaper status:", wallpaperImage.status, "source:", root.wallpaperSource);
+            }
+        }
+    }
+
+    MouseArea {
+        anchors.fill: parent
+        z: 2
+        hoverEnabled: true
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
+        onEntered: {
+            if (root.autoRecapture)
+                root.requestCaptureFrame(false);
+        }
+        onPressed: function (mouse) {
+            if (mouse.button === Qt.RightButton) {
+                root.requestContextMenu(mouse.x, mouse.y);
+            }
+        }
+    }
+
+    Item {
+        id: content
+        z: 1
+        anchors.fill: parent
+        anchors.topMargin: 17
+        anchors.leftMargin: 12
+        anchors.rightMargin: 12
+        anchors.bottomMargin: 16
+
+        Item {
+            id: monthHeader
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: 15
+
+            Text {
+                anchors.top: parent.top
+                anchors.topMargin: 2
+                anchors.left: parent.left
+                anchors.leftMargin: 4
+                text: root.monthLabel(root.shownYear, root.shownMonth)
+                color: Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, root.accentColor.a * root.materialOpacity)
+                font.family: "SF Pro Text"
+                font.weight: Font.DemiBold
+                font.pixelSize: 11
+                renderType: Text.NativeRendering
+            }
+        }
+
+        Item {
+            id: weekdayRow
+            anchors.top: monthHeader.bottom
+            anchors.topMargin: 3
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: root.gridWidth
+            height: root.cellSize
+
+            readonly property real xStride: (width - (7 * root.cellSize)) / 6
+
+            Repeater {
+                model: root.weekdayLabels.length
+                delegate: Item {
+                    id: weekdayCell
+                    required property int index
+                    x: index * (root.cellSize + weekdayRow.xStride)
+                    width: root.cellSize
+                    height: root.cellSize
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: root.weekdayLabels[weekdayCell.index]
+                        color: (weekdayCell.index === 0 || weekdayCell.index === 6) ? root.weekendColor : root.dateColor
+                        font.family: "SF Pro Text"
+                        font.weight: Font.DemiBold
+                        font.pixelSize: 10
+                        opacity: root.materialOpacity
+                        renderType: Text.NativeRendering
+                    }
                 }
             }
         }
 
         Item {
-            id: content
-            anchors.fill: parent
-            anchors.topMargin: 17
-            anchors.leftMargin: 12
-            anchors.rightMargin: 12
-            anchors.bottomMargin: 16
+            id: dateGrid
+            anchors.top: weekdayRow.bottom
+            anchors.topMargin: 2
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: root.gridWidth
+            height: (root.rowsUsed * root.cellSize) + ((root.rowsUsed - 1) * root.rowGap)
 
-            Item {
-                id: monthHeader
-                anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.right: parent.right
-                height: 15
+            readonly property real xStride: (width - (7 * root.cellSize)) / 6
 
-                Text {
-                    anchors.top: parent.top
-                    anchors.topMargin: 2
-                    anchors.left: parent.left
-                    anchors.leftMargin: 4
-                    text: root.monthLabel(root.shownYear, root.shownMonth)
-                    color: Qt.rgba(
-                        root.accentColor.r,
-                        root.accentColor.g,
-                        root.accentColor.b,
-                        root.accentColor.a * root.materialOpacity
-                    )
-                    font.family: "SF Pro Text"
-                    font.weight: Font.DemiBold
-                    font.pixelSize: 11
-                    renderType: Text.NativeRendering
-                }
-            }
+            Repeater {
+                model: root.cells
+                delegate: Item {
+                    id: dayCell
+                    required property int index
+                    required property var modelData
 
-            Item {
-                id: weekdayRow
-                anchors.top: monthHeader.bottom
-                anchors.topMargin: 3
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: root.gridWidth
-                height: root.cellSize
+                    property int col: modelData.col
+                    property int row: Math.floor(index / 7)
 
-                readonly property real xStride: (width - (7 * root.cellSize)) / 6
+                    // Hide rows not used this month so we can shrink the grid height.
+                    visible: row < root.rowsUsed
 
-                Repeater {
-                    model: root.weekdayLabels.length
-                    delegate: Item {
-                        id: weekdayCell
-                        required property int index
-                        x: index * (root.cellSize + weekdayRow.xStride)
-                        width: root.cellSize
-                        height: root.cellSize
+                    x: col * (root.cellSize + dateGrid.xStride)
+                    y: row * (root.cellSize + root.rowGap)
+                    width: root.cellSize
+                    height: root.cellSize
 
-                        Text {
-                            anchors.centerIn: parent
-                            text: root.weekdayLabels[weekdayCell.index]
-                            color: (weekdayCell.index === 0 || weekdayCell.index === 6) ? root.weekendColor : root.dateColor
-                            font.family: "SF Pro Text"
-                            font.weight: Font.DemiBold
-                            font.pixelSize: 10
-                            opacity: root.materialOpacity
-                            renderType: Text.NativeRendering
+                    Canvas {
+                        anchors.fill: parent
+                        visible: dayCell.modelData.isToday
+                        smooth: true
+                        antialiasing: true
+                        onPaint: {
+                            const ctx = getContext("2d");
+                            ctx.clearRect(0, 0, width, height);
+
+                            ctx.fillStyle = root.colorToRgbaString(root.accentColor, root.materialOpacity);
+                            ctx.beginPath();
+                            ctx.arc(width * 0.5, height * 0.5, Math.min(width, height) * 0.5, 0, Math.PI * 2);
+                            ctx.fill();
+
+                            ctx.globalCompositeOperation = "destination-out";
+                            ctx.fillStyle = "rgba(0,0,0,1)";
+                            ctx.textAlign = "center";
+                            ctx.textBaseline = "middle";
+                            ctx.font = "800 10px 'SF Pro Text'";
+                            ctx.fillText(String(dayCell.modelData.day), width * 0.5, height * 0.5 + 0.5);
                         }
+                        onWidthChanged: requestPaint()
+                        onHeightChanged: requestPaint()
+                        onVisibleChanged: requestPaint()
+                        Component.onCompleted: requestPaint()
                     }
-                }
-            }
 
-            Item {
-                id: dateGrid
-                anchors.top: weekdayRow.bottom
-                anchors.topMargin: 2
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: root.gridWidth
-                height: (root.rowsUsed * root.cellSize) + ((root.rowsUsed - 1) * root.rowGap)
-
-                readonly property real xStride: (width - (7 * root.cellSize)) / 6
-
-                Repeater {
-                    model: root.cells
-                    delegate: Item {
-                        id: dayCell
-                        required property int index
-                        required property var modelData
-
-                        property int col: modelData.col
-                        property int row: Math.floor(index / 7)
-
-                        // Hide rows not used this month so we can shrink the grid height.
-                        visible: row < root.rowsUsed
-
-                        x: col * (root.cellSize + dateGrid.xStride)
-                        y: row * (root.cellSize + root.rowGap)
-                        width: root.cellSize
-                        height: root.cellSize
-
-                        Canvas {
-                            anchors.fill: parent
-                            visible: dayCell.modelData.isToday
-                            smooth: true
-                            antialiasing: true
-                            onPaint: {
-                                const ctx = getContext("2d");
-                                ctx.clearRect(0, 0, width, height);
-
-                                ctx.fillStyle = root.colorToRgbaString(root.accentColor, root.materialOpacity);
-                                ctx.beginPath();
-                                ctx.arc(width * 0.5, height * 0.5, Math.min(width, height) * 0.5, 0, Math.PI * 2);
-                                ctx.fill();
-
-                                ctx.globalCompositeOperation = "destination-out";
-                                ctx.fillStyle = "rgba(0,0,0,1)";
-                                ctx.textAlign = "center";
-                                ctx.textBaseline = "middle";
-                                ctx.font = "800 10px 'SF Pro Text'";
-                                ctx.fillText(String(dayCell.modelData.day), width * 0.5, height * 0.5 + 0.5);
-                            }
-                            onWidthChanged: requestPaint()
-                            onHeightChanged: requestPaint()
-                            onVisibleChanged: requestPaint()
-                            Component.onCompleted: requestPaint()
-                        }
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: dayCell.modelData.inMonth ? String(dayCell.modelData.day) : ""
-                            visible: dayCell.modelData.inMonth && !dayCell.modelData.isToday
-                            color: (dayCell.col === 0 || dayCell.col === 6) ? root.weekendColor : root.dateColor
-                            font.family: "SF Pro Text"
-                            font.weight: Font.ExtraBold
-                            font.pixelSize: 10
-                            opacity: root.materialOpacity
-                            renderType: Text.NativeRendering
-                        }
+                    Text {
+                        anchors.centerIn: parent
+                        text: dayCell.modelData.inMonth ? String(dayCell.modelData.day) : ""
+                        visible: dayCell.modelData.inMonth && !dayCell.modelData.isToday
+                        color: (dayCell.col === 0 || dayCell.col === 6) ? root.weekendColor : root.dateColor
+                        font.family: "SF Pro Text"
+                        font.weight: Font.ExtraBold
+                        font.pixelSize: 10
+                        opacity: root.materialOpacity
+                        renderType: Text.NativeRendering
                     }
                 }
             }
@@ -391,5 +607,23 @@ Rectangle {
         style: Text.Raised
         styleColor: Qt.rgba(0, 0, 0, 0.7)
         renderType: Text.NativeRendering
+    }
+
+    Text {
+        visible: root.glassDebug
+        z: 4
+        anchors.left: parent.left
+        anchors.top: parent.top
+        anchors.margins: 6
+        color: "#FFFFFF"
+        style: Text.Outline
+        styleColor: "#000000"
+        font.family: "SF Pro Text"
+        font.pixelSize: 9
+        text: "mode=" + (root.useWallpaperSource ? "wallpaper" : "capture")
+            + " glass=" + liquidGlass.visible
+            + " has=" + root._hasBackgroundTexture
+            + " src=" + captureView.sourceSize.width + "x" + captureView.sourceSize.height
+            + " tex=" + root._regionTexWidth + "x" + root._regionTexHeight
     }
 }

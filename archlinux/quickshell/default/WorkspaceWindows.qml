@@ -21,7 +21,8 @@ Row {
         "obsidian": "Obsidian",
         "org.gnome.Loupe": "Preview",
         "kitty": "Terminal",
-        "spotify": "Spotify"
+        "spotify": "Spotify",
+        "org.telegram.desktop": "Messages"
 
     })
 

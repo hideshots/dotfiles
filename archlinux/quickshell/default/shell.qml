@@ -1,7 +1,9 @@
 import Quickshell
 import Quickshell.Hyprland
+import Quickshell.Io
 import Quickshell.Wayland
 import QtQuick
+import QtCore
 import Qt5Compat.GraphicalEffects
 
 import "menu" as Menu
@@ -19,6 +21,42 @@ ShellRoot {
     property string weatherDisplayLocation: "Richmond"
     property string weatherUnits: "u"
     property string weatherVariant: "medium"
+    property bool widgetGlassDebug: false
+    property real widgetGlassRefraction: 0.0
+    property real widgetGlassDepth: 0.02
+    property real widgetGlassDispersion: 5.0
+    property real widgetGlassFrost: 0.0
+    property real widgetGlassSplay: 5.0
+    property real widgetGlassOpacity: 1.0
+    property color widgetGlassTint: Qt.rgba(0.92, 0.97, 1.0, 0.0)
+    property real widgetGlassBlurStrength: 0.7
+    property bool widgetGlassLiveCapture: false
+    property bool widgetGlassAutoRecapture: false
+    readonly property string _homeDir: StandardPaths.writableLocation(StandardPaths.HomeLocation)
+
+    function _normalizeWallpaperPath(rawText) {
+        const raw = String(rawText).trim();
+        if (raw.length === 0) {
+            return "";
+        }
+
+        if (raw.indexOf("file://") === 0) {
+            return raw;
+        }
+
+        return raw;
+    }
+
+    readonly property string widgetWallpaperSource: _normalizeWallpaperPath(walWallpaperFile.text())
+
+    FileView {
+        id: walWallpaperFile
+        path: shell._homeDir + "/.cache/wal/wal"
+        preload: true
+        watchChanges: true
+        blockLoading: true
+        printErrors: false
+    }
 
     PanelWindow {
         id: weatherPanel
@@ -49,10 +87,23 @@ ShellRoot {
         Widgets.WeatherWidget {
             id: weatherWidget
             anchors.fill: parent
+            screen: weatherPanel.screen
             location: shell.weatherLocation
             displayLocation: shell.weatherDisplayLocation
             units: shell.weatherUnits
             variant: shell.weatherVariant
+            wallpaperSource: shell.widgetWallpaperSource
+            refraction: shell.widgetGlassRefraction
+            depth: shell.widgetGlassDepth
+            dispersion: shell.widgetGlassDispersion
+            frost: shell.widgetGlassFrost
+            splay: shell.widgetGlassSplay
+            glassOpacity: shell.widgetGlassOpacity
+            glassTint: shell.widgetGlassTint
+            blurStrength: shell.widgetGlassBlurStrength
+            liveCapture: shell.widgetGlassLiveCapture
+            autoRecapture: shell.widgetGlassAutoRecapture
+            glassDebug: shell.widgetGlassDebug
             onRequestContextMenu: function(x, y) {
                 weatherSizeMenu.anchorPointX = x + 4;
                 weatherSizeMenu.anchorPointY = y + 8;
@@ -117,6 +168,19 @@ ShellRoot {
         Widgets.CalendarWidget {
             id: calendarWidget
             anchors.fill: parent
+            screen: calendarPanel.screen
+            wallpaperSource: shell.widgetWallpaperSource
+            refraction: shell.widgetGlassRefraction
+            depth: shell.widgetGlassDepth
+            dispersion: shell.widgetGlassDispersion
+            frost: shell.widgetGlassFrost
+            splay: shell.widgetGlassSplay
+            glassOpacity: shell.widgetGlassOpacity
+            glassTint: shell.widgetGlassTint
+            blurStrength: shell.widgetGlassBlurStrength
+            liveCapture: shell.widgetGlassLiveCapture
+            autoRecapture: shell.widgetGlassAutoRecapture
+            glassDebug: shell.widgetGlassDebug
         }
     }
 

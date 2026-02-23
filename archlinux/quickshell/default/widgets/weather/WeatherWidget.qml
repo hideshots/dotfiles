@@ -1,7 +1,8 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import Quickshell.Widgets
+import Quickshell
+import Quickshell.Wayland
 
 Rectangle {
     id: root
@@ -9,7 +10,7 @@ Rectangle {
     implicitWidth: isMedium ? 344 : 164
     implicitHeight: isMedium ? 164 : 164
     radius: 22
-    clip: false
+    clip: true
 
     property string location: ""
     property string displayLocation: ""
@@ -18,23 +19,168 @@ Rectangle {
     signal requestContextMenu(real x, real y)
     signal variantSelected(string value)
     property alias service: weatherService
-    property real materialOpacity: 1.0
-    property real glassTintOpacity: 0.55
-    property real depthTopOpacity: 0.07
-    property real depthBottomOpacity: 0.1
-    property real innerStrokeOpacity: 0.11
-    property real edgeHighlightOpacity: 0.6
-    property real edgeShadeOpacity: 0.10
-    property real rimWidthPx: 1.2
-    property real rimGlowWidthPx: 1.0
-    property real rimCornerBoost: 0.28
-    property bool rimDebug: false
-    property real noiseOpacity: 0.015
-    property real shadowNearOpacity: 0.12
-    property real shadowFarOpacity: 0.06
     readonly property bool isMedium: variant === "medium"
 
-    color: "transparent"
+    property real materialOpacity: 1.0
+    property var screen: null
+    property string wallpaperSource: ""
+    readonly property bool useWallpaperSource: root.wallpaperSource.length > 0
+
+    // Shared liquid-glass controls.
+    property real refraction: 0.0
+    property real depth: 0.0
+    property real dispersion: 0.0
+    property real frost: 0.0
+    property real splay: 0.0
+    property real glassOpacity: 1.0
+    property color glassTint: Qt.rgba(0.92, 0.97, 1.0, 0.0)
+    property color widgetBackground: Qt.rgba(20 / 255, 20 / 255, 20 / 255, 0.0)
+    property bool liveCapture: false
+    property bool autoRecapture: false
+    property real blurStrength: 0.0
+    property bool glassDebug: false
+
+    property real _shaderTime: 0.0
+    property bool _capturedOnce: false
+    property bool _captureRequested: false
+
+    readonly property var _window: QsWindow.window
+    readonly property var _effectiveScreen: root.screen ? root.screen : (root._window ? root._window.screen : null)
+    readonly property real _screenX: root._effectiveScreen ? root._effectiveScreen.x : 0.0
+    readonly property real _screenY: root._effectiveScreen ? root._effectiveScreen.y : 0.0
+    readonly property real _screenLogicalWidth: root._effectiveScreen && root._effectiveScreen.width > 0 ? root._effectiveScreen.width : Math.max(1.0, root.width)
+    readonly property real _screenLogicalHeight: root._effectiveScreen && root._effectiveScreen.height > 0 ? root._effectiveScreen.height : Math.max(1.0, root.height)
+
+    readonly property real _captureWidth: root.useWallpaperSource ? root._screenLogicalWidth : (captureView.sourceSize.width > 0 ? captureView.sourceSize.width : root._screenLogicalWidth)
+    readonly property real _captureHeight: root.useWallpaperSource ? root._screenLogicalHeight : (captureView.sourceSize.height > 0 ? captureView.sourceSize.height : root._screenLogicalHeight)
+    readonly property bool _hasBackgroundTexture: root.useWallpaperSource ? (wallpaperImage.status === Image.Ready) : captureView.hasContent
+
+    readonly property real _logicalToCaptureX: root._captureWidth / Math.max(1.0, root._screenLogicalWidth)
+    readonly property real _logicalToCaptureY: root._captureHeight / Math.max(1.0, root._screenLogicalHeight)
+
+    readonly property real _windowWidth: root._window && root._window.width > 0 ? root._window.width : root.width
+    readonly property real _windowHeight: root._window && root._window.height > 0 ? root._window.height : root.height
+    readonly property real _marginLeft: root._window && root._window.margins ? root._window.margins.left : 0.0
+    readonly property real _marginRight: root._window && root._window.margins ? root._window.margins.right : 0.0
+    readonly property real _marginTop: root._window && root._window.margins ? root._window.margins.top : 0.0
+    readonly property real _marginBottom: root._window && root._window.margins ? root._window.margins.bottom : 0.0
+    readonly property bool _anchorLeft: root._window && root._window.anchors ? root._window.anchors.left : true
+    readonly property bool _anchorRight: root._window && root._window.anchors ? root._window.anchors.right : false
+    readonly property bool _anchorTop: root._window && root._window.anchors ? root._window.anchors.top : true
+    readonly property bool _anchorBottom: root._window && root._window.anchors ? root._window.anchors.bottom : false
+
+    readonly property real _windowXOnOutputLogical: root._anchorLeft ? root._marginLeft : (root._anchorRight ? Math.max(0.0, root._screenLogicalWidth - root._windowWidth - root._marginRight) : 0.0)
+    readonly property real _windowYOnOutputLogical: root._anchorTop ? root._marginTop : (root._anchorBottom ? Math.max(0.0, root._screenLogicalHeight - root._windowHeight - root._marginBottom) : 0.0)
+    readonly property real _itemXOnOutputLogical: root._windowXOnOutputLogical + root.x
+    readonly property real _itemYOnOutputLogical: root._windowYOnOutputLogical + root.y
+
+    readonly property real _itemXOnCapture: _clamp(root._itemXOnOutputLogical * root._logicalToCaptureX, 0.0, Math.max(0.0, root._captureWidth - 1.0))
+    readonly property real _itemYOnCapture: _clamp(root._itemYOnOutputLogical * root._logicalToCaptureY, 0.0, Math.max(0.0, root._captureHeight - 1.0))
+    readonly property real _itemWOnCapture: _clamp(root.width * root._logicalToCaptureX, 1.0, root._captureWidth)
+    readonly property real _itemHOnCapture: _clamp(root.height * root._logicalToCaptureY, 1.0, root._captureHeight)
+
+    readonly property int _regionTexWidth: Math.max(1, Math.round(root._itemWOnCapture))
+    readonly property int _regionTexHeight: Math.max(1, Math.round(root._itemHOnCapture))
+    readonly property vector2d _blurTexel: Qt.vector2d(1.0 / root._regionTexWidth, 1.0 / root._regionTexHeight)
+
+    color: Qt.rgba(20 / 255, 20 / 255, 20 / 255, 0)
+
+    function _clamp(v, minValue, maxValue) {
+        return Math.max(minValue, Math.min(maxValue, v));
+    }
+
+    function requestCaptureFrame(force) {
+        if (root.useWallpaperSource || root.liveCapture || !root.visible || !captureView.captureSource) {
+            return;
+        }
+
+        if (!root.autoRecapture && root._captureRequested) {
+            return;
+        }
+
+        if (!force && root._capturedOnce && !root.autoRecapture) {
+            return;
+        }
+
+        root._captureRequested = true;
+        captureView.captureFrame();
+    }
+
+    onLiveCaptureChanged: {
+        if (root.useWallpaperSource) {
+            return;
+        }
+        root._capturedOnce = false;
+        root._captureRequested = false;
+    }
+    onVisibleChanged: {
+        if (root.visible && !root.useWallpaperSource && !root.liveCapture && !root.autoRecapture && !root._captureRequested && !initialCaptureTimer.running) {
+            initialCaptureTimer.restart();
+        }
+        if (root.autoRecapture) {
+            requestCaptureFrame(false);
+        }
+    }
+    onWidthChanged: {
+        if (root.autoRecapture) {
+            requestCaptureFrame(false);
+        }
+    }
+    onHeightChanged: {
+        if (root.autoRecapture) {
+            requestCaptureFrame(false);
+        }
+    }
+
+    Timer {
+        id: initialCaptureTimer
+        interval: 450
+        repeat: false
+        running: !root.useWallpaperSource
+        onTriggered: root.requestCaptureFrame(false)
+    }
+
+    NumberAnimation on _shaderTime {
+        from: 0.0
+        to: 10000.0
+        duration: 10000000
+        loops: Animation.Infinite
+        running: root.visible && root.glassDebug
+    }
+
+    Connections {
+        target: root._window
+        ignoreUnknownSignals: true
+        function onMarginsChanged() {
+            if (root.autoRecapture)
+                root.requestCaptureFrame(false);
+        }
+        function onAnchorsChanged() {
+            if (root.autoRecapture)
+                root.requestCaptureFrame(false);
+        }
+        function onWidthChanged() {
+            if (root.autoRecapture)
+                root.requestCaptureFrame(false);
+        }
+        function onHeightChanged() {
+            if (root.autoRecapture)
+                root.requestCaptureFrame(false);
+        }
+        function onScreenChanged() {
+            if (root.autoRecapture)
+                root.requestCaptureFrame(false);
+        }
+    }
+
+    Connections {
+        target: root._effectiveScreen
+        ignoreUnknownSignals: true
+        function onGeometryChanged() {
+            if (root.autoRecapture)
+                root.requestCaptureFrame(false);
+        }
+    }
 
     WttrService {
         id: weatherService
@@ -42,135 +188,304 @@ Rectangle {
         units: root.units
     }
 
-    Rectangle {
-        anchors.fill: glassLayer
-        anchors.margins: -1
-        radius: root.radius + 1
-        color: Qt.rgba(0, 0, 0, root.shadowNearOpacity * root.materialOpacity)
-    }
-
-    Rectangle {
-        anchors.fill: glassLayer
-        anchors.margins: -3
-        radius: root.radius + 3
-        color: Qt.rgba(0, 0, 0, root.shadowFarOpacity * root.materialOpacity)
-    }
-
-    ClippingRectangle {
+    Item {
         id: glassLayer
         anchors.fill: parent
-        radius: root.radius
-        color: Qt.rgba(20 / 255, 20 / 255, 20 / 255, root.glassTintOpacity * root.materialOpacity)
+        z: 0
 
-        Rectangle {
-            anchors.fill: parent
-            color: "transparent"
-            gradient: Gradient {
-                GradientStop {
-                    position: 0.0
-                    color: Qt.rgba(1, 1, 1, root.depthTopOpacity * root.materialOpacity)
-                }
-                GradientStop {
-                    position: 1.0
-                    color: Qt.rgba(0, 0, 0, root.depthBottomOpacity * root.materialOpacity)
-                }
+        ScreencopyView {
+            id: captureView
+            visible: !root.useWallpaperSource
+            width: Math.max(1, Math.round(root._captureWidth))
+            height: Math.max(1, Math.round(root._captureHeight))
+            live: root.liveCapture
+            paintCursor: false
+            captureSource: root.useWallpaperSource ? null : root._effectiveScreen
+        }
+
+        Item {
+            id: wallpaperSourceItem
+            visible: false
+            width: Math.max(1, Math.round(root._captureWidth))
+            height: Math.max(1, Math.round(root._captureHeight))
+
+            Image {
+                id: wallpaperImage
+                anchors.fill: parent
+                source: root.wallpaperSource
+                fillMode: Image.PreserveAspectCrop
+                smooth: true
+                asynchronous: true
+                cache: true
             }
         }
 
-        EdgeRimEffect {
+        ShaderEffectSource {
+            id: sampledBackground
+            sourceItem: root.useWallpaperSource ? wallpaperSourceItem : captureView
+            hideSource: true
+            live: true
+            smooth: true
+            mipmap: false
+            sourceRect: Qt.rect(root._itemXOnCapture, root._itemYOnCapture, root._itemWOnCapture, root._itemHOnCapture)
+            textureSize: Qt.size(root._regionTexWidth, root._regionTexHeight)
+        }
+
+        ShaderEffect {
+            id: blurPassH
+            width: root._regionTexWidth
+            height: root._regionTexHeight
+
+            property variant source: sampledBackground
+            property vector2d texelSize: root._blurTexel
+            property real blurStrength: root.blurStrength * (1.0 + root.frost * 0.8)
+
+            fragmentShader: "../../shaders/blur_h.frag.qsb"
+        }
+
+        ShaderEffectSource {
+            id: blurPassHSource
+            sourceItem: blurPassH
+            hideSource: true
+            live: true
+            smooth: true
+            mipmap: false
+            textureSize: Qt.size(root._regionTexWidth, root._regionTexHeight)
+        }
+
+        ShaderEffect {
+            id: blurPassV
+            width: root._regionTexWidth
+            height: root._regionTexHeight
+
+            property variant source: blurPassHSource
+            property vector2d texelSize: root._blurTexel
+            property real blurStrength: root.blurStrength * (1.0 + root.frost * 0.8)
+
+            fragmentShader: "../../shaders/blur_v.frag.qsb"
+        }
+
+        ShaderEffectSource {
+            id: blurPassVSource
+            sourceItem: blurPassV
+            hideSource: true
+            live: true
+            smooth: true
+            mipmap: false
+            textureSize: Qt.size(root._regionTexWidth, root._regionTexHeight)
+        }
+
+        ShaderEffect {
+            id: liquidGlass
+            anchors.fill: parent
+            visible: root._hasBackgroundTexture && root.glassOpacity > 0.0
+
+            property variant sceneTex: blurPassVSource
+            property vector2d uSize: Qt.vector2d(width, height)
+            property vector4d uUvRect: Qt.vector4d(0.0, 0.0, 1.0, 1.0)
+            property real uRadius: root.radius
+            property real uRefraction: root.refraction
+            property real uDepth: root.depth
+            property real uDispersion: root.dispersion
+            property real uFrost: root.frost
+            property real uSplay: root.splay
+            property real uGlassOpacity: root.glassOpacity * root.materialOpacity
+            property color uTint: root.glassTint
+            property real uTime: root._shaderTime
+            property real uDebug: root.glassDebug ? 1.0 : 0.0
+
+            fragmentShader: "../../shaders/liquid_glass.frag.qsb"
+        }
+
+        Rectangle {
             anchors.fill: parent
             radius: root.radius
-            rimWidthPx: root.rimWidthPx
-            glowWidthPx: root.rimGlowWidthPx
-            highlightOpacity: root.edgeHighlightOpacity * root.materialOpacity
-            shadeOpacity: root.edgeShadeOpacity * root.materialOpacity
-            cornerBoost: root.rimCornerBoost
-            debug: root.rimDebug
-            enabled: root.materialOpacity > 0
+            visible: !root._hasBackgroundTexture || root.glassOpacity <= 0.0
+            color: Qt.rgba(root.widgetBackground.r, root.widgetBackground.g, root.widgetBackground.b, root.widgetBackground.a * root.materialOpacity)
         }
 
         Rectangle {
             anchors.fill: parent
-            anchors.margins: 1
-            radius: Math.max(root.radius - 1, 0)
-            color: "transparent"
-            border.width: 1
-            border.color: Qt.rgba(1, 1, 1, root.innerStrokeOpacity * root.materialOpacity)
+            radius: root.radius
+            color: Qt.rgba(root.widgetBackground.r, root.widgetBackground.g, root.widgetBackground.b, root.widgetBackground.a * root.materialOpacity * root.glassOpacity)
         }
 
-        Canvas {
-            id: noiseLayer
-            anchors.fill: parent
-            opacity: root.noiseOpacity * root.materialOpacity
-            smooth: false
-            onPaint: {
-                const ctx = getContext("2d");
-                ctx.clearRect(0, 0, width, height);
-                const dotCount = Math.floor(width * height * 0.08);
-                for (let i = 0; i < dotCount; i++) {
-                    const v = Math.floor(Math.random() * 255);
-                    ctx.fillStyle = "rgba(" + v + "," + v + "," + v + ",1)";
-                    ctx.fillRect(
-                        Math.floor(Math.random() * width),
-                        Math.floor(Math.random() * height),
-                        1,
-                        1
-                    );
-                }
-            }
-            onWidthChanged: requestPaint()
-            onHeightChanged: requestPaint()
-            Component.onCompleted: requestPaint()
-        }
-
-        MouseArea {
-            id: mouseArea
-            anchors.fill: parent
-            acceptedButtons: Qt.LeftButton | Qt.RightButton
-            onPressed: function(mouse) {
-                if (mouse.button === Qt.RightButton) {
-                    root.requestContextMenu(mouse.x, mouse.y);
-                }
-            }
-            onClicked: function(mouse) {
-                if (mouse.button === Qt.LeftButton) {
-                    weatherService.refresh();
+        Connections {
+            target: captureView
+            function onHasContentChanged() {
+                if (root.useWallpaperSource) {
                     return;
                 }
+                if (root.glassDebug) {
+                    console.log("[WeatherGlass] hasContent:", captureView.hasContent);
+                }
+                if (captureView.hasContent) {
+                    root._capturedOnce = true;
+                }
+            }
+            function onSourceSizeChanged() {
+                if (root.useWallpaperSource) {
+                    return;
+                }
+                if (root.glassDebug) {
+                    console.log("[WeatherGlass] sourceSize:", captureView.sourceSize.width + "x" + captureView.sourceSize.height);
+                }
+            }
+        }
+
+        Connections {
+            target: wallpaperImage
+            function onStatusChanged() {
+                if (!root.glassDebug) {
+                    return;
+                }
+                console.log("[WeatherGlass] wallpaper status:", wallpaperImage.status, "source:", root.wallpaperSource);
+            }
+        }
+    }
+
+    MouseArea {
+        id: mouseArea
+        anchors.fill: parent
+        z: 2
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
+        onPressed: function (mouse) {
+            if (mouse.button === Qt.RightButton) {
+                root.requestContextMenu(mouse.x, mouse.y);
+            }
+        }
+        onClicked: function (mouse) {
+            if (mouse.button === Qt.LeftButton) {
+                weatherService.refresh();
+                return;
+            }
+        }
+    }
+
+    Column {
+        id: smallContent
+        z: 1
+        visible: !root.isMedium
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.margins: 16
+        spacing: 16
+
+        Column {
+            spacing: -3
+
+            Row {
+                spacing: 4
+
+                Text {
+                    text: root.displayLocation.trim().length > 0 ? root.displayLocation : weatherService.data.city
+                    color: "#FFFFFF"
+                    opacity: 0.75
+                    elide: Text.ElideRight
+                    width: 100
+                    font.family: "SF Pro Text"
+                    font.weight: Font.ExtraBold
+                    font.pixelSize: 14
+                }
+
+                Item {
+                    width: 2
+                    height: 1
+                }
+
+                Text {
+                    visible: weatherService.offline
+                    text: "Offline"
+                    color: "#D8A5A5"
+                    font.family: "SF Pro Text"
+                    font.pixelSize: 9
+                    font.weight: Font.Bold
+                }
+            }
+
+            Text {
+                text: weatherService.data.temp === "—" ? "—" : weatherService.data.temp + "°"
+                color: "#FFFFFF"
+                opacity: 0.75
+                font.family: "SF Pro Display"
+                font.pixelSize: 42
+                font.weight: Font.Normal
+                lineHeight: 0.9
             }
         }
 
         Column {
-            id: smallContent
-            visible: !root.isMedium
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.margins: 16
-            spacing: 16
+            spacing: 0
+
+            Text {
+                width: 19
+                height: 19
+                text: weatherService.data.symbol
+                color: "#FFFFFF"
+                opacity: 0.75
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+                font.family: "SF Pro"
+                font.pixelSize: 16
+                font.weight: Font.Normal
+            }
+
+            Text {
+                text: weatherService.data.condition
+                color: "#FFFFFF"
+                opacity: 0.75
+                font.family: "SF Pro Text"
+                font.pixelSize: 13
+                font.weight: Font.Bold
+                elide: Text.ElideRight
+                width: 120
+            }
+
+            Item {
+                width: 2
+                height: 2
+            }
+
+            Text {
+                text: "H:" + weatherService.data.high + "° L:" + weatherService.data.low + "°"
+                color: "#FFFFFF"
+                opacity: 0.75
+                font.family: "SF Pro Text"
+                font.pixelSize: 13
+                font.weight: Font.Bold
+            }
+        }
+    }
+
+    Column {
+        id: mediumContent
+        z: 1
+        visible: root.isMedium
+        anchors.fill: parent
+        anchors.margins: 16
+        spacing: 4
+
+        Row {
+            width: parent.width
+            spacing: 12
 
             Column {
-                spacing: -3
+                width: 156
+                spacing: -2
 
                 Row {
                     spacing: 4
 
                     Text {
-                        text: root.displayLocation.trim().length > 0
-                            ? root.displayLocation
-                            : weatherService.data.city
+                        text: root.displayLocation.trim().length > 0 ? root.displayLocation : weatherService.data.city
                         color: "#FFFFFF"
                         opacity: 0.75
                         elide: Text.ElideRight
-                        width: 100
+                        width: 112
                         font.family: "SF Pro Text"
                         font.weight: Font.ExtraBold
                         font.pixelSize: 14
-                    }
-
-                    Item {
-                        width: 2
-                        height: 1
                     }
 
                     Text {
@@ -184,9 +499,7 @@ Rectangle {
                 }
 
                 Text {
-                    text: weatherService.data.temp === "—"
-                        ? "—"
-                        : weatherService.data.temp + "°"
+                    text: weatherService.data.temp === "—" ? "—" : weatherService.data.temp + "°"
                     color: "#FFFFFF"
                     opacity: 0.75
                     font.family: "SF Pro Display"
@@ -197,19 +510,23 @@ Rectangle {
             }
 
             Column {
+                width: parent.width - 168
                 spacing: 0
 
                 Text {
-                    width: 19
-                    height: 19
                     text: weatherService.data.symbol
                     color: "#FFFFFF"
                     opacity: 0.75
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
+                    horizontalAlignment: Text.AlignRight
+                    width: parent.width
                     font.family: "SF Pro"
                     font.pixelSize: 16
                     font.weight: Font.Normal
+                }
+
+                Item {
+                    width: 2
+                    height: 4
                 }
 
                 Text {
@@ -220,12 +537,8 @@ Rectangle {
                     font.pixelSize: 13
                     font.weight: Font.Bold
                     elide: Text.ElideRight
-                    width: 120
-                }
-
-                Item {
-                    width: 2
-                    height: 2
+                    horizontalAlignment: Text.AlignRight
+                    width: parent.width
                 }
 
                 Text {
@@ -235,166 +548,90 @@ Rectangle {
                     font.family: "SF Pro Text"
                     font.pixelSize: 13
                     font.weight: Font.Bold
+                    horizontalAlignment: Text.AlignRight
+                    width: parent.width
                 }
             }
         }
 
-        Column {
-            id: mediumContent
-            visible: root.isMedium
-            anchors.fill: parent
-            anchors.margins: 16
+        Row {
+            id: hourlyRow
+            width: parent.width
+            x: -8
             spacing: 4
 
-            Row {
-                width: parent.width
-                spacing: 12
+            Repeater {
+                model: 6
 
                 Column {
-                    width: 156
-                    spacing: -2
+                    required property int index
 
-                    Row {
-                        spacing: 4
+                    width: root.isMedium ? (mediumContent.width / 6) : 0
+                    spacing: 6
 
-                        Text {
-                            text: root.displayLocation.trim().length > 0
-                                ? root.displayLocation
-                                : weatherService.data.city
-                            color: "#FFFFFF"
-                            opacity: 0.75
-                            elide: Text.ElideRight
-                            width: 112
-                            font.family: "SF Pro Text"
-                            font.weight: Font.ExtraBold
-                            font.pixelSize: 14
+                    readonly property var hourlyEntry: {
+                        const hourly = root.service.data.hourly;
+                        if (!Array.isArray(hourly) || index >= hourly.length) {
+                            return {
+                                timeLabel: "—",
+                                symbol: "—",
+                                temp: "—"
+                            };
                         }
-
-                        Text {
-                            visible: weatherService.offline
-                            text: "Offline"
-                            color: "#D8A5A5"
-                            font.family: "SF Pro Text"
-                            font.pixelSize: 9
-                            font.weight: Font.Bold
-                        }
+                        return hourly[index];
                     }
 
                     Text {
-                        text: weatherService.data.temp === "—"
-                            ? "—"
-                            : weatherService.data.temp + "°"
+                        text: parent.hourlyEntry.timeLabel || "—"
                         color: "#FFFFFF"
-                        opacity: 0.75
-                        font.family: "SF Pro Display"
-                        font.pixelSize: 42
-                        font.weight: Font.Normal
-                        lineHeight: 0.9
-                    }
-                }
-
-                Column {
-                    width: parent.width - 168
-                    spacing: 0
-
-                    Text {
-                        text: weatherService.data.symbol
-                        color: "#FFFFFF"
-                        opacity: 0.75
-                        horizontalAlignment: Text.AlignRight
+                        opacity: 0.6
+                        font.family: "SF Pro Text"
+                        font.pixelSize: 11
+                        font.weight: Font.Bold
+                        horizontalAlignment: Text.AlignHCenter
                         width: parent.width
+                    }
+
+                    Text {
+                        text: parent.hourlyEntry.symbol || "—"
+                        color: "#FFFFFF"
+                        opacity: 0.75
                         font.family: "SF Pro"
-                        font.pixelSize: 16
-                        font.weight: Font.Normal
-                    }
-
-                Item {
-                    width: 2
-                    height: 4
-                }
-
-                    Text {
-                        text: weatherService.data.condition
-                        color: "#FFFFFF"
-                        opacity: 0.75
-                        font.family: "SF Pro Text"
-                        font.pixelSize: 13
-                        font.weight: Font.Bold
-                        elide: Text.ElideRight
-                        horizontalAlignment: Text.AlignRight
+                        font.pixelSize: 18
+                        horizontalAlignment: Text.AlignHCenter
                         width: parent.width
                     }
 
                     Text {
-                        text: "H:" + weatherService.data.high + "° L:" + weatherService.data.low + "°"
+                        text: parent.hourlyEntry.temp === "—" ? "—" : parent.hourlyEntry.temp + "°"
                         color: "#FFFFFF"
                         opacity: 0.75
                         font.family: "SF Pro Text"
-                        font.pixelSize: 13
+                        font.pixelSize: 12
                         font.weight: Font.Bold
-                        horizontalAlignment: Text.AlignRight
+                        horizontalAlignment: Text.AlignHCenter
                         width: parent.width
-                    }
-                }
-            }
-
-            Row {
-                id: hourlyRow
-                width: parent.width
-                x: -8
-                spacing: 4
-
-                Repeater {
-                    model: 6
-
-                    Column {
-                        required property int index
-
-                        width: root.isMedium ? (mediumContent.width / 6) : 0
-                        spacing: 6
-
-                        readonly property var hourlyEntry: {
-                            const hourly = root.service.data.hourly;
-                            if (!Array.isArray(hourly) || index >= hourly.length) {
-                                return { timeLabel: "—", symbol: "—", temp: "—" };
-                            }
-                            return hourly[index];
-                        }
-
-                        Text {
-                            text: parent.hourlyEntry.timeLabel || "—"
-                            color: "#FFFFFF"
-                            opacity: 0.6
-                            font.family: "SF Pro Text"
-                            font.pixelSize: 11
-                            font.weight: Font.Bold
-                            horizontalAlignment: Text.AlignHCenter
-                            width: parent.width
-                        }
-
-                        Text {
-                            text: parent.hourlyEntry.symbol || "—"
-                            color: "#FFFFFF"
-                            opacity: 0.75
-                            font.family: "SF Pro"
-                            font.pixelSize: 18
-                            horizontalAlignment: Text.AlignHCenter
-                            width: parent.width
-                        }
-
-                        Text {
-                            text: parent.hourlyEntry.temp === "—" ? "—" : parent.hourlyEntry.temp + "°"
-                            color: "#FFFFFF"
-                            opacity: 0.75
-                            font.family: "SF Pro Text"
-                            font.pixelSize: 12
-                            font.weight: Font.Bold
-                            horizontalAlignment: Text.AlignHCenter
-                            width: parent.width
-                        }
                     }
                 }
             }
         }
+    }
+
+    Text {
+        visible: root.glassDebug
+        z: 4
+        anchors.left: parent.left
+        anchors.top: parent.top
+        anchors.margins: 6
+        color: "#FFFFFF"
+        style: Text.Outline
+        styleColor: "#000000"
+        font.family: "SF Pro Text"
+        font.pixelSize: 9
+        text: "mode=" + (root.useWallpaperSource ? "wallpaper" : "capture")
+            + " glass=" + liquidGlass.visible
+            + " has=" + root._hasBackgroundTexture
+            + " src=" + captureView.sourceSize.width + "x" + captureView.sourceSize.height
+            + " tex=" + root._regionTexWidth + "x" + root._regionTexHeight
     }
 }
