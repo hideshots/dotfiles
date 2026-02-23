@@ -64,26 +64,54 @@ QtObject {
     }
     readonly property string cacheFilePath: Quickshell.cachePath("small-weather-last-good.json")
     readonly property bool offline: error.length > 0
+    readonly property int requestTimeoutMs: 30 * 1000
 
     property var _lastGoodData: null
+    property double _requestStartedAt: 0
 
     function refresh() {
-      if (isLoading) return;
+        if (isLoading) {
+            const elapsed = _requestStartedAt > 0 ? (Date.now() - _requestStartedAt) : 0;
+            if (!curlProcess.running || elapsed > requestTimeoutMs) {
+                _resetStuckRequest("Previous weather request got stuck.");
+            } else {
+                return;
+            }
+        }
 
-      isLoading = true;
-      error = "";
+        isLoading = true;
+        _requestStartedAt = Date.now();
+        error = "";
+        requestStartGuard.restart();
+        requestTimeoutGuard.restart();
 
-      curlProcess.exec([
-        "curl",
-        "--http1.1",
-        "-fsSL",
-        "--connect-timeout", "5",
-        "--max-time", "10",
-        "--retry", "2",
-        "--retry-delay", "1",
-        "-A", "Mozilla/5.0",
-        requestUrl
-      ]);
+        curlProcess.exec([
+            "curl",
+            "--http1.1",
+            "-fsSL",
+            "--connect-timeout", "5",
+            "--max-time", "10",
+            "--retry", "2",
+            "--retry-delay", "1",
+            "-A", "Mozilla/5.0",
+            requestUrl
+        ]);
+    }
+
+    function _resetStuckRequest(nextError) {
+        if (!isLoading) {
+            return;
+        }
+
+        if (curlProcess.running) {
+            curlProcess.signal(15);
+        }
+
+        isLoading = false;
+        _requestStartedAt = 0;
+        requestStartGuard.stop();
+        requestTimeoutGuard.stop();
+        _applyError(nextError);
     }
 
     function _safeValue(value) {
@@ -412,6 +440,13 @@ QtObject {
     }
 
     function _handleCurlFinished() {
+        if (!isLoading) {
+            return;
+        }
+
+        _requestStartedAt = 0;
+        requestStartGuard.stop();
+        requestTimeoutGuard.stop();
         isLoading = false;
         _onFetchFinished(stderrCollector.text, stdoutCollector.text);
     }
@@ -426,6 +461,26 @@ QtObject {
         repeat: true
         running: true
         onTriggered: root.refresh()
+    }
+
+    property Timer requestStartGuard: Timer {
+        interval: 1200
+        repeat: false
+        onTriggered: {
+            if (root.isLoading && !curlProcess.running) {
+                root._resetStuckRequest("Weather request failed to start.");
+            }
+        }
+    }
+
+    property Timer requestTimeoutGuard: Timer {
+        interval: root.requestTimeoutMs
+        repeat: false
+        onTriggered: {
+            if (root.isLoading) {
+                root._resetStuckRequest("Weather request timed out.");
+            }
+        }
     }
 
     property Process curlProcess: Process {
