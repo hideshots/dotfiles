@@ -22,18 +22,23 @@ ShellRoot {
     property string weatherUnits: "u"
     property string weatherVariant: "medium"
     property bool widgetGlassDebug: false
-    property real widgetGlassRefraction: 0.0
-    property real widgetGlassDepth: 0.02
-    property real widgetGlassDispersion: 5.0
-    property real widgetGlassFrost: 0.5
-    property real widgetGlassSplay: 5.0
-    property real widgetGlassLightAngleDeg: 315
-    property real widgetGlassLightStrength: 3.9
-    property real widgetGlassLightWidthPx: 4.0
-    property real widgetGlassLightSharpness: 0.1
+    property real widgetGlassRefraction: 9.0
+    property real widgetGlassBodyRefractionWidthPx: 28.0
+    property real widgetGlassDepth: 0.0
+    property real widgetGlassDispersion: 1.0
+    property real widgetGlassFrost: 0.7
+    property real widgetGlassSplay: 9.0
+    property real widgetGlassLightAngleDeg: 335
+    property real widgetGlassLightStrength: 4.0
+    property real widgetGlassLightWidthPx: 3.0
+    property real widgetGlassLightSharpness: 0.4
+    property real widgetGlassCornerBoost: 0.5
+    property real widgetGlassDispersionLimit: 1.0
+    property real widgetGlassDispersionWidthPx: 13.0
+    property real widgetGlassDispersionCurve: 0.45
     property real widgetGlassOpacity: 1.0
     property color widgetGlassTint: Qt.rgba(1.0, 1.0, 1.0, 0.1)
-    property real widgetGlassBlurSize: 2.7
+    property real widgetGlassBlurSize: 1.3
     property real widgetGlassBlurPasses: 2
     property bool widgetGlassLiveCapture: false
     property bool widgetGlassAutoRecapture: false
@@ -107,6 +112,11 @@ ShellRoot {
             lightStrength: shell.widgetGlassLightStrength
             lightWidthPx: shell.widgetGlassLightWidthPx
             lightSharpness: shell.widgetGlassLightSharpness
+            bodyRefractionWidthPx: shell.widgetGlassBodyRefractionWidthPx
+            cornerBoost: shell.widgetGlassCornerBoost
+            dispersionLimit: shell.widgetGlassDispersionLimit
+            dispersionWidthPx: shell.widgetGlassDispersionWidthPx
+            dispersionCurve: shell.widgetGlassDispersionCurve
             glassOpacity: shell.widgetGlassOpacity
             glassTint: shell.widgetGlassTint
             blurSize: shell.widgetGlassBlurSize
@@ -189,6 +199,11 @@ ShellRoot {
             lightStrength: shell.widgetGlassLightStrength
             lightWidthPx: shell.widgetGlassLightWidthPx
             lightSharpness: shell.widgetGlassLightSharpness
+            bodyRefractionWidthPx: shell.widgetGlassBodyRefractionWidthPx
+            cornerBoost: shell.widgetGlassCornerBoost
+            dispersionLimit: shell.widgetGlassDispersionLimit
+            dispersionWidthPx: shell.widgetGlassDispersionWidthPx
+            dispersionCurve: shell.widgetGlassDispersionCurve
             glassOpacity: shell.widgetGlassOpacity
             glassTint: shell.widgetGlassTint
             blurSize: shell.widgetGlassBlurSize

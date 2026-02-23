@@ -40,6 +40,11 @@ Rectangle {
     property real lightStrength: 0.85
     property real lightWidthPx: 14.0
     property real lightSharpness: 0.45
+    property real bodyRefractionWidthPx: 28.0
+    property real cornerBoost: 0.55
+    property real dispersionLimit: 0.35
+    property real dispersionWidthPx: 10.0
+    property real dispersionCurve: 0.7
     property real glassOpacity: 1.0
     property color glassTint: Qt.rgba(0.92, 0.97, 1.0, 0)
     property bool liveCapture: false
@@ -497,6 +502,11 @@ Rectangle {
             property real uLightStrength: root.lightStrength
             property real uLightWidthPx: root.lightWidthPx
             property real uLightSharpness: root.lightSharpness
+            property real uBodyRefractionWidthPx: root.bodyRefractionWidthPx
+            property real uCornerBoost: root.cornerBoost
+            property real uDispersionLimit: root.dispersionLimit
+            property real uDispersionWidthPx: root.dispersionWidthPx
+            property real uDispersionCurve: root.dispersionCurve
 
             fragmentShader: "../../shaders/liquid_glass.frag.qsb"
         }

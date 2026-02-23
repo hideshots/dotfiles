@@ -19,6 +19,11 @@ layout(std140, binding = 0) uniform buf {
     float uLightStrength;
     float uLightWidthPx;
     float uLightSharpness;
+    float uBodyRefractionWidthPx;
+    float uCornerBoost;
+    float uDispersionLimit;
+    float uDispersionWidthPx;
+    float uDispersionCurve;
     vec2 uSize;
     vec4 uUvRect;
     vec4 uTint;
@@ -66,6 +71,11 @@ void main() {
     float mask = smoothstep(0.0, 1.0, edgeDist);
     float edgeMask = 1.0 - smoothstep(0.0, 18.0, edgeDist);
     float edgeInfluence = edgeMask * edgeMask;
+    float bodyWidthPx = max(2.0, uBodyRefractionWidthPx);
+    float bodyMask = 1.0 - smoothstep(0.0, bodyWidthPx, edgeDist);
+    bodyMask *= bodyMask * (3.0 - 2.0 * bodyMask);
+    float bodyTail = 1.0 - smoothstep(bodyWidthPx, bodyWidthPx * 4.0, edgeDist);
+    bodyMask = clamp(max(bodyMask, 0.22 * bodyTail), 0.0, 1.0);
 
     // Avoid dFdx/dFdy seam across the internal quad triangle split by using
     // finite differences in pixel space.
@@ -75,17 +85,39 @@ void main() {
     float sdfX0 = roundedRectSdf(pixel - px, uSize, uRadius);
     float sdfY1 = roundedRectSdf(pixel + py, uSize, uRadius);
     float sdfY0 = roundedRectSdf(pixel - py, uSize, uRadius);
+    float sdfXYpp = roundedRectSdf(pixel + px + py, uSize, uRadius);
+    float sdfXYpn = roundedRectSdf(pixel + px - py, uSize, uRadius);
+    float sdfXYnp = roundedRectSdf(pixel - px + py, uSize, uRadius);
+    float sdfXYnn = roundedRectSdf(pixel - px - py, uSize, uRadius);
     vec2 grad = vec2(sdfX1 - sdfX0, sdfY1 - sdfY0);
     float gradLen = max(length(grad), 1e-4);
     vec2 normal2d = grad / gradLen;
     vec2 tangent = vec2(-normal2d.y, normal2d.x);
+    float dxx = sdfX1 - (2.0 * sdf) + sdfX0;
+    float dyy = sdfY1 - (2.0 * sdf) + sdfY0;
+    float dxy = 0.25 * (sdfXYpp - sdfXYpn - sdfXYnp + sdfXYnn);
+    float cornerCurvature = abs(dxx) + abs(dyy) + (2.0 * abs(dxy));
+    float cornerCurvMask = smoothstep(0.035, 0.33, cornerCurvature);
+    float sideDistX = min(pixel.x, uSize.x - pixel.x);
+    float sideDistY = min(pixel.y, uSize.y - pixel.y);
+    float cornerReach = max(2.0, uRadius * 1.5);
+    float cornerNearX = 1.0 - smoothstep(0.0, cornerReach, sideDistX);
+    float cornerNearY = 1.0 - smoothstep(0.0, cornerReach, sideDistY);
+    float cornerGeomMask = cornerNearX * cornerNearY;
+    float cornerness = clamp(max(cornerCurvMask, cornerGeomMask), 0.0, 1.0);
+    cornerness *= (0.4 + 0.6 * bodyMask);
 
     float depthGain = 1.0 + (uDepth * 0.95);
     vec2 pixelToUv = vec2(1.0 / max(1.0, uSize.x), 1.0 / max(1.0, uSize.y));
+    float refrControl = max(uRefraction, 0.0);
+    float refrResponse = 1.0 - exp(-refrControl * 0.04);
+    float cornerBoost = clamp(uCornerBoost, 0.0, 1.0);
+    float bodyWeight = bodyMask * (1.0 + cornerBoost * cornerness);
+    bodyWeight = min(bodyWeight, 1.45);
 
-    float refrPx = (0.8 + 4.8 * uRefraction)
+    float refrPx = (9.6 * refrResponse)
         * (0.35 + 0.65 * depthGain)
-        * edgeInfluence;
+        * bodyWeight;
     vec2 refrOffset = normal2d * refrPx * pixelToUv;
 
     float splayPx = (0.2 + 2.2 * uSplay) * edgeInfluence;
@@ -94,14 +126,29 @@ void main() {
     vec2 mappedUv = uUvRect.xy + (uv * uUvRect.zw);
     vec2 refractedUv = mappedUv + refrOffset + splayOffset;
 
-    float dispersionUv = (0.0007 + 0.0032 * uDispersion) * edgeInfluence;
-    vec2 dispersionVec = normal2d * dispersionUv;
+    float dispersionWidthPx = max(1.0, uDispersionWidthPx);
+    float dispersionMask = 1.0 - smoothstep(0.0, dispersionWidthPx, edgeDist);
+    dispersionMask *= dispersionMask * (3.0 - 2.0 * dispersionMask);
+    dispersionMask *= (0.72 + 0.28 * cornerness);
+    float dispersionControl = max(uDispersion, 0.0);
+    float dispersionNorm = dispersionControl / (1.0 + dispersionControl);
+    float dispersionCurve = max(0.2, uDispersionCurve);
+    float dispersionResponse = pow(dispersionNorm, dispersionCurve);
+    float dispersionLimit = clamp(uDispersionLimit, 0.0, 1.0);
+    float dispersionAmount = min(dispersionResponse * dispersionMask, dispersionLimit);
+    float dispersionMix = clamp(dispersionAmount * 2.6, 0.0, 1.0);
+    // Keep dispersion restrained, but allow a visible RGB split at practical widget sizes.
+    float dispersionPx = (0.20 + 4.40 * dispersionAmount) * (0.70 + 0.30 * bodyMask);
+    vec2 dispersionDir = normalize(normal2d + (tangent * 0.30));
+    vec2 dispersionVec = dispersionDir * dispersionPx * pixelToUv;
 
     vec3 baseColor = sampleScene(mappedUv);
-    vec3 refractedColor;
-    refractedColor.r = sampleScene(refractedUv + dispersionVec).r;
-    refractedColor.g = sampleScene(refractedUv).g;
-    refractedColor.b = sampleScene(refractedUv - dispersionVec).b;
+    vec3 monoRefracted = sampleScene(refractedUv);
+    vec3 dispersedColor;
+    dispersedColor.r = sampleScene(refractedUv + (dispersionVec * 1.35)).r;
+    dispersedColor.g = sampleScene(refractedUv - (dispersionVec * 0.20)).g;
+    dispersedColor.b = sampleScene(refractedUv - (dispersionVec * 1.35)).b;
+    vec3 refractedColor = mix(monoRefracted, dispersedColor, dispersionMix);
 
     float frostFactor = uFrost;
     vec2 frostStep = pixelToUv * (1.8 + 5.5 * frostFactor);
