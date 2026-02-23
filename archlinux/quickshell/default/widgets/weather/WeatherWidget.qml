@@ -32,12 +32,17 @@ Rectangle {
     property real dispersion: 0.0
     property real frost: 0.0
     property real splay: 0.0
+    property real lightAngleDeg: 345
+    property real lightStrength: 0.85
+    property real lightWidthPx: 14.0
+    property real lightSharpness: 0.45
     property real glassOpacity: 1.0
     property color glassTint: Qt.rgba(0.92, 0.97, 1.0, 0.0)
     property color widgetBackground: Qt.rgba(20 / 255, 20 / 255, 20 / 255, 0.0)
     property bool liveCapture: false
     property bool autoRecapture: false
-    property real blurStrength: 0.0
+    property real blurSize: 0.0
+    property real blurPasses: 2
     property bool glassDebug: false
 
     property real _shaderTime: 0.0
@@ -192,6 +197,8 @@ Rectangle {
         id: glassLayer
         anchors.fill: parent
         z: 0
+        readonly property int effectiveBlurPasses: Math.max(1, Math.min(3, Math.round(root.blurPasses)))
+        readonly property real blurBase: Math.max(0.001, root.blurSize) * (1.0 + root.frost * 0.8)
 
         ScreencopyView {
             id: captureView
@@ -238,7 +245,7 @@ Rectangle {
 
             property variant source: sampledBackground
             property vector2d texelSize: root._blurTexel
-            property real blurStrength: root.blurStrength * (1.0 + root.frost * 0.8)
+            property real blurStrength: glassLayer.blurBase * 1.0
 
             fragmentShader: "../../shaders/blur_h.frag.qsb"
         }
@@ -260,7 +267,7 @@ Rectangle {
 
             property variant source: blurPassHSource
             property vector2d texelSize: root._blurTexel
-            property real blurStrength: root.blurStrength * (1.0 + root.frost * 0.8)
+            property real blurStrength: glassLayer.blurBase * 1.0
 
             fragmentShader: "../../shaders/blur_v.frag.qsb"
         }
@@ -276,11 +283,105 @@ Rectangle {
         }
 
         ShaderEffect {
+            id: blurPass2H
+            visible: glassLayer.effectiveBlurPasses >= 2
+            width: root._regionTexWidth
+            height: root._regionTexHeight
+
+            property variant source: blurPassVSource
+            property vector2d texelSize: root._blurTexel
+            property real blurStrength: glassLayer.blurBase * 1.7
+
+            fragmentShader: "../../shaders/blur_h.frag.qsb"
+        }
+
+        ShaderEffectSource {
+            id: blurPass2HSource
+            sourceItem: blurPass2H
+            hideSource: true
+            live: glassLayer.effectiveBlurPasses >= 2
+            smooth: true
+            mipmap: false
+            textureSize: Qt.size(root._regionTexWidth, root._regionTexHeight)
+        }
+
+        ShaderEffect {
+            id: blurPass2V
+            visible: glassLayer.effectiveBlurPasses >= 2
+            width: root._regionTexWidth
+            height: root._regionTexHeight
+
+            property variant source: blurPass2HSource
+            property vector2d texelSize: root._blurTexel
+            property real blurStrength: glassLayer.blurBase * 1.7
+
+            fragmentShader: "../../shaders/blur_v.frag.qsb"
+        }
+
+        ShaderEffectSource {
+            id: blurPass2VSource
+            sourceItem: blurPass2V
+            hideSource: true
+            live: glassLayer.effectiveBlurPasses >= 2
+            smooth: true
+            mipmap: false
+            textureSize: Qt.size(root._regionTexWidth, root._regionTexHeight)
+        }
+
+        ShaderEffect {
+            id: blurPass3H
+            visible: glassLayer.effectiveBlurPasses >= 3
+            width: root._regionTexWidth
+            height: root._regionTexHeight
+
+            property variant source: blurPass2VSource
+            property vector2d texelSize: root._blurTexel
+            property real blurStrength: glassLayer.blurBase * 2.4
+
+            fragmentShader: "../../shaders/blur_h.frag.qsb"
+        }
+
+        ShaderEffectSource {
+            id: blurPass3HSource
+            sourceItem: blurPass3H
+            hideSource: true
+            live: glassLayer.effectiveBlurPasses >= 3
+            smooth: true
+            mipmap: false
+            textureSize: Qt.size(root._regionTexWidth, root._regionTexHeight)
+        }
+
+        ShaderEffect {
+            id: blurPass3V
+            visible: glassLayer.effectiveBlurPasses >= 3
+            width: root._regionTexWidth
+            height: root._regionTexHeight
+
+            property variant source: blurPass3HSource
+            property vector2d texelSize: root._blurTexel
+            property real blurStrength: glassLayer.blurBase * 2.4
+
+            fragmentShader: "../../shaders/blur_v.frag.qsb"
+        }
+
+        ShaderEffectSource {
+            id: blurPass3VSource
+            sourceItem: blurPass3V
+            hideSource: true
+            live: glassLayer.effectiveBlurPasses >= 3
+            smooth: true
+            mipmap: false
+            textureSize: Qt.size(root._regionTexWidth, root._regionTexHeight)
+        }
+
+        ShaderEffect {
             id: liquidGlass
             anchors.fill: parent
             visible: root._hasBackgroundTexture && root.glassOpacity > 0.0
 
-            property variant sceneTex: blurPassVSource
+            property variant sceneTex: glassLayer.effectiveBlurPasses >= 3
+                ? blurPass3VSource
+                : (glassLayer.effectiveBlurPasses >= 2 ? blurPass2VSource : blurPassVSource)
             property vector2d uSize: Qt.vector2d(width, height)
             property vector4d uUvRect: Qt.vector4d(0.0, 0.0, 1.0, 1.0)
             property real uRadius: root.radius
@@ -293,6 +394,10 @@ Rectangle {
             property color uTint: root.glassTint
             property real uTime: root._shaderTime
             property real uDebug: root.glassDebug ? 1.0 : 0.0
+            property real uLightAngleDeg: root.lightAngleDeg
+            property real uLightStrength: root.lightStrength
+            property real uLightWidthPx: root.lightWidthPx
+            property real uLightSharpness: root.lightSharpness
 
             fragmentShader: "../../shaders/liquid_glass.frag.qsb"
         }
@@ -633,5 +738,6 @@ Rectangle {
             + " has=" + root._hasBackgroundTexture
             + " src=" + captureView.sourceSize.width + "x" + captureView.sourceSize.height
             + " tex=" + root._regionTexWidth + "x" + root._regionTexHeight
+            + " b=" + root.blurSize + " p=" + glassLayer.effectiveBlurPasses
     }
 }

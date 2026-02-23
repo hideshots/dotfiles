@@ -25,11 +25,16 @@ ShellRoot {
     property real widgetGlassRefraction: 0.0
     property real widgetGlassDepth: 0.02
     property real widgetGlassDispersion: 5.0
-    property real widgetGlassFrost: 0.0
+    property real widgetGlassFrost: 0.5
     property real widgetGlassSplay: 5.0
+    property real widgetGlassLightAngleDeg: 315
+    property real widgetGlassLightStrength: 3.9
+    property real widgetGlassLightWidthPx: 4.0
+    property real widgetGlassLightSharpness: 0.1
     property real widgetGlassOpacity: 1.0
-    property color widgetGlassTint: Qt.rgba(0.92, 0.97, 1.0, 0.0)
-    property real widgetGlassBlurStrength: 0.7
+    property color widgetGlassTint: Qt.rgba(1.0, 1.0, 1.0, 0.1)
+    property real widgetGlassBlurSize: 2.7
+    property real widgetGlassBlurPasses: 2
     property bool widgetGlassLiveCapture: false
     property bool widgetGlassAutoRecapture: false
     readonly property string _homeDir: StandardPaths.writableLocation(StandardPaths.HomeLocation)
@@ -98,9 +103,14 @@ ShellRoot {
             dispersion: shell.widgetGlassDispersion
             frost: shell.widgetGlassFrost
             splay: shell.widgetGlassSplay
+            lightAngleDeg: shell.widgetGlassLightAngleDeg
+            lightStrength: shell.widgetGlassLightStrength
+            lightWidthPx: shell.widgetGlassLightWidthPx
+            lightSharpness: shell.widgetGlassLightSharpness
             glassOpacity: shell.widgetGlassOpacity
             glassTint: shell.widgetGlassTint
-            blurStrength: shell.widgetGlassBlurStrength
+            blurSize: shell.widgetGlassBlurSize
+            blurPasses: shell.widgetGlassBlurPasses
             liveCapture: shell.widgetGlassLiveCapture
             autoRecapture: shell.widgetGlassAutoRecapture
             glassDebug: shell.widgetGlassDebug
@@ -175,9 +185,14 @@ ShellRoot {
             dispersion: shell.widgetGlassDispersion
             frost: shell.widgetGlassFrost
             splay: shell.widgetGlassSplay
+            lightAngleDeg: shell.widgetGlassLightAngleDeg
+            lightStrength: shell.widgetGlassLightStrength
+            lightWidthPx: shell.widgetGlassLightWidthPx
+            lightSharpness: shell.widgetGlassLightSharpness
             glassOpacity: shell.widgetGlassOpacity
             glassTint: shell.widgetGlassTint
-            blurStrength: shell.widgetGlassBlurStrength
+            blurSize: shell.widgetGlassBlurSize
+            blurPasses: shell.widgetGlassBlurPasses
             liveCapture: shell.widgetGlassLiveCapture
             autoRecapture: shell.widgetGlassAutoRecapture
             glassDebug: shell.widgetGlassDebug
