@@ -1,5 +1,5 @@
+pragma ComponentBehavior: Bound
 import QtQuick
-import Qt5Compat.GraphicalEffects
 
 Rectangle {
     id: root
@@ -14,7 +14,8 @@ Rectangle {
 
     // Computed properties
     property bool hasSubmenu: itemData.submenu !== undefined
-    property bool isDisabled: itemData.disabled || false
+    property bool isDisabled: itemData.disabled || itemData.enabled === false || false
+    readonly property bool showActiveText: !isDisabled && (isHovered || isSelected)
     property bool isChecked: itemData.checked || false
     property bool reserveCheckmark: itemData.reserveCheckmark || false
     readonly property bool showCheckColumn: reserveCheckmark || isChecked
@@ -36,7 +37,7 @@ Rectangle {
         radius: Theme.menuItemBorderRadius
         color: {
             if (root.isDisabled) return "transparent"
-            if (root.isSelected || root.isHovered) {
+            if (root.showActiveText) {
                 return Theme.menuHighlight
             }
             if (root.isSubmenuOpen) {
@@ -44,7 +45,7 @@ Rectangle {
             }
             return "transparent"
         }
-        visible: root.isHovered || root.isSelected || root.isSubmenuOpen
+        visible: !root.isDisabled && (root.isHovered || root.isSelected || root.isSubmenuOpen)
 
         Behavior on color {
             ColorAnimation { duration: Theme.animationDuration }
@@ -66,7 +67,7 @@ Rectangle {
                 text: "􀆅"
                 font.family: Theme.fontFamily
                 font.pixelSize: 10
-                color: (root.isHovered || root.isSelected)
+                color: root.showActiveText
                     ? "#ffffff"
                     : (root.isDisabled ? Theme.menuTextDisabled : Theme.menuText)
                 renderType: Text.NativeRendering
@@ -84,7 +85,7 @@ Rectangle {
                 text: root.icon
                 font.family: Theme.fontFamily
                 font.pixelSize: 10
-                color: (root.isHovered || root.isSelected)
+                color: root.showActiveText
                     ? "#ffffff"
                     : (root.isDisabled ? Theme.menuTextDisabled : Theme.menuText)
                 renderType: Text.NativeRendering
@@ -101,7 +102,7 @@ Rectangle {
             font.family: Theme.fontFamily
             font.pixelSize: Theme.fontSize
             font.weight: Font.Medium
-            color: (root.isHovered || root.isSelected)
+            color: root.showActiveText
                 ? "#ffffff"
                 : (root.isDisabled ? Theme.menuTextDisabled : Theme.menuText)
             elide: Text.ElideRight
@@ -127,11 +128,15 @@ Rectangle {
             height: parent.height
             spacing: 1
             visible: root.shortcut.length > 0 && !root.hasSubmenu
+            property color shortcutColor: root.showActiveText
+                ? "#ffffff"
+                : (root.isDisabled ? Theme.menuTextDisabled : Theme.menuShortcutText)
 
             Repeater {
                 model: root.shortcut
 
                 Text {
+                    required property var modelData
                     height: parent.height
                     width: 12
                     verticalAlignment: Text.AlignVCenter
@@ -140,9 +145,7 @@ Rectangle {
                     font.family: Theme.fontFamily
                     font.pixelSize: 13
                     font.weight: Font.Medium
-                    color: (root.isHovered || root.isSelected)
-                        ? "#ffffff"
-                        : Theme.menuShortcutText
+                    color: shortcutRow.shortcutColor
                     renderType: Text.NativeRendering
                 }
             }
@@ -158,7 +161,7 @@ Rectangle {
             font.family: Theme.fontFamily
             font.pixelSize: 13
             font.weight: Font.DemiBold
-            color: (root.isHovered || root.isSelected)
+            color: root.showActiveText
                 ? "#ffffff"
                 : (root.isDisabled ? Theme.menuTextDisabled : Theme.menuText)
             visible: root.hasSubmenu

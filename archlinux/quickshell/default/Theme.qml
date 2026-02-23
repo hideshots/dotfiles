@@ -23,8 +23,14 @@ QtObject {
 
     // Font settings - SF Pro
     readonly property string fontFamily: "SF Pro Text"
+    readonly property string fontFamilyDisplay: "SF Pro Display"
+    readonly property string fontFamilySymbol: "SF Pro"
     readonly property int fontSize: 13
     readonly property int iconSize: 16
+
+    // Shared semantic text colors
+    readonly property color textWarning: isDark ? "#D8A5A5" : "#8A4F4F"
+    readonly property color textOutline: "#000000"
 
     // Hover opacity
     readonly property real hoverOpacity: 0.8

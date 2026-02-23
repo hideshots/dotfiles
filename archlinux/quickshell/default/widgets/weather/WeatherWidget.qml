@@ -4,6 +4,8 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 
+import "../.." as Root
+
 Rectangle {
     id: root
 
@@ -495,11 +497,11 @@ Rectangle {
 
                 Text {
                     text: root.displayLocation.trim().length > 0 ? root.displayLocation : weatherService.data.city
-                    color: "#FFFFFF"
+                    color: Root.Theme.textPrimary
                     opacity: 0.75
                     elide: Text.ElideRight
                     width: 100
-                    font.family: "SF Pro Text"
+                    font.family: Root.Theme.fontFamily
                     font.weight: Font.ExtraBold
                     font.pixelSize: 14
                 }
@@ -512,8 +514,8 @@ Rectangle {
                 Text {
                     visible: weatherService.offline
                     text: "Offline"
-                    color: "#D8A5A5"
-                    font.family: "SF Pro Text"
+                    color: Root.Theme.textWarning
+                    font.family: Root.Theme.fontFamily
                     font.pixelSize: 9
                     font.weight: Font.Bold
                 }
@@ -521,9 +523,9 @@ Rectangle {
 
             Text {
                 text: weatherService.data.temp === "—" ? "—" : weatherService.data.temp + "°"
-                color: "#FFFFFF"
+                color: Root.Theme.textPrimary
                 opacity: 0.75
-                font.family: "SF Pro Display"
+                font.family: Root.Theme.fontFamilyDisplay
                 font.pixelSize: 42
                 font.weight: Font.Normal
                 lineHeight: 0.9
@@ -537,20 +539,20 @@ Rectangle {
                 width: 19
                 height: 19
                 text: weatherService.data.symbol
-                color: "#FFFFFF"
+                color: Root.Theme.textPrimary
                 opacity: 0.75
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
-                font.family: "SF Pro"
+                font.family: Root.Theme.fontFamilySymbol
                 font.pixelSize: 16
                 font.weight: Font.Normal
             }
 
             Text {
                 text: weatherService.data.condition
-                color: "#FFFFFF"
+                color: Root.Theme.textPrimary
                 opacity: 0.75
-                font.family: "SF Pro Text"
+                font.family: Root.Theme.fontFamily
                 font.pixelSize: 13
                 font.weight: Font.Bold
                 elide: Text.ElideRight
@@ -564,9 +566,9 @@ Rectangle {
 
             Text {
                 text: "H:" + weatherService.data.high + "° L:" + weatherService.data.low + "°"
-                color: "#FFFFFF"
+                color: Root.Theme.textPrimary
                 opacity: 0.75
-                font.family: "SF Pro Text"
+                font.family: Root.Theme.fontFamily
                 font.pixelSize: 13
                 font.weight: Font.Bold
             }
@@ -594,11 +596,11 @@ Rectangle {
 
                     Text {
                         text: root.displayLocation.trim().length > 0 ? root.displayLocation : weatherService.data.city
-                        color: "#FFFFFF"
+                        color: Root.Theme.textPrimary
                         opacity: 0.75
                         elide: Text.ElideRight
                         width: 112
-                        font.family: "SF Pro Text"
+                        font.family: Root.Theme.fontFamily
                         font.weight: Font.ExtraBold
                         font.pixelSize: 14
                     }
@@ -606,8 +608,8 @@ Rectangle {
                     Text {
                         visible: weatherService.offline
                         text: "Offline"
-                        color: "#D8A5A5"
-                        font.family: "SF Pro Text"
+                        color: Root.Theme.textWarning
+                        font.family: Root.Theme.fontFamily
                         font.pixelSize: 9
                         font.weight: Font.Bold
                     }
@@ -615,9 +617,9 @@ Rectangle {
 
                 Text {
                     text: weatherService.data.temp === "—" ? "—" : weatherService.data.temp + "°"
-                    color: "#FFFFFF"
+                    color: Root.Theme.textPrimary
                     opacity: 0.75
-                    font.family: "SF Pro Display"
+                    font.family: Root.Theme.fontFamilyDisplay
                     font.pixelSize: 42
                     font.weight: Font.Normal
                     lineHeight: 0.9
@@ -630,11 +632,11 @@ Rectangle {
 
                 Text {
                     text: weatherService.data.symbol
-                    color: "#FFFFFF"
+                    color: Root.Theme.textPrimary
                     opacity: 0.75
                     horizontalAlignment: Text.AlignRight
                     width: parent.width
-                    font.family: "SF Pro"
+                    font.family: Root.Theme.fontFamilySymbol
                     font.pixelSize: 16
                     font.weight: Font.Normal
                 }
@@ -646,9 +648,9 @@ Rectangle {
 
                 Text {
                     text: weatherService.data.condition
-                    color: "#FFFFFF"
+                    color: Root.Theme.textPrimary
                     opacity: 0.75
-                    font.family: "SF Pro Text"
+                    font.family: Root.Theme.fontFamily
                     font.pixelSize: 13
                     font.weight: Font.Bold
                     elide: Text.ElideRight
@@ -658,9 +660,9 @@ Rectangle {
 
                 Text {
                     text: "H:" + weatherService.data.high + "° L:" + weatherService.data.low + "°"
-                    color: "#FFFFFF"
+                    color: Root.Theme.textPrimary
                     opacity: 0.75
-                    font.family: "SF Pro Text"
+                    font.family: Root.Theme.fontFamily
                     font.pixelSize: 13
                     font.weight: Font.Bold
                     horizontalAlignment: Text.AlignRight
@@ -698,9 +700,9 @@ Rectangle {
 
                     Text {
                         text: parent.hourlyEntry.timeLabel || "—"
-                        color: "#FFFFFF"
+                        color: Root.Theme.textPrimary
                         opacity: 0.6
-                        font.family: "SF Pro Text"
+                        font.family: Root.Theme.fontFamily
                         font.pixelSize: 11
                         font.weight: Font.Bold
                         horizontalAlignment: Text.AlignHCenter
@@ -709,9 +711,9 @@ Rectangle {
 
                     Text {
                         text: parent.hourlyEntry.symbol || "—"
-                        color: "#FFFFFF"
+                        color: Root.Theme.textPrimary
                         opacity: 0.75
-                        font.family: "SF Pro"
+                        font.family: Root.Theme.fontFamilySymbol
                         font.pixelSize: 18
                         horizontalAlignment: Text.AlignHCenter
                         width: parent.width
@@ -719,9 +721,9 @@ Rectangle {
 
                     Text {
                         text: parent.hourlyEntry.temp === "—" ? "—" : parent.hourlyEntry.temp + "°"
-                        color: "#FFFFFF"
+                        color: Root.Theme.textPrimary
                         opacity: 0.75
-                        font.family: "SF Pro Text"
+                        font.family: Root.Theme.fontFamily
                         font.pixelSize: 12
                         font.weight: Font.Bold
                         horizontalAlignment: Text.AlignHCenter
@@ -738,10 +740,10 @@ Rectangle {
         anchors.left: parent.left
         anchors.top: parent.top
         anchors.margins: 6
-        color: "#FFFFFF"
+        color: Root.Theme.textPrimary
         style: Text.Outline
-        styleColor: "#000000"
-        font.family: "SF Pro Text"
+        styleColor: Root.Theme.textOutline
+        font.family: Root.Theme.fontFamily
         font.pixelSize: 9
         text: "mode=" + (root.useWallpaperSource ? "wallpaper" : "capture")
             + " glass=" + liquidGlass.visible

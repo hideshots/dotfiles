@@ -1,10 +1,7 @@
 export ZSH="$HOME/.oh-my-zsh"
 ZSH_THEME="bureau"
 
-export ANTHROPIC_BASE_URL="https://agentrouter.org/"
-export ANTHROPIC_AUTH_TOKEN="sk-RDmSextbUTN9wShyAuNAv5WZWyw7XiRlUvVyk1IFkwDYYboH"
-export ANTHROPIC_MODEL="glm-4.6"
-
+export PATH="/usr/lib/qt6/bin:$PATH"
 export MPD_HOST="$HOME/.config/mpd/socket"
 
 plugins=(

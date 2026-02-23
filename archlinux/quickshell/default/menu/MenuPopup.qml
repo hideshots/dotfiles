@@ -514,7 +514,7 @@ PopupWindow {
         var newIndex = hoveredIndex - 1
         while (newIndex >= 0) {
             var item = model[newIndex]
-            if (item.type !== "separator" && item.type !== "header" && !item.disabled) {
+            if (item.type !== "separator" && item.type !== "header" && !isItemDisabled(item)) {
                 hoveredIndex = newIndex
                 return
             }
@@ -526,7 +526,7 @@ PopupWindow {
         var newIndex = hoveredIndex + 1
         while (newIndex < model.length) {
             var item = model[newIndex]
-            if (item.type !== "separator" && item.type !== "header" && !item.disabled) {
+            if (item.type !== "separator" && item.type !== "header" && !isItemDisabled(item)) {
                 hoveredIndex = newIndex
                 return
             }
@@ -537,7 +537,7 @@ PopupWindow {
     function findFirstSelectableIndex() {
         for (var i = 0; i < model.length; i++) {
             var item = model[i]
-            if (item.type !== "separator" && item.type !== "header" && !item.disabled) {
+            if (item.type !== "separator" && item.type !== "header" && !isItemDisabled(item)) {
                 return i
             }
         }
@@ -546,12 +546,16 @@ PopupWindow {
 
     function activateItem(index) {
         var item = model[index]
-        if (item && !item.disabled) {
+        if (item && !isItemDisabled(item)) {
             selectedIndex = index
             itemClicked(item, index)
             if (item.action) item.action()
             root.closeTopMenu()
         }
+    }
+
+    function isItemDisabled(item) {
+        return item && (item.disabled || item.enabled === false)
     }
 
     Component {
@@ -567,10 +571,10 @@ PopupWindow {
                 id: mouseArea
                 anchors.fill: parent
                 hoverEnabled: true
-                cursorShape: parent.itemData.disabled ? Qt.ArrowCursor : Qt.PointingHandCursor
+                cursorShape: root.isItemDisabled(parent.itemData) ? Qt.ArrowCursor : Qt.PointingHandCursor
 
                 onEntered: {
-                    if (parent.itemData.disabled) return
+                    if (root.isItemDisabled(parent.itemData)) return
 
                     var index = parent.parent.itemIndex
                     root.hoveredIndex = index
@@ -595,7 +599,7 @@ PopupWindow {
                 }
 
                 onClicked: {
-                    if (!parent.itemData.disabled && !parent.itemData.submenu) {
+                    if (!root.isItemDisabled(parent.itemData) && !parent.itemData.submenu) {
                         root.activateItem(parent.parent.itemIndex)
                     }
                 }

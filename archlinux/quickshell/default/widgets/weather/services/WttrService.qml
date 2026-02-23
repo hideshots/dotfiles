@@ -68,17 +68,29 @@ QtObject {
 
     property var _lastGoodData: null
     property double _requestStartedAt: 0
+    property bool _refreshQueued: false
 
     function refresh() {
+        if (!isLoading && curlProcess.running) {
+            _refreshQueued = true;
+            curlProcess.signal(15);
+            return;
+        }
+
         if (isLoading) {
             const elapsed = _requestStartedAt > 0 ? (Date.now() - _requestStartedAt) : 0;
             if (!curlProcess.running || elapsed > requestTimeoutMs) {
                 _resetStuckRequest("Previous weather request got stuck.");
+                if (curlProcess.running) {
+                    _refreshQueued = true;
+                    return;
+                }
             } else {
                 return;
             }
         }
 
+        _refreshQueued = false;
         isLoading = true;
         _requestStartedAt = Date.now();
         error = "";
@@ -164,25 +176,38 @@ QtObject {
     }
 
     function _parseHour(value) {
-        if (!value || typeof value !== "string") {
+        if (value === undefined || value === null) {
             return -1;
         }
 
-        const match = value.match(/(\d{1,2}):\d{2}\s*([AP]M)/i);
+        const raw = String(value).trim();
+        if (raw.length === 0) {
+            return -1;
+        }
+
+        const match = raw.match(/(\d{1,2}):(\d{2})(?:\s*([AP]M))?/i);
         if (!match) {
             return -1;
         }
 
         let hour = parseInt(match[1], 10);
-        if (isNaN(hour)) {
+        const minute = parseInt(match[2], 10);
+        if (isNaN(hour) || isNaN(minute) || minute < 0 || minute > 59) {
             return -1;
         }
 
-        const suffix = match[2].toUpperCase();
-        if (suffix === "AM" && hour === 12) {
-            hour = 0;
-        } else if (suffix === "PM" && hour !== 12) {
-            hour += 12;
+        const suffix = match[3] ? match[3].toUpperCase() : "";
+        if (suffix.length > 0) {
+            if (hour < 1 || hour > 12) {
+                return -1;
+            }
+            if (suffix === "AM" && hour === 12) {
+                hour = 0;
+            } else if (suffix === "PM" && hour !== 12) {
+                hour += 12;
+            }
+        } else if (hour < 0 || hour > 23) {
+            return -1;
         }
 
         return hour;
@@ -298,33 +323,69 @@ QtObject {
         return symbolByKey[key] || symbolByKey.cloudy_night;
     }
 
-    function _parseHourlyForecast(today) {
-        const hourlyArray = today.hourly;
-        if (!Array.isArray(hourlyArray) || hourlyArray.length === 0) {
+    function _forecastReferenceHour(current) {
+        const localObsHour = _parseHour(current.localObsDateTime || "");
+        if (localObsHour >= 0) {
+            return localObsHour;
+        }
+
+        const obsHour = _parseHour(current.observation_time || "");
+        if (obsHour >= 0) {
+            return obsHour;
+        }
+
+        return (new Date()).getHours();
+    }
+
+    function _parseHourlyForecast(weatherDays, current) {
+        if (!Array.isArray(weatherDays) || weatherDays.length === 0) {
             return [];
         }
 
-        const nowHour = (new Date()).getHours();
-        let startIndex = 0;
+        const nowHour = _forecastReferenceHour(current);
+        const orderedEntries = [];
 
-        for (let i = 0; i < hourlyArray.length; i++) {
-            const hour = _hourFromWttrTime(hourlyArray[i].time);
-            if (hour >= nowHour) {
-                startIndex = i;
-                break;
+        for (let dayIndex = 0; dayIndex < weatherDays.length; dayIndex++) {
+            const day = weatherDays[dayIndex] || {};
+            const hourlyArray = day.hourly;
+            if (!Array.isArray(hourlyArray) || hourlyArray.length === 0) {
+                continue;
             }
-            if (i === hourlyArray.length - 1) {
-                startIndex = 0;
+
+            for (let i = 0; i < hourlyArray.length; i++) {
+                const entry = hourlyArray[i] || {};
+                const hour24 = _hourFromWttrTime(entry.time);
+                if (hour24 < 0) {
+                    continue;
+                }
+
+                const dayOffset = dayIndex === 0 && hour24 < nowHour
+                    ? weatherDays.length
+                    : dayIndex;
+
+                orderedEntries.push({
+                    entry: entry,
+                    hour24: hour24,
+                    sortKey: dayOffset * 24 + hour24
+                });
             }
         }
 
+        if (orderedEntries.length === 0) {
+            return [];
+        }
+
+        orderedEntries.sort(function (left, right) {
+            return left.sortKey - right.sortKey;
+        });
+
         const output = [];
         for (let j = 0; j < 6; j++) {
-            const idx = (startIndex + j) % hourlyArray.length;
-            const entry = hourlyArray[idx] || {};
-            const hour24 = _hourFromWttrTime(entry.time);
-            const conditionRaw = _safeGet(entry, ["weatherDesc", 0, "value"]);
-            const tempRaw = normalizedUnits === "u" ? entry.tempF : entry.tempC;
+            const item = orderedEntries[j % orderedEntries.length];
+            const entry = item.entry;
+            const hour24 = item.hour24;
+            const conditionRaw = _safeGet(item.entry, ["weatherDesc", 0, "value"]);
+            const tempRaw = normalizedUnits === "u" ? item.entry.tempF : item.entry.tempC;
 
             output.push({
                 timeLabel: _toAmPmLabel(hour24),
@@ -341,7 +402,8 @@ QtObject {
 
         const cityFromApi = _safeGet(parsed, ["nearest_area", 0, "areaName", 0, "value"]);
         const current = _safeGet(parsed, ["current_condition", 0]) || {};
-        const today = _safeGet(parsed, ["weather", 0]) || {};
+        const weatherDays = Array.isArray(parsed.weather) ? parsed.weather : [];
+        const today = weatherDays[0] || {};
 
         const city = cityFromApi && String(cityFromApi).length > 0
             ? String(cityFromApi)
@@ -352,7 +414,7 @@ QtObject {
         const lowRaw = normalizedUnits === "u" ? today.mintempF : today.mintempC;
         const conditionRaw = _safeGet(current, ["weatherDesc", 0, "value"]);
         const symbol = _resolveSymbol(current, conditionRaw);
-        const hourly = _parseHourlyForecast(today);
+        const hourly = _parseHourlyForecast(weatherDays, current);
 
         return {
             city: _safeValue(city),
@@ -383,6 +445,10 @@ QtObject {
 
     function _applyError(nextError) {
         error = nextError;
+        if (_isValidData(_lastGoodData)) {
+            data = _lastGoodData;
+            return;
+        }
         const cityHint = _lastGoodData && _lastGoodData.city
             ? _lastGoodData.city
             : requestedLocation;
@@ -414,7 +480,7 @@ QtObject {
                 }
             }
         } catch (exception) {
-            error = "Cache read failed.";
+            console.warn("Weather cache read failed:", exception);
         }
     }
 
@@ -435,7 +501,10 @@ QtObject {
             _storeLastGood(nextData);
             error = "";
         } catch (exception) {
-            _applyError("Weather JSON parse failed.");
+            const reason = exception && exception.message
+                ? exception.message
+                : "invalid payload";
+            _applyError("Weather JSON parse failed: " + reason);
         }
     }
 
@@ -497,6 +566,12 @@ QtObject {
         onRunningChanged: {
             if (!running && root.isLoading) {
                 root._handleCurlFinished();
+                return;
+            }
+
+            if (!running && root._refreshQueued) {
+                root._refreshQueued = false;
+                Qt.callLater(root.refresh);
             }
         }
     }
@@ -508,5 +583,6 @@ QtObject {
         watchChanges: false
         blockLoading: true
         printErrors: false
+        onSaveFailed: console.warn("Weather cache write failed.")
     }
 }

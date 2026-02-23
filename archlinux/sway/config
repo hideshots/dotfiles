@@ -8,7 +8,7 @@ set $term kitty
 set $menu wofi --show drun
 
 ### Output Configuration
-output * bg ~/.dotfiles/wallpapers/aletiune_2.png fill
+output * bg /home/drama/dotfiles/wallpapers/aletiune_2.png fill
 
 mode "Pause" {
     bindsym $mod+Shift+p mode "default"

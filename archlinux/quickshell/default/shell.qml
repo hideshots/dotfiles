@@ -218,9 +218,10 @@ ShellRoot {
         model: Quickshell.screens
 
         PanelWindow {
+            id: barPanelWindow
           WlrLayershell.namespace: "qsbar"
             required property var modelData
-            screen: modelData
+            screen: barPanelWindow.modelData
 
             anchors {
                 top: true

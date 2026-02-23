@@ -4,6 +4,8 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 
+import "../.." as Root
+
 Rectangle {
     id: root
 
@@ -21,9 +23,9 @@ Rectangle {
     property int shownMonth: (new Date()).getMonth()
 
     property color calendarBackground: Qt.rgba(20 / 255, 20 / 255, 20 / 255, 0.00)
-    property color accentColor: Qt.rgba(1.0, 1.0, 1.0, 0.75)
-    property color weekendColor: Qt.rgba(1.0, 1.0, 1.0, 0.50)
-    property color dateColor: Qt.rgba(1.0, 1.0, 1.0, 0.75)
+    property color accentColor: Qt.rgba(Root.Theme.textPrimary.r, Root.Theme.textPrimary.g, Root.Theme.textPrimary.b, 0.75)
+    property color weekendColor: Qt.rgba(Root.Theme.textPrimary.r, Root.Theme.textPrimary.g, Root.Theme.textPrimary.b, 0.50)
+    property color dateColor: Qt.rgba(Root.Theme.textPrimary.r, Root.Theme.textPrimary.g, Root.Theme.textPrimary.b, 0.75)
 
     property real materialOpacity: 1.0
 
@@ -598,7 +600,7 @@ Rectangle {
                 anchors.leftMargin: 4
                 text: root.monthLabel(root.shownYear, root.shownMonth)
                 color: Qt.rgba(root.accentColor.r, root.accentColor.g, root.accentColor.b, root.accentColor.a * root.materialOpacity)
-                font.family: "SF Pro Text"
+                font.family: Root.Theme.fontFamily
                 font.weight: Font.DemiBold
                 font.pixelSize: 11
                 renderType: Text.NativeRendering
@@ -628,7 +630,7 @@ Rectangle {
                         anchors.centerIn: parent
                         text: root.weekdayLabels[weekdayCell.index]
                         color: (weekdayCell.index === 0 || weekdayCell.index === 6) ? root.weekendColor : root.dateColor
-                        font.family: "SF Pro Text"
+                        font.family: Root.Theme.fontFamily
                         font.weight: Font.DemiBold
                         font.pixelSize: 10
                         opacity: root.materialOpacity
@@ -684,7 +686,7 @@ Rectangle {
                             ctx.fillStyle = "rgba(0,0,0,1)";
                             ctx.textAlign = "center";
                             ctx.textBaseline = "middle";
-                            ctx.font = "800 10px 'SF Pro Text'";
+                            ctx.font = "800 10px '" + Root.Theme.fontFamily + "'";
                             ctx.fillText(String(dayCell.modelData.day), width * 0.5, height * 0.5 + 0.5);
                         }
                         onWidthChanged: requestPaint()
@@ -698,7 +700,7 @@ Rectangle {
                         text: dayCell.modelData.inMonth ? String(dayCell.modelData.day) : ""
                         visible: dayCell.modelData.inMonth && !dayCell.modelData.isToday
                         color: (dayCell.col === 0 || dayCell.col === 6) ? root.weekendColor : root.dateColor
-                        font.family: "SF Pro Text"
+                        font.family: Root.Theme.fontFamily
                         font.weight: Font.ExtraBold
                         font.pixelSize: 10
                         opacity: root.materialOpacity
@@ -715,12 +717,12 @@ Rectangle {
         anchors.topMargin: 9
         anchors.horizontalCenter: root.horizontalCenter
         text: "Calendar"
-        color: Qt.rgba(1, 1, 1, 0.92)
-        font.family: "SF Pro Text"
+        color: Qt.rgba(Root.Theme.textPrimary.r, Root.Theme.textPrimary.g, Root.Theme.textPrimary.b, 0.92)
+        font.family: Root.Theme.fontFamily
         font.weight: Font.DemiBold
         font.pixelSize: 12
         style: Text.Raised
-        styleColor: Qt.rgba(0, 0, 0, 0.7)
+        styleColor: Qt.rgba(Root.Theme.textOutline.r, Root.Theme.textOutline.g, Root.Theme.textOutline.b, 0.7)
         renderType: Text.NativeRendering
     }
 
@@ -730,10 +732,10 @@ Rectangle {
         anchors.left: parent.left
         anchors.top: parent.top
         anchors.margins: 6
-        color: "#FFFFFF"
+        color: Root.Theme.textPrimary
         style: Text.Outline
-        styleColor: "#000000"
-        font.family: "SF Pro Text"
+        styleColor: Root.Theme.textOutline
+        font.family: Root.Theme.fontFamily
         font.pixelSize: 9
         text: "mode=" + (root.useWallpaperSource ? "wallpaper" : "capture")
             + " glass=" + liquidGlass.visible
