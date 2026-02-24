@@ -12,6 +12,7 @@ layout(std140, binding = 0) uniform buf {
     float uDispersion;
     float uFrost;
     float uSplay;
+    float uSplayDepth;
     float uGlassOpacity;
     float uTime;
     float uDebug;
@@ -120,7 +121,10 @@ void main() {
         * bodyWeight;
     vec2 refrOffset = normal2d * refrPx * pixelToUv;
 
-    float splayPx = (0.2 + 2.2 * uSplay) * edgeInfluence;
+    float splayReachPx = max(1.0, uSplayDepth);
+    float splayEdgeMask = 1.0 - smoothstep(0.0, splayReachPx, edgeDist);
+    float splayInfluence = splayEdgeMask * splayEdgeMask;
+    float splayPx = (0.2 + 2.2 * uSplay) * splayInfluence;
     vec2 splayOffset = tangent * splayPx * pixelToUv;
 
     vec2 mappedUv = uUvRect.xy + (uv * uUvRect.zw);

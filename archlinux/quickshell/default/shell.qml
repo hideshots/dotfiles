@@ -22,23 +22,24 @@ ShellRoot {
     property string weatherUnits: "u"
     property string weatherVariant: "medium"
     property bool widgetGlassDebug: false
-    property real widgetGlassRefraction: 9.0
-    property real widgetGlassBodyRefractionWidthPx: 28.0
-    property real widgetGlassDepth: 0.0
+    property real widgetGlassRefraction: 8.2
+    property real widgetGlassBodyRefractionWidthPx: 32.0
+    property real widgetGlassDepth: 0.2
     property real widgetGlassDispersion: 1.0
-    property real widgetGlassFrost: 0.7
-    property real widgetGlassSplay: 9.0
+    property real widgetGlassFrost: 0.8
+    property real widgetGlassSplay: 3.0
+    property real widgetGlassSplayDepth: 30.0
     property real widgetGlassLightAngleDeg: 335
-    property real widgetGlassLightStrength: 4.0
+    property real widgetGlassLightStrength: 3.0
     property real widgetGlassLightWidthPx: 3.0
-    property real widgetGlassLightSharpness: 0.4
+    property real widgetGlassLightSharpness: 0.0
     property real widgetGlassCornerBoost: 0.5
     property real widgetGlassDispersionLimit: 1.0
-    property real widgetGlassDispersionWidthPx: 13.0
-    property real widgetGlassDispersionCurve: 0.45
+    property real widgetGlassDispersionWidthPx: 9.0
+    property real widgetGlassDispersionCurve: 0.9
     property real widgetGlassOpacity: 1.0
-    property color widgetGlassTint: Qt.rgba(1.0, 1.0, 1.0, 0.1)
-    property real widgetGlassBlurSize: 1.3
+    property color widgetGlassTint: Qt.rgba(1.0, 1.0, 1.0, 0.08)
+    property real widgetGlassBlurSize: 1.1
     property real widgetGlassBlurPasses: 2
     property bool widgetGlassLiveCapture: false
     property bool widgetGlassAutoRecapture: false
@@ -75,7 +76,7 @@ ShellRoot {
         anchors.top: true
         anchors.left: true
         margins.top: shell.weatherPanelTopMargin
-        margins.left: shell.weatherPanelLeftMargin
+        margins.left: shell.weatherPanelLeftMargin + (shell.calendarEnabled ? (calendarWidget.implicitWidth + shell.calendarPanelGap) : 0)
         exclusionMode: ExclusionMode.Ignore
 
         color: "transparent"
@@ -108,6 +109,7 @@ ShellRoot {
             dispersion: shell.widgetGlassDispersion
             frost: shell.widgetGlassFrost
             splay: shell.widgetGlassSplay
+            splayDepth: shell.widgetGlassSplayDepth
             lightAngleDeg: shell.widgetGlassLightAngleDeg
             lightStrength: shell.widgetGlassLightStrength
             lightWidthPx: shell.widgetGlassLightWidthPx
@@ -165,7 +167,7 @@ ShellRoot {
 
         anchors.top: true
         anchors.left: true
-        margins.top: shell.weatherPanelTopMargin + weatherWidget.implicitHeight + shell.calendarPanelGap
+        margins.top: shell.weatherPanelTopMargin
         margins.left: shell.weatherPanelLeftMargin
         exclusionMode: ExclusionMode.Ignore
 
@@ -195,6 +197,7 @@ ShellRoot {
             dispersion: shell.widgetGlassDispersion
             frost: shell.widgetGlassFrost
             splay: shell.widgetGlassSplay
+            splayDepth: shell.widgetGlassSplayDepth
             lightAngleDeg: shell.widgetGlassLightAngleDeg
             lightStrength: shell.widgetGlassLightStrength
             lightWidthPx: shell.widgetGlassLightWidthPx

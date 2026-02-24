@@ -34,6 +34,7 @@ Rectangle {
     property real dispersion: 0.0
     property real frost: 0.0
     property real splay: 0.0
+    property real splayDepth: 18.0
     property real lightAngleDeg: 345
     property real lightStrength: 0.85
     property real lightWidthPx: 14.0
@@ -397,6 +398,7 @@ Rectangle {
             property real uDispersion: root.dispersion
             property real uFrost: root.frost
             property real uSplay: root.splay
+            property real uSplayDepth: root.splayDepth
             property real uGlassOpacity: root.glassOpacity * root.materialOpacity
             property color uTint: root.glassTint
             property real uTime: root._shaderTime
@@ -514,7 +516,7 @@ Rectangle {
                 Text {
                     visible: weatherService.offline
                     text: "Offline"
-                    color: Root.Theme.textWarning
+                    color: "transparent"
                     font.family: Root.Theme.fontFamily
                     font.pixelSize: 9
                     font.weight: Font.Bold
@@ -608,7 +610,7 @@ Rectangle {
                     Text {
                         visible: weatherService.offline
                         text: "Offline"
-                        color: Root.Theme.textWarning
+                        color: "transparent"
                         font.family: Root.Theme.fontFamily
                         font.pixelSize: 9
                         font.weight: Font.Bold
