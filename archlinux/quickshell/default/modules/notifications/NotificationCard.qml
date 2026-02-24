@@ -68,6 +68,13 @@ FocusScope {
     // notifications incorrectly render a large preview.
     readonly property string previewImageSource: _toRenderableSource(_trimmed(contentPreviewImageSource))
     readonly property bool hasPreviewImage: previewImageSource.length > 0
+    readonly property bool isPopupMode: interactionMode === "popup"
+    readonly property bool isCenterMode: interactionMode === "center"
+    readonly property int popupDismissSize: 22
+    readonly property int popupAvatarSize: 32
+    readonly property int popupOverlayInset: 6
+    readonly property int popupRightOverlayReserve: isPopupMode ? Math.max((showDismissButton ? popupDismissSize : 0), (hasRightImage ? popupAvatarSize : 0)) : 0
+    readonly property int popupRightOverlayGap: popupRightOverlayReserve > 0 ? 6 : 0
     readonly property bool popupTimeoutHold: pauseTimeoutOnHover && (hovered || externalHoverHold || dragInProgress)
     readonly property real dragProgress: Math.min(1, Math.abs(dragOffsetX) / Math.max(1, dismissThresholdPx))
     readonly property real dragOpacity: draggableDismiss ? (1 - (dragProgress * 0.24)) : 1
@@ -476,7 +483,7 @@ FocusScope {
 
                 Column {
                     id: textColumn
-                    width: Math.max(0, headerRow.width - iconSlot.width - controlsColumn.width - (headerRow.spacing * 2))
+                    width: Math.max(0, headerRow.width - iconSlot.width - (controlsColumn.visible ? controlsColumn.width : 0) - (headerRow.spacing * (controlsColumn.visible ? 2 : 1)) - root.popupRightOverlayReserve - root.popupRightOverlayGap)
                     spacing: 2
 
                     Text {
@@ -510,8 +517,9 @@ FocusScope {
 
                 Column {
                     id: controlsColumn
+                    visible: root.isCenterMode
                     spacing: 4
-                    width: Math.max(timeText.implicitWidth, (centerDismissButton.visible ? centerDismissButton.width : 0), (expandButton.visible ? expandButton.width : 0), (rightImageFrame.visible ? rightImageFrame.width : 0))
+                    width: visible ? Math.max(timeText.implicitWidth, (centerDismissButton.visible ? centerDismissButton.width : 0), (expandButton.visible ? expandButton.width : 0), (rightImageFrame.visible ? rightImageFrame.width : 0)) : 0
 
                     Text {
                         id: timeText
@@ -529,12 +537,12 @@ FocusScope {
 
                     Rectangle {
                         id: rightImageFrame
-                        width: root.hasRightImage ? 32 : 0
-                        height: root.hasRightImage ? 32 : 0
+                        width: root.isCenterMode && root.hasRightImage ? 32 : 0
+                        height: root.isCenterMode && root.hasRightImage ? 32 : 0
                         radius: 8
                         x: parent.width - width
                         clip: true
-                        visible: root.hasRightImage
+                        visible: root.isCenterMode && root.hasRightImage
                         color: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.07)
                         border.width: 1
                         border.color: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.10)
@@ -542,7 +550,7 @@ FocusScope {
                         Image {
                             id: rightImage
                             anchors.fill: parent
-                            source: root.rightImageSource
+                            source: rightImageFrame.visible ? root.rightImageSource : ""
                             fillMode: Image.PreserveAspectCrop
                             smooth: true
                             asynchronous: true
@@ -734,19 +742,58 @@ FocusScope {
             }
         }
 
-        // Popup-only dismiss overlay: top-left, hover-revealed, and out of normal layout flow
+        // Popup-only right image: anchored to the lower-right corner of popup content.
+        // This keeps popup media separate from center-mode stacked controls and avoids
+        // drifting to top-right on short headers.
+        Rectangle {
+            id: popupRightImageFrame
+            visible: root.isPopupMode && root.hasRightImage
+            width: root.popupAvatarSize
+            height: root.popupAvatarSize
+            radius: 8
+            z: 2
+            anchors.right: contentColumn.right
+            anchors.bottom: contentColumn.bottom
+            clip: true
+            color: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.07)
+            border.width: 1
+            border.color: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.10)
+
+            Image {
+                id: popupRightImage
+                anchors.fill: parent
+                source: popupRightImageFrame.visible ? root.rightImageSource : ""
+                fillMode: Image.PreserveAspectCrop
+                smooth: true
+                asynchronous: true
+                visible: status === Image.Ready
+            }
+
+            Text {
+                anchors.centerIn: parent
+                visible: popupRightImage.status === Image.Error
+                text: root.fallbackIconText
+                font.family: Root.Theme.fontFamilyDisplay
+                font.pixelSize: 12
+                font.weight: Font.DemiBold
+                color: Root.Theme.textPrimary
+                renderType: Text.NativeRendering
+            }
+        }
+
+        // Popup-only dismiss overlay: top-right, hover-revealed, and out of normal layout flow
         // so it does not steal width from title/body/timestamp columns.
         Rectangle {
             id: popupDismissButton
-            visible: root.showDismissButton && root.interactionMode === "popup"
-            width: 22
-            height: 22
+            visible: root.showDismissButton && root.isPopupMode
+            width: root.popupDismissSize
+            height: root.popupDismissSize
             radius: 11
-            z: 2
-            anchors.left: parent.left
+            z: 3
+            anchors.right: parent.right
             anchors.top: parent.top
-            anchors.leftMargin: 6
-            anchors.topMargin: 6
+            anchors.rightMargin: root.popupOverlayInset
+            anchors.topMargin: root.popupOverlayInset
             opacity: root.revealDismissOnHover ? ((root.hovered || popupDismissHover.hovered || popupDismissMouseArea.containsMouse) ? 1 : 0) : 1
             color: popupDismissMouseArea.containsMouse ? (Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.16) : Qt.rgba(0, 0, 0, 0.14)) : (opacity > 0 ? (Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.09) : Qt.rgba(0, 0, 0, 0.08)) : "transparent")
 

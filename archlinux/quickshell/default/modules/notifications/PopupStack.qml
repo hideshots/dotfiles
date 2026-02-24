@@ -125,6 +125,7 @@ Item {
                 actions: rowWrapper.notificationSnapshot && rowWrapper.notificationSnapshot.actions ? rowWrapper.notificationSnapshot.actions : []
                 keyboardInteractive: false
                 interactionMode: "popup"
+                showTimeLabel: false
                 draggableDismiss: true
                 pauseTimeoutOnHover: true
                 externalHoverHold: root.stackHovered
