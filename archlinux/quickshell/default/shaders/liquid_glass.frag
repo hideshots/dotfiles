@@ -13,10 +13,17 @@ layout(std140, binding = 0) uniform buf {
     float uFrost;
     float uSplay;
     float uSplayDepth;
+    float uRimWidth;
+    float uRimStrength;
+    float uBodyDepth;
+    float uBodyExponent;
+    float uBodyStrength;
+    float uMagnifyStrength;
     float uVibrance;
     float uGlassOpacity;
     float uTime;
     float uDebug;
+    float uDebugView;
     float uLightAngleDeg;
     float uLightStrength;
     float uLightWidthPx;
@@ -50,34 +57,38 @@ vec3 sampleScene(vec2 uv) {
     return texture(sceneTex, clamped).rgb;
 }
 
+vec2 clampToUvRect(vec2 uv, vec4 uvRect) {
+    vec2 uvMin = uvRect.xy + vec2(0.0005);
+    vec2 uvMax = (uvRect.xy + uvRect.zw) - vec2(0.0005);
+    return clamp(uv, uvMin, max(uvMin, uvMax));
+}
+
 void main() {
     vec2 uv = qt_TexCoord0;
     vec2 pixel = uv * uSize;
-
-    if (uDebug > 0.5) {
-        float grid = step(0.95, fract(uv.x * 10.0)) + step(0.95, fract(uv.y * 10.0));
-        vec3 dbg = vec3(
-            clamp(uRefraction, 0.0, 1.0),
-            clamp(uDispersion, 0.0, 1.0),
-            clamp(uFrost, 0.0, 1.0)
-        );
-        dbg = mix(dbg, vec3(1.0, 1.0, 0.0), clamp(grid, 0.0, 1.0) * 0.35);
-        dbg += vec3(0.10 * sin(uTime * 4.0 + uv.x * 20.0));
-        fragColor = vec4(clamp(dbg, 0.0, 1.0), 1.0);
-        return;
-    }
 
     float sdf = roundedRectSdf(pixel, uSize, uRadius);
     float edgeDist = -sdf;
 
     float mask = smoothstep(0.0, 1.0, edgeDist);
-    float edgeMask = 1.0 - smoothstep(0.0, 18.0, edgeDist);
-    float edgeInfluence = edgeMask * edgeMask;
-    float bodyWidthPx = max(2.0, uBodyRefractionWidthPx);
-    float bodyMask = 1.0 - smoothstep(0.0, bodyWidthPx, edgeDist);
-    bodyMask *= bodyMask * (3.0 - 2.0 * bodyMask);
-    float bodyTail = 1.0 - smoothstep(bodyWidthPx, bodyWidthPx * 4.0, edgeDist);
-    bodyMask = clamp(max(bodyMask, 0.22 * bodyTail), 0.0, 1.0);
+    float rimWidthPx = max(1.0, uRimWidth);
+    // Rim mask: narrow edge-focused band for crisp silhouette distortion.
+    float rimMask = 1.0 - smoothstep(0.0, rimWidthPx, edgeDist);
+    rimMask *= rimMask;
+    float edgeInfluence = rimMask;
+
+    float bodyDepthPx = max(1.0, max(uBodyDepth, uBodyRefractionWidthPx * 2.0));
+    // Body mask: normalized interior depth from SDF, spread by bodyExponent.
+    float insideNorm = clamp(edgeDist / bodyDepthPx, 0.0, 1.0);
+    float bodyExponent = max(0.15, uBodyExponent);
+    float bodyMask = pow(insideNorm, bodyExponent);
+
+    vec2 centerUv = (uv - vec2(0.5)) * vec2(uSize.x / max(1.0, uSize.y), 1.0);
+    float radial = clamp(length(centerUv) * 1.41421356, 0.0, 1.4);
+    // Lens profile: broad radial shaping so interior stays optically active.
+    float lensCore = 1.0 - smoothstep(0.0, 1.15, radial);
+    float lensProfile = mix(0.45, 1.0, lensCore);
+    float bodyInfluence = bodyMask * lensProfile;
 
     // Avoid dFdx/dFdy seam across the internal quad triangle split by using
     // finite differences in pixel space.
@@ -107,29 +118,69 @@ void main() {
     float cornerNearY = 1.0 - smoothstep(0.0, cornerReach, sideDistY);
     float cornerGeomMask = cornerNearX * cornerNearY;
     float cornerness = clamp(max(cornerCurvMask, cornerGeomMask), 0.0, 1.0);
-    cornerness *= (0.4 + 0.6 * bodyMask);
+    cornerness *= (0.4 + 0.6 * max(rimMask, bodyInfluence));
 
     float depthGain = 1.0 + (uDepth * 0.95);
     vec2 pixelToUv = vec2(1.0 / max(1.0, uSize.x), 1.0 / max(1.0, uSize.y));
     float refrControl = max(uRefraction, 0.0);
     float refrResponse = 1.0 - exp(-refrControl * 0.04);
     float cornerBoost = clamp(uCornerBoost, 0.0, 1.0);
-    float bodyWeight = bodyMask * (1.0 + cornerBoost * cornerness);
-    bodyWeight = min(bodyWeight, 1.45);
+    float refrBasePx = (9.6 * refrResponse) * (0.35 + 0.65 * depthGain);
 
-    float refrPx = (9.6 * refrResponse)
-        * (0.35 + 0.65 * depthGain)
-        * bodyWeight;
-    vec2 refrOffset = normal2d * refrPx * pixelToUv;
+    float rimStrength = max(0.0, uRimStrength);
+    float rimPx = refrBasePx
+        * rimStrength
+        * rimMask
+        * (1.0 + cornerBoost * cornerness);
+    vec2 rimOffset = normal2d * rimPx * pixelToUv;
 
     float splayReachPx = max(1.0, uSplayDepth);
-    float splayEdgeMask = 1.0 - smoothstep(0.0, splayReachPx, edgeDist);
-    float splayInfluence = splayEdgeMask * splayEdgeMask;
+    float splayInfluence = 1.0 - smoothstep(0.0, splayReachPx, edgeDist);
+    splayInfluence *= splayInfluence;
     float splayPx = (0.2 + 2.2 * uSplay) * splayInfluence;
     vec2 splayOffset = tangent * splayPx * pixelToUv;
 
+    float bodyStrength = max(0.0, uBodyStrength);
+    vec2 centerVec = pixel - (uSize * 0.5);
+    float centerLen = length(centerVec);
+    vec2 centerDir = centerLen > 1e-4 ? (centerVec / centerLen) : normal2d;
+    vec2 mixedBodyDir = mix(normal2d, centerDir, 0.35);
+    vec2 bodyDir = mixedBodyDir / max(length(mixedBodyDir), 1e-4);
+    float bodyPx = refrBasePx * bodyStrength * bodyInfluence;
+    vec2 bodyOffset = bodyDir * bodyPx * pixelToUv;
+
+    // Center magnification/compression: subtle radial lensing in the interior.
+    float magnifyStrength = clamp(uMagnifyStrength, -0.35, 0.35);
+    float centerMask = bodyMask * (1.0 - smoothstep(0.20, 1.0, radial));
+    vec2 centerMagnifyOffset = -(uv - vec2(0.5))
+        * magnifyStrength
+        * centerMask
+        * (0.65 + 0.35 * depthGain);
+
+    // Final distortion combines rim, broad body, and center lens contributions.
+    vec2 distortionUv = rimOffset + splayOffset + bodyOffset + centerMagnifyOffset;
+
     vec2 mappedUv = uUvRect.xy + (uv * uUvRect.zw);
-    vec2 refractedUv = mappedUv + refrOffset + splayOffset;
+    vec2 refractedUv = clampToUvRect(mappedUv + distortionUv, uUvRect);
+
+    if (uDebug > 0.5) {
+        if (uDebugView < 0.5) {
+            fragColor = vec4(rimMask, 0.0, 0.0, 1.0);
+            return;
+        }
+        if (uDebugView < 1.5) {
+            fragColor = vec4(0.0, bodyInfluence, 0.0, 1.0);
+            return;
+        }
+
+        float distortionPx = length(distortionUv * uSize);
+        float distortionNorm = clamp(distortionPx / max(1.0, refrBasePx * 1.6), 0.0, 1.0);
+        vec3 heat = mix(vec3(0.05, 0.08, 0.20), vec3(0.0, 0.85, 0.95), distortionNorm);
+        heat = mix(heat, vec3(1.0, 0.90, 0.10), smoothstep(0.45, 0.85, distortionNorm));
+        heat = mix(heat, vec3(1.0, 0.20, 0.10), smoothstep(0.85, 1.0, distortionNorm));
+        fragColor = vec4(heat, 1.0);
+        return;
+    }
 
     float dispersionWidthPx = max(1.0, uDispersionWidthPx);
     float dispersionMask = 1.0 - smoothstep(0.0, dispersionWidthPx, edgeDist);
@@ -150,9 +201,9 @@ void main() {
     vec3 baseColor = sampleScene(mappedUv);
     vec3 monoRefracted = sampleScene(refractedUv);
     vec3 dispersedColor;
-    dispersedColor.r = sampleScene(refractedUv + (dispersionVec * 1.35)).r;
-    dispersedColor.g = sampleScene(refractedUv - (dispersionVec * 0.20)).g;
-    dispersedColor.b = sampleScene(refractedUv - (dispersionVec * 1.35)).b;
+    dispersedColor.r = sampleScene(clampToUvRect(refractedUv + (dispersionVec * 1.35), uUvRect)).r;
+    dispersedColor.g = sampleScene(clampToUvRect(refractedUv - (dispersionVec * 0.20), uUvRect)).g;
+    dispersedColor.b = sampleScene(clampToUvRect(refractedUv - (dispersionVec * 1.35), uUvRect)).b;
     vec3 refractedColor = mix(monoRefracted, dispersedColor, dispersionMix);
 
     float frostFactor = uFrost;

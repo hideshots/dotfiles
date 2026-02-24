@@ -39,6 +39,12 @@ Rectangle {
     property real frost: 0.0
     property real splay: 5.0
     property real splayDepth: 18.0
+    property real rimWidth: 18.0
+    property real rimStrength: 1.0
+    property real bodyDepth: 64.0
+    property real bodyExponent: 0.75
+    property real bodyStrength: 0.25
+    property real magnifyStrength: 0.03
     property real vibrance: 0.0
     property real lightAngleDeg: 345
     property real lightStrength: 0.85
@@ -56,6 +62,7 @@ Rectangle {
     property real blurSize: 0.9
     property real blurPasses: 2
     property bool glassDebug: false
+    property int glassDebugView: 2
 
     readonly property int cellSize: 18
     readonly property int rowGap: 6
@@ -499,11 +506,18 @@ Rectangle {
             property real uFrost: root.frost
             property real uSplay: root.splay
             property real uSplayDepth: root.splayDepth
+            property real uRimWidth: root.rimWidth
+            property real uRimStrength: root.rimStrength
+            property real uBodyDepth: root.bodyDepth
+            property real uBodyExponent: root.bodyExponent
+            property real uBodyStrength: root.bodyStrength
+            property real uMagnifyStrength: root.magnifyStrength
             property real uVibrance: root.vibrance
             property real uGlassOpacity: root.glassOpacity * root.materialOpacity
             property color uTint: root.glassTint
             property real uTime: root._shaderTime
             property real uDebug: root.glassDebug ? 1.0 : 0.0
+            property real uDebugView: root.glassDebugView
             property real uLightAngleDeg: root.lightAngleDeg
             property real uLightStrength: root.lightStrength
             property real uLightWidthPx: root.lightWidthPx
@@ -747,5 +761,6 @@ Rectangle {
             + " src=" + captureView.sourceSize.width + "x" + captureView.sourceSize.height
             + " tex=" + root._regionTexWidth + "x" + root._regionTexHeight
             + " b=" + root.blurSize + " p=" + glassLayer.effectiveBlurPasses
+            + " dbg=" + root.glassDebugView
     }
 }

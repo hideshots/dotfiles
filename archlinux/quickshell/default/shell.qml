@@ -26,10 +26,17 @@ ShellRoot {
     property real widgetGlassBodyRefractionWidthPx: 32.0
     property real widgetGlassDepth: 0.2
     property real widgetGlassDispersion: 1.0
-    property real widgetGlassFrost: 0.8
-    property real widgetGlassSplay: 3.0
+    property real widgetGlassFrost: 0.7
+    property real widgetGlassSplay: 2.5
     property real widgetGlassSplayDepth: 30.0
+    property real widgetGlassRimWidth: 15.0
+    property real widgetGlassRimStrength: 1.0
+    property real widgetGlassBodyDepth: 64.0
+    property real widgetGlassBodyExponent: 0.75
+    property real widgetGlassBodyStrength: 0.25
+    property real widgetGlassMagnifyStrength: -0.1
     property real widgetGlassVibrance: 0.8
+    property int widgetGlassDebugView: 0
     property real widgetGlassLightAngleDeg: 335
     property real widgetGlassLightStrength: 3.0
     property real widgetGlassLightWidthPx: 3.0
@@ -40,7 +47,7 @@ ShellRoot {
     property real widgetGlassDispersionCurve: 0.9
     property real widgetGlassOpacity: 1.0
     property color widgetGlassTint: Qt.rgba(1.0, 1.0, 1.0, 0.08)
-    property real widgetGlassBlurSize: 1.1
+    property real widgetGlassBlurSize: 0.7
     property real widgetGlassBlurPasses: 2
     property bool widgetGlassLiveCapture: false
     property bool widgetGlassAutoRecapture: false
@@ -111,6 +118,12 @@ ShellRoot {
             frost: shell.widgetGlassFrost
             splay: shell.widgetGlassSplay
             splayDepth: shell.widgetGlassSplayDepth
+            rimWidth: shell.widgetGlassRimWidth
+            rimStrength: shell.widgetGlassRimStrength
+            bodyDepth: shell.widgetGlassBodyDepth
+            bodyExponent: shell.widgetGlassBodyExponent
+            bodyStrength: shell.widgetGlassBodyStrength
+            magnifyStrength: shell.widgetGlassMagnifyStrength
             vibrance: shell.widgetGlassVibrance
             lightAngleDeg: shell.widgetGlassLightAngleDeg
             lightStrength: shell.widgetGlassLightStrength
@@ -128,6 +141,7 @@ ShellRoot {
             liveCapture: shell.widgetGlassLiveCapture
             autoRecapture: shell.widgetGlassAutoRecapture
             glassDebug: shell.widgetGlassDebug
+            glassDebugView: shell.widgetGlassDebugView
             onRequestContextMenu: function(x, y) {
                 weatherSizeMenu.anchorPointX = x + 4;
                 weatherSizeMenu.anchorPointY = y + 8;
@@ -200,6 +214,12 @@ ShellRoot {
             frost: shell.widgetGlassFrost
             splay: shell.widgetGlassSplay
             splayDepth: shell.widgetGlassSplayDepth
+            rimWidth: shell.widgetGlassRimWidth
+            rimStrength: shell.widgetGlassRimStrength
+            bodyDepth: shell.widgetGlassBodyDepth
+            bodyExponent: shell.widgetGlassBodyExponent
+            bodyStrength: shell.widgetGlassBodyStrength
+            magnifyStrength: shell.widgetGlassMagnifyStrength
             vibrance: shell.widgetGlassVibrance
             lightAngleDeg: shell.widgetGlassLightAngleDeg
             lightStrength: shell.widgetGlassLightStrength
@@ -217,6 +237,7 @@ ShellRoot {
             liveCapture: shell.widgetGlassLiveCapture
             autoRecapture: shell.widgetGlassAutoRecapture
             glassDebug: shell.widgetGlassDebug
+            glassDebugView: shell.widgetGlassDebugView
         }
     }
 
