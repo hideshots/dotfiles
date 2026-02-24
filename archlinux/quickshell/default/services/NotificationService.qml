@@ -10,9 +10,11 @@ Singleton {
 
     property int maxActive: 5
     property int maxHistory: 100
+    property int defaultPopupTimeoutMs: 5000
     property bool keepTransientInHistory: false
     property bool resetTimestampOnReplace: true
     property bool debugLogging: false
+    property bool debugActiveRowUpdates: false
 
     readonly property alias activeList: activeListModel
     readonly property alias historyList: historyListModel
@@ -164,6 +166,52 @@ Singleton {
         clearHistory();
     }
 
+    function setPopupTimeoutPaused(id, paused) {
+        var idKey = _idKey(id);
+        if (!_hasOwn(_byId, idKey) || !_hasOwn(_metadataById, idKey)) {
+            return false;
+        }
+
+        var metadata = _metadataById[idKey];
+        if (!metadata.popupVisible) {
+            return false;
+        }
+
+        var shouldPause = _safeBool(paused, false);
+        var isPaused = _safeBool(metadata.timeoutPaused, false);
+        if (shouldPause === isPaused) {
+            return true;
+        }
+
+        var now = Date.now();
+
+        if (shouldPause) {
+            var expiresAt = _safeNumber(metadata.expiresAt, -1);
+            if (expiresAt > 0) {
+                metadata.pausedRemainingMs = Math.max(0, expiresAt - now);
+                metadata.expiresAt = -1;
+            } else {
+                metadata.pausedRemainingMs = -1;
+            }
+            metadata.timeoutPaused = true;
+        } else {
+            var remainingMs = _safeNumber(metadata.pausedRemainingMs, -1);
+            metadata.timeoutPaused = false;
+            metadata.pausedRemainingMs = 0;
+
+            if (remainingMs > 0) {
+                metadata.expiresAt = now + remainingMs;
+            } else if (remainingMs === 0) {
+                metadata.expiresAt = now;
+            } else {
+                metadata.expiresAt = -1;
+            }
+        }
+
+        _metadataById[idKey] = metadata;
+        return true;
+    }
+
     function removeFromHistory(id) {
         var idKey = _idKey(id);
         if (!_hasOwn(_byId, idKey)) {
@@ -308,6 +356,8 @@ Singleton {
 
         metadata.receivedAt = receivedAt;
         metadata.expiresAt = _computeExpiresAt(record.expireTimeout, receivedAt, record.resident);
+        metadata.timeoutPaused = false;
+        metadata.pausedRemainingMs = 0;
         metadata.popupVisible = true;
         metadata.dismissed = false;
         metadata.expired = false;
@@ -412,6 +462,8 @@ Singleton {
 
         metadata.popupVisible = false;
         metadata.expiresAt = -1;
+        metadata.timeoutPaused = false;
+        metadata.pausedRemainingMs = 0;
         metadata.closeReason = reasonName;
         metadata.sourceAlive = sourceAlive;
 
@@ -450,6 +502,10 @@ Singleton {
                 continue;
             }
 
+            if (_safeBool(metadata.timeoutPaused, false)) {
+                continue;
+            }
+
             var expiresAt = _safeNumber(metadata.expiresAt, -1);
             if (expiresAt > 0 && now >= expiresAt) {
                 _debug("auto-expire id=" + ids[i]);
@@ -478,7 +534,7 @@ Singleton {
             actions: _normalizeActions(notification),
             resident: _safeBool(notification.resident, false),
             transient: _safeBool(notification.transient, false),
-            expireTimeout: _safeNumber(notification.expireTimeout, 0),
+            expireTimeout: _safeNumber(notification.expireTimeout, -1),
             receivedAt: _safeNumber(receivedAt, Date.now()),
             timeLabel: NotificationTime.shortRelativeLabel(receivedAt, Date.now()),
             isPopup: true,
@@ -559,8 +615,9 @@ Singleton {
 
     function _enforceHistoryLimit() {
         while (historyListModel.count > Math.max(0, maxHistory)) {
-            var row = historyListModel.get(0);
-            historyListModel.remove(0);
+            var lastIndex = historyListModel.count - 1;
+            var row = historyListModel.get(lastIndex);
+            historyListModel.remove(lastIndex);
 
             var idKey = _idKey(row.id);
             if (_hasOwn(_metadataById, idKey)) {
@@ -584,7 +641,13 @@ Singleton {
             return;
         }
 
-        _upsertModelRow(activeListModel, _toModelRow(record, metadata, true));
+        var row = _toModelRow(record, metadata, true);
+        var existingIndex = _findModelIndexById(activeListModel, row.id);
+        _upsertModelRow(activeListModel, row);
+
+        if (debugActiveRowUpdates) {
+            _debugActiveRow(existingIndex < 0 ? "append" : "update", row);
+        }
     }
 
     function _upsertHistoryRow(idKey) {
@@ -600,7 +663,19 @@ Singleton {
             return;
         }
 
-        _upsertModelRow(historyListModel, _toModelRow(record, metadata, false));
+        var row = _toModelRow(record, metadata, false);
+        var existingIndex = _findModelIndexById(historyListModel, row.id);
+
+        if (existingIndex === 0) {
+            historyListModel.set(0, row);
+            return;
+        }
+
+        if (existingIndex > 0) {
+            historyListModel.remove(existingIndex);
+        }
+
+        historyListModel.insert(0, row);
     }
 
     function _toModelRow(record, metadata, popupRow) {
@@ -705,18 +780,29 @@ Singleton {
         }
     }
 
-    function _computeExpiresAt(expireTimeoutSeconds, receivedAt, resident) {
+    function _computeExpiresAt(expireTimeoutMs, receivedAt, resident) {
         // Resident notifications stay until explicitly dismissed by the source or user.
         if (resident) {
             return -1;
         }
 
-        var timeoutSeconds = _safeNumber(expireTimeoutSeconds, 0);
-        if (timeoutSeconds <= 0) {
+        var timeoutMs = _safeNumber(expireTimeoutMs, -1);
+        if (timeoutMs > 0) {
+            return _safeNumber(receivedAt, Date.now()) + Math.round(timeoutMs);
+        }
+
+        // 0 means explicitly persistent.
+        if (timeoutMs === 0) {
             return -1;
         }
 
-        return _safeNumber(receivedAt, Date.now()) + Math.round(timeoutSeconds * 1000);
+        // < 0 means "server default"; apply local popup fallback.
+        var fallbackTimeoutMs = Math.max(0, _safeNumber(defaultPopupTimeoutMs, 0));
+        if (fallbackTimeoutMs <= 0) {
+            return -1;
+        }
+
+        return _safeNumber(receivedAt, Date.now()) + fallbackTimeoutMs;
     }
 
     function _urgencyToString(value) {
@@ -771,5 +857,16 @@ Singleton {
         }
 
         console.log("[NotificationService] " + message);
+    }
+
+    function _debugActiveRow(action, row) {
+        var summaryText = _safeString(row && row.summary !== undefined ? row.summary : "");
+        var appNameText = _safeString(row && row.appName !== undefined ? row.appName : "");
+        var bodyText = _safeString(row && row.body !== undefined ? row.body : "");
+        console.log("[NotificationService] active-row " + _safeString(action)
+                    + " id=" + _safeString(row && row.id !== undefined ? row.id : "")
+                    + " app=\"" + appNameText + "\""
+                    + " summary=\"" + summaryText + "\""
+                    + " bodyLen=" + bodyText.length);
     }
 }

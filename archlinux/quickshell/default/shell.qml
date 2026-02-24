@@ -48,6 +48,12 @@ ShellRoot {
     shell.notificationCenterTriggerItem = hasTrigger ? triggerItem : null
     shell.notificationCenterOpen = true
   }
+  Shortcut {
+    sequence: "Escape"
+    context: Qt.ApplicationShortcut
+    enabled: shell.notificationCenterOpen
+    onActivated: shell.notificationCenterOpen = false
+  }
   property int weatherPanelTopMargin: 50
   property int weatherPanelLeftMargin: 10
   property int calendarPanelGap: 10
@@ -310,13 +316,13 @@ ShellRoot {
   }
 
   PanelWindow {
-    id: notificationCenterPanel
+    id: notificationCenterOverlayPanel
     visible: shell.notificationCenterEnabled && (shell.notificationCenterOpen || notificationCenter.opacity > 0.01)
 
     anchors.top: true
+    anchors.left: true
     anchors.right: true
-    margins.top: shell.notificationCenterTopMargin
-    margins.right: shell.notificationCenterRightMargin
+    anchors.bottom: true
     exclusionMode: ExclusionMode.Ignore
 
     color: "transparent"
@@ -324,14 +330,42 @@ ShellRoot {
     focusable: false
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
-    WlrLayershell.namespace: "quickshell:notification-center"
+    WlrLayershell.namespace: "quickshell:notification-center-overlay"
 
-    implicitWidth: notificationCenter.implicitWidth
-    implicitHeight: notificationCenter.implicitHeight
+    MouseArea {
+      id: notificationCenterBackdropMouseArea
+      anchors.fill: parent
+      acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
+      preventStealing: true
+
+      onPressed: function(mouse) {
+        mouse.accepted = true;
+      }
+
+      onClicked: function(mouse) {
+        mouse.accepted = true;
+
+        var panelPos = notificationCenter.mapToItem(notificationCenterBackdropMouseArea, 0, 0);
+        var insidePanel = mouse.x >= panelPos.x
+          && mouse.x <= panelPos.x + notificationCenter.width
+          && mouse.y >= panelPos.y
+          && mouse.y <= panelPos.y + notificationCenter.height;
+
+        if (!insidePanel) {
+          shell.notificationCenterOpen = false;
+        }
+      }
+    }
 
     Notifications.NotificationCenter {
       id: notificationCenter
-      anchors.fill: parent
+      z: 1
+      width: implicitWidth
+      height: implicitHeight
+      anchors.top: parent.top
+      anchors.right: parent.right
+      anchors.topMargin: shell.notificationCenterTopMargin
+      anchors.rightMargin: shell.notificationCenterRightMargin
       open: shell.notificationCenterOpen
       onRequestClose: shell.notificationCenterOpen = false
     }

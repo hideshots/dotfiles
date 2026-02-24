@@ -4,7 +4,7 @@ import QtQuick
 
 import "../.." as Root
 
-Item {
+FocusScope {
     id: root
 
     property bool open: false
@@ -14,6 +14,7 @@ Item {
     property int headerHeight: 42
     property int listSpacing: 8
     property int maxHistoryVisible: 100
+    property var expandedById: ({})
 
     readonly property var notificationService: Root.NotificationService
     readonly property bool hasHistory: notificationService.historyCount > 0
@@ -27,6 +28,25 @@ Item {
     opacity: open ? 1 : 0
     x: open ? 0 : 16
     enabled: opacity > 0.95
+    focus: open
+
+    Keys.onEscapePressed: function(event) {
+        if (!root.open) {
+            return;
+        }
+
+        event.accepted = true;
+        root.requestClose();
+    }
+
+    onOpenChanged: {
+        if (open) {
+            pruneExpandedState();
+            return;
+        }
+
+        clearExpandedState();
+    }
 
     Behavior on opacity {
         NumberAnimation {
@@ -40,6 +60,81 @@ Item {
             duration: 170
             easing.type: Easing.OutCubic
         }
+    }
+
+    Connections {
+        target: root.notificationService
+
+        function onHistoryCountChanged() {
+            root.pruneExpandedState();
+        }
+    }
+
+    function _idKey(value) {
+        if (value === undefined || value === null) {
+            return "";
+        }
+        return String(value);
+    }
+
+    function _hasOwn(objectValue, key) {
+        return Object.prototype.hasOwnProperty.call(objectValue, key);
+    }
+
+    function clearExpandedState() {
+        expandedById = ({})
+    }
+
+    function isExpanded(notificationId) {
+        var key = _idKey(notificationId);
+        return _hasOwn(expandedById, key) && !!expandedById[key];
+    }
+
+    function setExpanded(notificationId, expanded) {
+        var next = ({})
+        var key = _idKey(notificationId);
+        var source = expandedById || ({})
+        var mapKey = "";
+
+        for (mapKey in source) {
+            if (!_hasOwn(source, mapKey) || mapKey === key || !source[mapKey]) {
+                continue;
+            }
+            next[mapKey] = true;
+        }
+
+        if (expanded) {
+            next[key] = true;
+        }
+
+        expandedById = next;
+    }
+
+    function toggleExpanded(notificationId) {
+        setExpanded(notificationId, !isExpanded(notificationId));
+    }
+
+    function pruneExpandedState() {
+        var allowed = ({})
+        var i = 0;
+
+        for (i = 0; i < notificationService.historyCount; i++) {
+            var row = notificationService.historyList.get(i);
+            allowed[_idKey(row.id)] = true;
+        }
+
+        var next = ({})
+        var source = expandedById || ({})
+        var key = "";
+
+        for (key in source) {
+            if (!_hasOwn(source, key) || !source[key] || !_hasOwn(allowed, key)) {
+                continue;
+            }
+            next[key] = true;
+        }
+
+        expandedById = next;
     }
 
     Rectangle {
@@ -125,8 +220,18 @@ Item {
                         id: clearAllMouseArea
                         anchors.fill: parent
                         hoverEnabled: true
+                        acceptedButtons: Qt.LeftButton
+                        preventStealing: true
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: root.notificationService.clearHistory()
+
+                        onPressed: function(mouse) {
+                            mouse.accepted = true;
+                        }
+
+                        onClicked: function(mouse) {
+                            mouse.accepted = true;
+                            root.notificationService.clearHistory();
+                        }
                     }
                 }
 
@@ -151,8 +256,18 @@ Item {
                         id: closeMouseArea
                         anchors.fill: parent
                         hoverEnabled: true
+                        acceptedButtons: Qt.LeftButton
+                        preventStealing: true
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: root.requestClose()
+
+                        onPressed: function(mouse) {
+                            mouse.accepted = true;
+                        }
+
+                        onClicked: function(mouse) {
+                            mouse.accepted = true;
+                            root.requestClose();
+                        }
                     }
                 }
             }
@@ -184,7 +299,7 @@ Item {
                 boundsBehavior: Flickable.StopAtBounds
                 interactive: contentHeight > height
                 orientation: ListView.Vertical
-                verticalLayoutDirection: ListView.BottomToTop
+                verticalLayoutDirection: ListView.TopToBottom
 
                 add: Transition {
                     NumberAnimation {
@@ -215,7 +330,7 @@ Item {
                     required property int index
                     required property var model
 
-                    readonly property bool withinVisibleLimit: index >= Math.max(0, ListView.view.count - root.maxHistoryVisible)
+                    readonly property bool withinVisibleLimit: index < Math.max(0, root.maxHistoryVisible)
 
                     width: historyListView.width
                     visible: withinVisibleLimit
@@ -231,11 +346,20 @@ Item {
                     actions: model.actions ? model.actions : []
 
                     keyboardInteractive: false
-                    showActions: false
+                    showActions: true
                     showDismissButton: true
                     showTimeLabel: true
                     dismissMode: "removeHistory"
                     clickActivatesDefault: true
+
+                    interactionMode: "center"
+                    draggableDismiss: false
+                    pauseTimeoutOnHover: false
+                    expandable: true
+                    expanded: root.isExpanded(notificationId)
+                    showActionsWhenExpanded: true
+
+                    onRequestExpandToggle: root.toggleExpanded(notificationId)
                 }
             }
         }

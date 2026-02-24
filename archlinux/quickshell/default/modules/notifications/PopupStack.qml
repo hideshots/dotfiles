@@ -13,6 +13,7 @@ Item {
     property int cardWidth: 352
     property int maxHeight: 720
     property string anchorCorner: "top-right"
+    readonly property bool stackHovered: stackHoverHandler.hovered
 
     readonly property var notificationService: Root.NotificationService
     readonly property int visibleCount: Math.min(notificationService.activeCount, Math.max(0, maxVisible))
@@ -32,6 +33,8 @@ Item {
         anchors.margins: root.edgeMargin
         spacing: root.spacing
         clip: true
+        // Keep popup delegates non-reused to avoid stale role visuals near maxVisible boundaries.
+        reuseItems: false
         model: root.notificationService.activeList
         boundsBehavior: Flickable.StopAtBounds
         interactive: contentHeight > height
@@ -84,23 +87,45 @@ Item {
 
         delegate: NotificationCard {
             required property int index
-            required property var model
 
             readonly property bool withinVisibleLimit: index >= Math.max(0, ListView.view.count - root.maxVisible)
+            // Resolve row data from activeList by current index so hidden/visible transitions
+            // never depend on potentially stale delegate-local role objects.
+            readonly property var rowData: {
+                if (!withinVisibleLimit || !root.notificationService.activeList) {
+                    return null;
+                }
+
+                var sourceModel = root.notificationService.activeList;
+                if (index < 0 || index >= sourceModel.count) {
+                    return null;
+                }
+
+                return sourceModel.get(index);
+            }
 
             width: listView.width
             visible: withinVisibleLimit
             height: visible ? implicitHeight : 0
             opacity: visible ? 1 : 0
 
-            notificationId: Number(model.id)
-            appName: model.appName ? String(model.appName) : ""
-            appIcon: model.appIcon ? String(model.appIcon) : ""
-            summary: model.summary ? String(model.summary) : ""
-            body: model.body ? String(model.body) : ""
-            timeLabel: model.timeLabel ? String(model.timeLabel) : ""
-            actions: model.actions ? model.actions : []
+            notificationId: rowData ? Number(rowData.id) : -1
+            appName: rowData && rowData.appName !== undefined && rowData.appName !== null ? String(rowData.appName) : ""
+            appIcon: rowData && rowData.appIcon !== undefined && rowData.appIcon !== null ? String(rowData.appIcon) : ""
+            summary: rowData && rowData.summary !== undefined && rowData.summary !== null ? String(rowData.summary) : ""
+            body: rowData && rowData.body !== undefined && rowData.body !== null ? String(rowData.body) : ""
+            timeLabel: rowData && rowData.timeLabel !== undefined && rowData.timeLabel !== null ? String(rowData.timeLabel) : ""
+            actions: rowData && rowData.actions ? rowData.actions : []
             keyboardInteractive: false
+            interactionMode: "popup"
+            draggableDismiss: true
+            pauseTimeoutOnHover: true
+            externalHoverHold: root.stackHovered
+            expandable: false
         }
+    }
+
+    HoverHandler {
+        id: stackHoverHandler
     }
 }
