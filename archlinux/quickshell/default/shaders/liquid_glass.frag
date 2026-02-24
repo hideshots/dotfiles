@@ -13,6 +13,7 @@ layout(std140, binding = 0) uniform buf {
     float uFrost;
     float uSplay;
     float uSplayDepth;
+    float uVibrance;
     float uGlassOpacity;
     float uTime;
     float uDebug;
@@ -252,6 +253,14 @@ void main() {
     glassColor -= directionalShadow + innerShadow;
 
     glassColor = mix(glassColor, uTint.rgb, clamp(uTint.a, 0.0, 1.0));
+
+    float vibrance = clamp(uVibrance, -1.0, 1.0);
+    float maxChannel = max(glassColor.r, max(glassColor.g, glassColor.b));
+    float minChannel = min(glassColor.r, min(glassColor.g, glassColor.b));
+    float saturation = maxChannel - minChannel;
+    float vibranceScale = 1.0 + (vibrance >= 0.0 ? (vibrance * (1.0 - saturation)) : vibrance);
+    float vibranceLuma = dot(glassColor, vec3(0.2126, 0.7152, 0.0722));
+    glassColor = vec3(vibranceLuma) + ((glassColor - vec3(vibranceLuma)) * max(0.0, vibranceScale));
 
     float effectMix = uGlassOpacity;
     vec3 composited = mix(baseColor, glassColor, effectMix);

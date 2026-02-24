@@ -29,6 +29,7 @@ ShellRoot {
     property real widgetGlassFrost: 0.8
     property real widgetGlassSplay: 3.0
     property real widgetGlassSplayDepth: 30.0
+    property real widgetGlassVibrance: 0.8
     property real widgetGlassLightAngleDeg: 335
     property real widgetGlassLightStrength: 3.0
     property real widgetGlassLightWidthPx: 3.0
@@ -110,6 +111,7 @@ ShellRoot {
             frost: shell.widgetGlassFrost
             splay: shell.widgetGlassSplay
             splayDepth: shell.widgetGlassSplayDepth
+            vibrance: shell.widgetGlassVibrance
             lightAngleDeg: shell.widgetGlassLightAngleDeg
             lightStrength: shell.widgetGlassLightStrength
             lightWidthPx: shell.widgetGlassLightWidthPx
@@ -198,6 +200,7 @@ ShellRoot {
             frost: shell.widgetGlassFrost
             splay: shell.widgetGlassSplay
             splayDepth: shell.widgetGlassSplayDepth
+            vibrance: shell.widgetGlassVibrance
             lightAngleDeg: shell.widgetGlassLightAngleDeg
             lightStrength: shell.widgetGlassLightStrength
             lightWidthPx: shell.widgetGlassLightWidthPx

@@ -7,8 +7,8 @@
 # -----------------------------------------------
 
 # Paths to your notification sounds
-MUTE_SOUND="$HOME/.dotfiles/archlinux/scripts/assets/disable.caf"
-UNMUTE_SOUND="$HOME/.dotfiles/archlinux/scripts/assets/enable.caf"
+MUTE_SOUND="$HOME/dotfiles/archlinux/scripts/assets/disable.caf"
+UNMUTE_SOUND="$HOME/dotfiles/archlinux/scripts/assets/enable.caf"
 
 # Toggle the default source (mic)
 pactl set-source-mute @DEFAULT_SOURCE@ toggle

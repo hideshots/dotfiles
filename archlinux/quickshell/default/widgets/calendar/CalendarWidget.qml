@@ -39,6 +39,7 @@ Rectangle {
     property real frost: 0.0
     property real splay: 5.0
     property real splayDepth: 18.0
+    property real vibrance: 0.0
     property real lightAngleDeg: 345
     property real lightStrength: 0.85
     property real lightWidthPx: 14.0
@@ -498,6 +499,7 @@ Rectangle {
             property real uFrost: root.frost
             property real uSplay: root.splay
             property real uSplayDepth: root.splayDepth
+            property real uVibrance: root.vibrance
             property real uGlassOpacity: root.glassOpacity * root.materialOpacity
             property color uTint: root.glassTint
             property real uTime: root._shaderTime
