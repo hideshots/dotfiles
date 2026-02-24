@@ -6,11 +6,15 @@ import QtQuick
 import QtCore
 import Qt5Compat.GraphicalEffects
 
+import "." as Root
 import "menu" as Menu
 import "widgets" as Widgets
 
 ShellRoot {
   id: shell
+  // Force-load notifications backend so NotificationServer is active without UI components.
+  readonly property var notificationService: Root.NotificationService
+  Component.onCompleted: notificationService.refreshTimeLabels()
   // Notifications { }
   property bool weatherEnabled: true
   property bool calendarEnabled: true
