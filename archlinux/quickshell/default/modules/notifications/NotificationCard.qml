@@ -10,9 +10,17 @@ FocusScope {
 
     property int notificationId: -1
     property string appName: ""
-    property string appIcon: ""
+    property var appIcon: ""
+    property string appIconHint: ""
+    property var resolvedAppIconSource: undefined
+    property string resolvedAppIconHint: ""
     property string summary: ""
     property string body: ""
+    property var image: ""
+    property string imageHint: ""
+    property string rightSideImageSource: ""
+    property string contentPreviewImageSource: ""
+    property var hints: ({})
     property string timeLabel: ""
     property var actions: []
     property int maxActionButtons: 2
@@ -48,6 +56,18 @@ FocusScope {
     readonly property string effectiveTitle: _trimmed(summary).length > 0 ? _trimmed(summary) : (_trimmed(appName).length > 0 ? _trimmed(appName) : "Notification")
     readonly property string fallbackIconText: _fallbackLabel()
     readonly property bool actionsVisible: showActions && actionButtonCount > 0 && (!showActionsWhenExpanded || expanded)
+    readonly property var effectiveAppIconSource: _hasMediaValue(resolvedAppIconSource) ? resolvedAppIconSource : appIcon
+    readonly property string effectiveAppIconHint: _trimmed(resolvedAppIconHint).length > 0 ? _trimmed(resolvedAppIconHint) : (_trimmed(appIconHint).length > 0 ? _trimmed(appIconHint) : _mediaHint(effectiveAppIconSource))
+    readonly property bool iconUsesRasterImage: _looksLikePathOrUrl(effectiveAppIconHint)
+    readonly property string iconRasterSource: iconUsesRasterImage ? _toRenderableSource(effectiveAppIconHint) : ""
+    readonly property bool iconHasSource: iconUsesRasterImage ? iconRasterSource.length > 0 : _hasMediaValue(effectiveAppIconSource)
+    readonly property string rightImageSource: _toRenderableSource(_trimmed(rightSideImageSource))
+    readonly property bool hasRightImage: rightImageSource.length > 0
+    // Preview slot binds strictly to the service-classified preview role.
+    // Do not fallback to raw image/app icon/right-side image here, otherwise icon-only
+    // notifications incorrectly render a large preview.
+    readonly property string previewImageSource: _toRenderableSource(_trimmed(contentPreviewImageSource))
+    readonly property bool hasPreviewImage: previewImageSource.length > 0
     readonly property bool popupTimeoutHold: pauseTimeoutOnHover && (hovered || externalHoverHold || dragInProgress)
     readonly property real dragProgress: Math.min(1, Math.abs(dragOffsetX) / Math.max(1, dismissThresholdPx))
     readonly property real dragOpacity: draggableDismiss ? (1 - (dragProgress * 0.24)) : 1
@@ -57,6 +77,7 @@ FocusScope {
     property real _pressX: 0
     property real _pressY: 0
     property bool _pointerPressed: false
+    property bool _suppressNextDefaultActivation: false
     property int _timeoutPauseId: -1
 
     implicitWidth: 352
@@ -72,11 +93,17 @@ FocusScope {
     Keys.onEscapePressed: if (keyboardInteractive)
         dismiss()
 
-    onNotificationIdChanged: _syncTimeoutPauseRegistration()
+    onNotificationIdChanged: {
+        resetVisualState();
+        _syncTimeoutPauseRegistration();
+    }
     onPauseTimeoutOnHoverChanged: _syncTimeoutPauseRegistration()
     onPopupTimeoutHoldChanged: _updateTimeoutPauseState()
 
-    Component.onCompleted: _syncTimeoutPauseRegistration()
+    Component.onCompleted: {
+        resetVisualState();
+        _syncTimeoutPauseRegistration();
+    }
     Component.onDestruction: _releaseTimeoutPause()
 
     Behavior on dragOffsetX {
@@ -137,6 +164,69 @@ FocusScope {
         return String(action.text);
     }
 
+    function _hasMediaValue(value) {
+        if (value === undefined || value === null) {
+            return false;
+        }
+        if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+            return _trimmed(value).length > 0;
+        }
+        return true;
+    }
+
+    function _mediaHint(value) {
+        if (value === undefined || value === null) {
+            return "";
+        }
+
+        if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+            return _trimmed(value);
+        }
+
+        if (typeof value === "object") {
+            var keys = ["source", "path", "url", "name", "icon", "iconName"];
+            var i = 0;
+            for (i = 0; i < keys.length; i++) {
+                var key = keys[i];
+                if (!Object.prototype.hasOwnProperty.call(value, key)) {
+                    continue;
+                }
+
+                var candidate = _trimmed(value[key]);
+                if (candidate.length > 0) {
+                    return candidate;
+                }
+            }
+        }
+
+        var fallback = _trimmed(value);
+        return fallback === "[object Object]" ? "" : fallback;
+    }
+
+    function _looksLikePathOrUrl(value) {
+        var text = _trimmed(value);
+        if (text.length === 0) {
+            return false;
+        }
+
+        if (text.indexOf("/") === 0 || text.indexOf("file://") === 0 || text.indexOf("qrc:/") === 0 || text.indexOf(":/") === 0) {
+            return true;
+        }
+
+        return /^[A-Za-z][A-Za-z0-9+.-]*:/.test(text);
+    }
+
+    function _toRenderableSource(value) {
+        var text = _trimmed(value);
+        if (text.length === 0) {
+            return "";
+        }
+        if (text.indexOf("/") === 0) {
+            return "file://" + text;
+        }
+        return text;
+    }
+
     function _supportsTimeoutPause() {
         return !!notificationService && notificationService.setPopupTimeoutPaused !== undefined;
     }
@@ -175,6 +265,17 @@ FocusScope {
         notificationService.setPopupTimeoutPaused(_timeoutPauseId, popupTimeoutHold);
     }
 
+    function resetVisualState() {
+        // Reset transform/opacity/drag state to avoid recycled delegate visual leakage in popup bursts.
+        x = 0;
+        opacity = 1;
+        scale = 1;
+        dragInProgress = false;
+        dragOffsetX = 0;
+        _suppressNextDefaultActivation = false;
+        _resetPointerState();
+    }
+
     function _resetPointerState() {
         _pointerPressed = false;
         _pressX = 0;
@@ -211,6 +312,11 @@ FocusScope {
         _resetPointerState();
 
         if (!dragInProgress) {
+            if (_suppressNextDefaultActivation) {
+                _suppressNextDefaultActivation = false;
+                return;
+            }
+
             if (keyboardInteractive) {
                 forceActiveFocus();
             }
@@ -233,11 +339,16 @@ FocusScope {
 
     function _handlePointerCancel() {
         _resetPointerState();
+        _suppressNextDefaultActivation = false;
 
         if (dragInProgress) {
             dragInProgress = false;
             dragOffsetX = 0;
         }
+    }
+
+    function _consumeCardReleaseActivation() {
+        _suppressNextDefaultActivation = true;
     }
 
     function activateDefault() {
@@ -297,16 +408,16 @@ FocusScope {
             preventStealing: true
             cursorShape: Qt.PointingHandCursor
 
-            onPressed: function(mouse) {
+            onPressed: function (mouse) {
                 mouse.accepted = true;
                 root._handlePointerPress(mouse);
             }
 
-            onPositionChanged: function(mouse) {
+            onPositionChanged: function (mouse) {
                 root._handlePointerMove(mouse);
             }
 
-            onReleased: function(mouse) {
+            onReleased: function (mouse) {
                 mouse.accepted = true;
                 root._handlePointerRelease();
             }
@@ -332,18 +443,29 @@ FocusScope {
                     radius: 8
                     color: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.07)
 
+                    Image {
+                        id: appIconRasterImage
+                        anchors.fill: parent
+                        anchors.margins: 5
+                        source: root.iconRasterSource
+                        fillMode: Image.PreserveAspectFit
+                        smooth: true
+                        asynchronous: true
+                        visible: root.iconUsesRasterImage && status === Image.Ready
+                    }
+
                     IconImage {
                         id: appIconImage
                         anchors.fill: parent
                         anchors.margins: 5
-                        source: root._trimmed(root.appIcon)
-                        visible: root._trimmed(root.appIcon).length > 0
+                        source: root.iconUsesRasterImage ? "" : root.effectiveAppIconSource
+                        visible: !root.iconUsesRasterImage && root.iconHasSource
                     }
 
                     Text {
                         anchors.centerIn: parent
                         text: root.fallbackIconText
-                        visible: !appIconImage.visible
+                        visible: !appIconRasterImage.visible && !appIconImage.visible
                         font.family: Root.Theme.fontFamilyDisplay
                         font.pixelSize: 14
                         font.weight: Font.DemiBold
@@ -381,7 +503,7 @@ FocusScope {
                         font.pixelSize: 12
                         elide: root.expandable && root.expanded ? Text.ElideNone : Text.ElideRight
                         maximumLineCount: root.expandable ? (root.expanded ? 8 : 2) : 2
-                        wrapMode: Text.WordWrap
+                        wrapMode: root.expandable && root.expanded ? Text.WrapAnywhere : Text.WordWrap
                         renderType: Text.NativeRendering
                     }
                 }
@@ -389,10 +511,11 @@ FocusScope {
                 Column {
                     id: controlsColumn
                     spacing: 4
-                    width: Math.max(timeText.implicitWidth, dismissButton.width, expandButton.width)
+                    width: Math.max(timeText.implicitWidth, (centerDismissButton.visible ? centerDismissButton.width : 0), (expandButton.visible ? expandButton.width : 0), (rightImageFrame.visible ? rightImageFrame.width : 0))
 
                     Text {
                         id: timeText
+                        width: parent.width
                         text: root._trimmed(root.timeLabel)
                         visible: root.showTimeLabel && root._trimmed(root.timeLabel).length > 0
                         color: Root.Theme.textSecondary
@@ -405,12 +528,46 @@ FocusScope {
                     }
 
                     Rectangle {
+                        id: rightImageFrame
+                        width: root.hasRightImage ? 32 : 0
+                        height: root.hasRightImage ? 32 : 0
+                        radius: 8
+                        x: parent.width - width
+                        clip: true
+                        visible: root.hasRightImage
+                        color: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.07)
+                        border.width: 1
+                        border.color: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.10)
+
+                        Image {
+                            id: rightImage
+                            anchors.fill: parent
+                            source: root.rightImageSource
+                            fillMode: Image.PreserveAspectCrop
+                            smooth: true
+                            asynchronous: true
+                            visible: status === Image.Ready
+                        }
+
+                        Text {
+                            anchors.centerIn: parent
+                            visible: rightImage.status === Image.Error
+                            text: root.fallbackIconText
+                            font.family: Root.Theme.fontFamilyDisplay
+                            font.pixelSize: 12
+                            font.weight: Font.DemiBold
+                            color: Root.Theme.textPrimary
+                            renderType: Text.NativeRendering
+                        }
+                    }
+
+                    Rectangle {
                         id: expandButton
                         visible: root.expandable && (root.hasBody || root.actionButtonCount > 0)
                         width: 20
                         height: 20
                         radius: 10
-                        anchors.right: parent.right
+                        x: parent.width - width
                         color: expandMouseArea.containsMouse ? (Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.12)) : "transparent"
 
                         Text {
@@ -431,33 +588,27 @@ FocusScope {
                             preventStealing: true
                             cursorShape: Qt.PointingHandCursor
 
-                            onPressed: function(mouse) {
+                            onPressed: function (mouse) {
                                 mouse.accepted = true;
+                                root._consumeCardReleaseActivation();
                             }
 
-                            onClicked: function(mouse) {
+                            onClicked: function (mouse) {
                                 mouse.accepted = true;
                                 root.requestExpandToggle();
+                                root._suppressNextDefaultActivation = false;
                             }
                         }
                     }
 
                     Rectangle {
-                        id: dismissButton
-                        visible: root.showDismissButton
+                        id: centerDismissButton
+                        visible: root.showDismissButton && root.interactionMode === "center"
                         width: 20
                         height: 20
                         radius: 10
-                        anchors.right: parent.right
-                        opacity: root.revealDismissOnHover ? (root.hovered ? 1 : 0.68) : 1
-                        color: dismissMouseArea.containsMouse ? (Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.12)) : "transparent"
-
-                        Behavior on opacity {
-                            NumberAnimation {
-                                duration: 120
-                                easing.type: Easing.OutCubic
-                            }
-                        }
+                        x: parent.width - width
+                        color: centerDismissMouseArea.containsMouse ? (Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.12)) : "transparent"
 
                         Text {
                             anchors.centerIn: parent
@@ -470,23 +621,57 @@ FocusScope {
                         }
 
                         MouseArea {
-                            id: dismissMouseArea
+                            id: centerDismissMouseArea
                             anchors.fill: parent
                             hoverEnabled: true
                             acceptedButtons: Qt.LeftButton
                             preventStealing: true
                             cursorShape: Qt.PointingHandCursor
 
-                            onPressed: function(mouse) {
+                            onPressed: function (mouse) {
                                 mouse.accepted = true;
+                                root._consumeCardReleaseActivation();
                             }
 
-                            onClicked: function(mouse) {
+                            onClicked: function (mouse) {
                                 mouse.accepted = true;
                                 root.dismiss();
+                                root._suppressNextDefaultActivation = false;
                             }
                         }
                     }
+                }
+            }
+
+            Rectangle {
+                id: bodyImageFrame
+                width: parent.width
+                height: visible ? Math.round(Math.max(72, Math.min(176, width * 0.52))) : 0
+                radius: 10
+                clip: true
+                visible: root.hasPreviewImage
+                color: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.05) : Qt.rgba(0, 0, 0, 0.04)
+                border.width: 1
+                border.color: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.07) : Qt.rgba(0, 0, 0, 0.08)
+
+                Image {
+                    id: bodyImage
+                    anchors.fill: parent
+                    source: root.previewImageSource
+                    fillMode: Image.PreserveAspectFit
+                    smooth: true
+                    asynchronous: true
+                    visible: status === Image.Ready
+                }
+
+                Text {
+                    anchors.centerIn: parent
+                    visible: bodyImage.status === Image.Error
+                    text: "Image unavailable"
+                    color: Root.Theme.textSecondary
+                    font.family: Root.Theme.fontFamily
+                    font.pixelSize: 11
+                    renderType: Text.NativeRendering
                 }
             }
 
@@ -533,16 +718,76 @@ FocusScope {
                             preventStealing: true
                             cursorShape: Qt.PointingHandCursor
 
-                            onPressed: function(mouse) {
+                            onPressed: function (mouse) {
                                 mouse.accepted = true;
+                                root._consumeCardReleaseActivation();
                             }
 
-                            onClicked: function(mouse) {
+                            onClicked: function (mouse) {
                                 mouse.accepted = true;
                                 root.invokeAction(actionButton.actionId);
+                                root._suppressNextDefaultActivation = false;
                             }
                         }
                     }
+                }
+            }
+        }
+
+        // Popup-only dismiss overlay: top-left, hover-revealed, and out of normal layout flow
+        // so it does not steal width from title/body/timestamp columns.
+        Rectangle {
+            id: popupDismissButton
+            visible: root.showDismissButton && root.interactionMode === "popup"
+            width: 22
+            height: 22
+            radius: 11
+            z: 2
+            anchors.left: parent.left
+            anchors.top: parent.top
+            anchors.leftMargin: 6
+            anchors.topMargin: 6
+            opacity: root.revealDismissOnHover ? ((root.hovered || popupDismissHover.hovered || popupDismissMouseArea.containsMouse) ? 1 : 0) : 1
+            color: popupDismissMouseArea.containsMouse ? (Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.16) : Qt.rgba(0, 0, 0, 0.14)) : (opacity > 0 ? (Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.09) : Qt.rgba(0, 0, 0, 0.08)) : "transparent")
+
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: 120
+                    easing.type: Easing.OutCubic
+                }
+            }
+
+            Text {
+                anchors.centerIn: parent
+                text: "x"
+                color: Root.Theme.textSecondary
+                font.family: Root.Theme.fontFamilyDisplay
+                font.pixelSize: 12
+                font.weight: Font.DemiBold
+                renderType: Text.NativeRendering
+            }
+
+            HoverHandler {
+                id: popupDismissHover
+            }
+
+            MouseArea {
+                id: popupDismissMouseArea
+                anchors.fill: parent
+                hoverEnabled: true
+                acceptedButtons: Qt.LeftButton
+                preventStealing: true
+                cursorShape: Qt.PointingHandCursor
+
+                onPressed: function (mouse) {
+                    mouse.accepted = true;
+                    root._consumeCardReleaseActivation();
+                }
+
+                onClicked: function (mouse) {
+                    mouse.accepted = true;
+                    root.dismiss();
+                    root._suppressNextDefaultActivation = false;
                 }
             }
         }

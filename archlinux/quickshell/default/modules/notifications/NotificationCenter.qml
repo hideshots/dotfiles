@@ -30,7 +30,7 @@ FocusScope {
     enabled: opacity > 0.95
     focus: open
 
-    Keys.onEscapePressed: function(event) {
+    Keys.onEscapePressed: function (event) {
         if (!root.open) {
             return;
         }
@@ -82,7 +82,7 @@ FocusScope {
     }
 
     function clearExpandedState() {
-        expandedById = ({})
+        expandedById = ({});
     }
 
     function isExpanded(notificationId) {
@@ -91,9 +91,9 @@ FocusScope {
     }
 
     function setExpanded(notificationId, expanded) {
-        var next = ({})
+        var next = ({});
         var key = _idKey(notificationId);
-        var source = expandedById || ({})
+        var source = expandedById || ({});
         var mapKey = "";
 
         for (mapKey in source) {
@@ -115,16 +115,17 @@ FocusScope {
     }
 
     function pruneExpandedState() {
-        var allowed = ({})
+        var allowed = ({});
         var i = 0;
 
         for (i = 0; i < notificationService.historyCount; i++) {
             var row = notificationService.historyList.get(i);
-            allowed[_idKey(row.id)] = true;
+            var rowId = row && row.notificationId !== undefined ? row.notificationId : row.id;
+            allowed[_idKey(rowId)] = true;
         }
 
-        var next = ({})
-        var source = expandedById || ({})
+        var next = ({});
+        var source = expandedById || ({});
         var key = "";
 
         for (key in source) {
@@ -224,11 +225,11 @@ FocusScope {
                         preventStealing: true
                         cursorShape: Qt.PointingHandCursor
 
-                        onPressed: function(mouse) {
+                        onPressed: function (mouse) {
                             mouse.accepted = true;
                         }
 
-                        onClicked: function(mouse) {
+                        onClicked: function (mouse) {
                             mouse.accepted = true;
                             root.notificationService.clearHistory();
                         }
@@ -260,11 +261,11 @@ FocusScope {
                         preventStealing: true
                         cursorShape: Qt.PointingHandCursor
 
-                        onPressed: function(mouse) {
+                        onPressed: function (mouse) {
                             mouse.accepted = true;
                         }
 
-                        onClicked: function(mouse) {
+                        onClicked: function (mouse) {
                             mouse.accepted = true;
                             root.requestClose();
                         }
@@ -331,19 +332,37 @@ FocusScope {
                     required property var model
 
                     readonly property bool withinVisibleLimit: index < Math.max(0, root.maxHistoryVisible)
+                    readonly property int rowRevision: model && model.revision !== undefined ? Number(model.revision) : 0
+                    readonly property var notificationSnapshot: {
+                        if (rowRevision < -1) {
+                            return null;
+                        }
+                        if (notificationId < 0) {
+                            return null;
+                        }
+                        return root.notificationService.getNotification(notificationId);
+                    }
 
                     width: historyListView.width
                     visible: withinVisibleLimit
                     height: visible ? implicitHeight : 0
                     opacity: visible ? 1 : 0
 
-                    notificationId: Number(model.id)
-                    appName: model.appName ? String(model.appName) : ""
-                    appIcon: model.appIcon ? String(model.appIcon) : ""
-                    summary: model.summary ? String(model.summary) : ""
-                    body: model.body ? String(model.body) : ""
-                    timeLabel: model.timeLabel ? String(model.timeLabel) : ""
-                    actions: model.actions ? model.actions : []
+                    notificationId: model && model.notificationId !== undefined ? Number(model.notificationId) : Number(model.id)
+                    appName: notificationSnapshot && notificationSnapshot.appName !== undefined ? String(notificationSnapshot.appName) : (model.appName ? String(model.appName) : "")
+                    appIcon: notificationSnapshot ? notificationSnapshot.appIcon : (model.appIconHint ? String(model.appIconHint) : "")
+                    appIconHint: notificationSnapshot && notificationSnapshot.appIconHint !== undefined ? String(notificationSnapshot.appIconHint) : (model.appIconHint ? String(model.appIconHint) : "")
+                    resolvedAppIconSource: notificationSnapshot && notificationSnapshot.resolvedAppIconSource !== undefined ? notificationSnapshot.resolvedAppIconSource : (model.resolvedAppIconHint ? String(model.resolvedAppIconHint) : "")
+                    resolvedAppIconHint: notificationSnapshot && notificationSnapshot.resolvedAppIconHint !== undefined ? String(notificationSnapshot.resolvedAppIconHint) : (model.resolvedAppIconHint ? String(model.resolvedAppIconHint) : "")
+                    summary: notificationSnapshot && notificationSnapshot.summary !== undefined ? String(notificationSnapshot.summary) : (model.summary ? String(model.summary) : "")
+                    body: notificationSnapshot && notificationSnapshot.body !== undefined ? String(notificationSnapshot.body) : (model.body ? String(model.body) : "")
+                    image: notificationSnapshot ? notificationSnapshot.image : (model.imageHint ? String(model.imageHint) : "")
+                    imageHint: notificationSnapshot && notificationSnapshot.imageHint !== undefined ? String(notificationSnapshot.imageHint) : (model.imageHint ? String(model.imageHint) : "")
+                    rightSideImageSource: notificationSnapshot && notificationSnapshot.rightSideImageSource !== undefined ? String(notificationSnapshot.rightSideImageSource) : (model.rightSideImageSource ? String(model.rightSideImageSource) : "")
+                    contentPreviewImageSource: notificationSnapshot && notificationSnapshot.contentPreviewImageSource !== undefined ? String(notificationSnapshot.contentPreviewImageSource) : (model.contentPreviewImageSource ? String(model.contentPreviewImageSource) : "")
+                    hints: notificationSnapshot && notificationSnapshot.hints !== undefined ? notificationSnapshot.hints : ({})
+                    timeLabel: notificationSnapshot && notificationSnapshot.timeLabel !== undefined ? String(notificationSnapshot.timeLabel) : (model.timeLabel ? String(model.timeLabel) : "")
+                    actions: notificationSnapshot && notificationSnapshot.actions ? notificationSnapshot.actions : []
 
                     keyboardInteractive: false
                     showActions: true
