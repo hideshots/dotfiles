@@ -8,6 +8,7 @@ import Qt5Compat.GraphicalEffects
 
 import "." as Root
 import "menu" as Menu
+import "modules/notifications" as Notifications
 import "widgets" as Widgets
 
 ShellRoot {
@@ -18,6 +19,35 @@ ShellRoot {
   // Notifications { }
   property bool weatherEnabled: true
   property bool calendarEnabled: true
+  property bool notificationsPopupEnabled: true
+  property int notificationsPopupTopMargin: 44
+  property int notificationsPopupRightMargin: 16
+  property int notificationsPopupMaxVisible: 5
+  property bool notificationCenterOpen: false
+  property var notificationCenterTriggerItem: null
+  property bool notificationCenterEnabled: true
+  property int notificationCenterTopMargin: 44
+  property int notificationCenterRightMargin: 16
+  onNotificationCenterOpenChanged: {
+    if (!shell.notificationCenterOpen) {
+      shell.notificationCenterTriggerItem = null
+    }
+  }
+  function toggleNotificationCenter(triggerItem) {
+    var hasTrigger = triggerItem !== undefined && triggerItem !== null
+
+    if (shell.notificationCenterOpen) {
+      if (hasTrigger && shell.notificationCenterTriggerItem !== triggerItem) {
+        shell.notificationCenterTriggerItem = triggerItem
+        return
+      }
+      shell.notificationCenterOpen = false
+      return
+    }
+
+    shell.notificationCenterTriggerItem = hasTrigger ? triggerItem : null
+    shell.notificationCenterOpen = true
+  }
   property int weatherPanelTopMargin: 50
   property int weatherPanelLeftMargin: 10
   property int calendarPanelGap: 10
@@ -252,6 +282,61 @@ ShellRoot {
     }
   }
 
+  PanelWindow {
+    id: notificationsPopupPanel
+    visible: shell.notificationsPopupEnabled && shell.notificationService.activeCount > 0
+
+    anchors.top: true
+    anchors.right: true
+    margins.top: shell.notificationsPopupTopMargin
+    margins.right: shell.notificationsPopupRightMargin
+    exclusionMode: ExclusionMode.Ignore
+
+    color: "transparent"
+    surfaceFormat.opaque: false
+    focusable: false
+    WlrLayershell.layer: WlrLayer.Overlay
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+    WlrLayershell.namespace: "quickshell:notifications"
+
+    implicitWidth: popupStack.implicitWidth
+    implicitHeight: popupStack.implicitHeight
+
+    Notifications.PopupStack {
+      id: popupStack
+      anchors.fill: parent
+      maxVisible: shell.notificationsPopupMaxVisible
+    }
+  }
+
+  PanelWindow {
+    id: notificationCenterPanel
+    visible: shell.notificationCenterEnabled && (shell.notificationCenterOpen || notificationCenter.opacity > 0.01)
+
+    anchors.top: true
+    anchors.right: true
+    margins.top: shell.notificationCenterTopMargin
+    margins.right: shell.notificationCenterRightMargin
+    exclusionMode: ExclusionMode.Ignore
+
+    color: "transparent"
+    surfaceFormat.opaque: false
+    focusable: false
+    WlrLayershell.layer: WlrLayer.Overlay
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+    WlrLayershell.namespace: "quickshell:notification-center"
+
+    implicitWidth: notificationCenter.implicitWidth
+    implicitHeight: notificationCenter.implicitHeight
+
+    Notifications.NotificationCenter {
+      id: notificationCenter
+      anchors.fill: parent
+      open: shell.notificationCenterOpen
+      onRequestClose: shell.notificationCenterOpen = false
+    }
+  }
+
   Variants {
     model: Quickshell.screens
 
@@ -260,6 +345,11 @@ ShellRoot {
       WlrLayershell.namespace: "qsbar"
       required property var modelData
       screen: barPanelWindow.modelData
+      property bool notificationCenterOpenProxy: shell.notificationCenterOpen
+      property var notificationCenterTriggerItemProxy: shell.notificationCenterTriggerItem
+      function toggleNotificationCenterForBar(triggerItem) {
+        shell.toggleNotificationCenter(triggerItem)
+      }
 
       anchors {
         top: true
@@ -454,11 +544,35 @@ ShellRoot {
               id: rightSection
               height: parent.height
               width: rightRow.implicitWidth
+              function syncNotificationCenterHighlight() {
+                var shouldHighlight = barPanelWindow.notificationCenterOpenProxy && barPanelWindow.notificationCenterTriggerItemProxy === timeDisplay
+                if (shouldHighlight) {
+                  rightHi.activeTarget = timeDisplay
+                } else if (rightHi.activeTarget === timeDisplay) {
+                  rightHi.activeTarget = null
+                }
+              }
+              Component.onCompleted: syncNotificationCenterHighlight()
+              Component.onDestruction: {
+                if (rightHi.activeTarget === timeDisplay) {
+                  rightHi.activeTarget = null
+                }
+              }
 
               QtObject {
                 id: rightHi
                 property Item activeTarget: null
                 property Item pulseTarget: null
+              }
+
+              Connections {
+                target: barPanelWindow
+                function onNotificationCenterOpenProxyChanged() {
+                  rightSection.syncNotificationCenterHighlight()
+                }
+                function onNotificationCenterTriggerItemProxyChanged() {
+                  rightSection.syncNotificationCenterHighlight()
+                }
               }
 
               Rectangle {
@@ -496,10 +610,14 @@ ShellRoot {
 
                 // IconButton { icon: "􀙇"; highlightState: rightHi; onClicked: {} }
                 // IconButton { icon: "􀊫"; highlightState: rightHi; onClicked: {} }
-                // IconButton { icon: "􀉭"; highlightState: rightHi; onClicked: {} }
                 IconButton { icon: "􀜊"; highlightState: rightHi; onClicked: {} }
 
-                TimeDisplay { height: parent.height; highlightState: rightHi }
+                TimeDisplay {
+                  id: timeDisplay
+                  height: parent.height
+                  highlightState: rightHi
+                  onClicked: barPanelWindow.toggleNotificationCenterForBar(timeDisplay)
+                }
               }
             }
           }

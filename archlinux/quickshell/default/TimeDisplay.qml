@@ -5,6 +5,7 @@ import Quickshell
 Rectangle {
     id: root
     property var highlightState: null
+    signal clicked()
 
     height: parent.height
     width: timeText.width + (Theme.itemPadding * 2)
@@ -45,8 +46,6 @@ Rectangle {
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
 
-        onClicked: {
-            // Time action (e.g., open calendar)
-        }
+        onClicked: root.clicked()
     }
 }

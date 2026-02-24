@@ -1,0 +1,4 @@
+module notifications
+NotificationCard 1.0 NotificationCard.qml
+PopupStack 1.0 PopupStack.qml
+NotificationCenter 1.0 NotificationCenter.qml
