@@ -51,6 +51,17 @@ FocusScope {
 
     readonly property var notificationService: Root.NotificationService
     readonly property int cardPadding: 10
+    readonly property real cardRadius: 14
+    property bool edgeLightEnabled: isPopupMode
+    property real edgeLightStrength: 2
+    property real edgeLightAngleDeg: 330
+    property real edgeLightWidthPx: 4.0
+    property real edgeLightSharpness: 0.1
+    property real edgeLightOpacity: 1.0
+    property real cardTintOpacity: isPopupMode ? (Root.Theme.isDark ? 0.46 : 0.54) : 0.96
+    readonly property color cardTintColor: Root.Theme.isDark ? Qt.rgba(0.10, 0.11, 0.13, cardTintOpacity) : Qt.rgba(0.97, 0.98, 0.99, cardTintOpacity)
+    readonly property color cardContrastColor: Root.Theme.isDark ? Qt.rgba(1, 1, 1, isPopupMode ? 0.030 : 0.0) : Qt.rgba(1, 1, 1, isPopupMode ? 0.16 : 0.0)
+    readonly property color cardHairlineColor: Root.Theme.isDark ? Qt.rgba(1, 1, 1, isPopupMode ? 0.07 : 0.05) : Qt.rgba(1, 1, 1, isPopupMode ? 0.52 : 0.70)
     readonly property bool hasBody: _trimmed(body).length > 0
     readonly property int actionButtonCount: Math.min(maxActionButtons, _safeLength(actions))
     readonly property string effectiveTitle: _trimmed(summary).length > 0 ? _trimmed(summary) : (_trimmed(appName).length > 0 ? _trimmed(appName) : "Notification")
@@ -400,18 +411,38 @@ FocusScope {
 
         Rectangle {
             anchors.fill: parent
-            radius: 14
-            color: Root.Theme.isDark ? Qt.rgba(0.12, 0.12, 0.12, 0.96) : Qt.rgba(0.98, 0.98, 0.98, 0.96)
-            border.width: 1
-            border.color: (root.keyboardInteractive && root.activeFocus) ? Qt.rgba(Root.Theme.menuHighlight.r, Root.Theme.menuHighlight.g, Root.Theme.menuHighlight.b, 0.55) : (Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.10))
+            radius: root.cardRadius
+            color: root.cardTintColor
         }
 
         Rectangle {
             anchors.fill: parent
-            radius: 14
+            radius: root.cardRadius
+            color: root.cardContrastColor
+        }
+
+        Rectangle {
+            anchors.fill: parent
+            radius: root.cardRadius
             color: "transparent"
             border.width: 1
-            border.color: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.05) : Qt.rgba(1, 1, 1, 0.70)
+            border.color: root.cardHairlineColor
+        }
+
+        ShaderEffect {
+            id: edgeLightOverlay
+            anchors.fill: parent
+            visible: root.isPopupMode && root.edgeLightEnabled
+            property vector2d uSize: Qt.vector2d(width, height)
+            property real uRadius: root.cardRadius
+            property real uLightAngleDeg: root.edgeLightAngleDeg
+            property real uLightStrength: root.edgeLightStrength
+            property real uLightWidthPx: root.edgeLightWidthPx
+            property real uLightSharpness: root.edgeLightSharpness
+            property real uCornerBoost: 0.5
+            property real uEdgeOpacity: root.edgeLightOpacity
+            property color uEdgeTint: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.98) : Qt.rgba(1, 1, 1, 0.90)
+            fragmentShader: "../../shaders/notification_edge_light.frag.qsb"
         }
 
         MouseArea {
