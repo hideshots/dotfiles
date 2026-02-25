@@ -30,9 +30,9 @@ ShellRoot {
     property int notificationsActionWindowBleed: 3
     property int notificationsDismissHoverOverlapPx: 5
     property int notificationsActionHoverOverlapPx: 6
-    property int notificationsControlFadeInMs: 70
-    property int notificationsControlFadeOutMs: 110
-    readonly property color notificationsControlTintColor: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.20) : Qt.rgba(0.98, 0.99, 1.0, 0.24)
+    property int notificationsControlFadeInMs: 150
+    property int notificationsControlFadeOutMs: 200
+    readonly property color notificationsControlTintColor: Root.Theme.isDark ? Qt.rgba(0, 0, 0, 0.16) : Qt.rgba(0.98, 0.99, 1.0, 0.24)
     readonly property color notificationsControlHoverTintColor: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.26) : Qt.rgba(1, 1, 1, 0.34)
     readonly property color notificationsControlBorderColor: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(1, 1, 1, 0.52)
     property bool notificationCenterOpen: false
@@ -426,8 +426,8 @@ ShellRoot {
                         property vector2d uSize: Qt.vector2d(width, height)
                         property real uRadius: dismissButton.radius
                         property real uLightAngleDeg: 330
-                        property real uLightStrength: 1.1
-                        property real uLightWidthPx: 3.2
+                        property real uLightStrength: 5.1
+                        property real uLightWidthPx: 4.2
                         property real uLightSharpness: 0.28
                         property real uCornerBoost: 0.45
                         property real uEdgeOpacity: 0.72
@@ -602,8 +602,8 @@ ShellRoot {
                                     property vector2d uSize: Qt.vector2d(width, height)
                                     property real uRadius: popupActionButton.radius
                                     property real uLightAngleDeg: 330
-                                    property real uLightStrength: 1.1
-                                    property real uLightWidthPx: 3.2
+                                    property real uLightStrength: 5.1
+                                    property real uLightWidthPx: 3.5
                                     property real uLightSharpness: 0.28
                                     property real uCornerBoost: 0.45
                                     property real uEdgeOpacity: 0.72
