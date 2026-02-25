@@ -42,12 +42,23 @@ FocusScope {
     property bool showActionsWhenExpanded: interactionMode === "center"
     property bool pauseTimeoutOnHover: interactionMode === "popup"
     property bool externalHoverHold: false
+    property bool externalDismissOverlayEnabled: false
+    property bool externalDismissHover: false
+    property bool externalPopupActionsOverlayEnabled: false
+    property bool externalPopupActionsHover: false
+    property int controlsHoverOwnerId: -1
     property bool revealDismissOnHover: interactionMode === "popup"
+    property int controlsHandoffGraceMs: 80
+    property bool controlsHandoffGraceActive: false
+    property int popupControlsFadeInMs: 70
+    property int popupControlsFadeOutMs: 110
 
-    property real dismissThresholdPx: Math.max(96, width * 0.30)
-    property real dragStartThresholdPx: 8
+    property real dismissThresholdPx: Math.max(140, width * 9.1)
+    property real dragStartThresholdPx: 14
 
     signal requestExpandToggle
+    signal requestControlsOwner(int notificationId)
+    signal controlsHandoffGraceChanged(int notificationId, bool active)
 
     readonly property var notificationService: Root.NotificationService
     readonly property int cardPadding: 10
@@ -73,6 +84,7 @@ FocusScope {
     readonly property color cardHairlineColor: Root.Theme.isDark ? Qt.rgba(1, 1, 1, isPopupMode ? 0.07 : 0.05) : Qt.rgba(1, 1, 1, isPopupMode ? 0.52 : 0.70)
     readonly property bool hasBody: _trimmed(body).length > 0
     readonly property int actionButtonCount: Math.min(maxActionButtons, _safeLength(actions))
+    readonly property var popupVisibleActions: _popupVisibleActions()
     readonly property string effectiveTitle: _trimmed(summary).length > 0 ? _trimmed(summary) : (_trimmed(appName).length > 0 ? _trimmed(appName) : "Notification")
     readonly property string fallbackIconText: _fallbackLabel()
     readonly property bool actionsVisible: showActions && actionButtonCount > 0 && (!showActionsWhenExpanded || expanded)
@@ -96,11 +108,26 @@ FocusScope {
     readonly property int popupOverlayInset: 5
     readonly property int popupRightRailReservedWidth: hasRightImage ? popupRailWidth : 0
     readonly property int popupRightRailReservedSpacing: hasRightImage ? popupMainRow.spacing : 0
+    readonly property real dismissVisualX: -Math.round(popupDismissSize / 2) + popupOverlayInset
+    readonly property real dismissVisualY: -Math.round(popupDismissSize / 2) + popupOverlayInset
+    readonly property bool externalDismissEligible: showDismissButton && isPopupMode
+    readonly property bool controlsSuppressedByDrag: dragInProgress || dragOffsetX > 0
+    readonly property bool controlsOwnedByThisCard: controlsHoverOwnerId < 0 || controlsHoverOwnerId === notificationId
+    readonly property bool controlsVisibleEffective: controlsOwnedByThisCard && (hovered || externalDismissHover || externalPopupActionsHover || controlsHandoffGraceActive)
+    readonly property real externalDismissOpacity: controlsSuppressedByDrag ? 0 : (revealDismissOnHover ? (controlsVisibleEffective ? 1 : 0) : 1)
     property int popupActionsBottomGap: 0
     readonly property bool popupActionsOverlayEligible: isPopupMode && actionsVisible
-    readonly property bool popupActionsOverlayShown: popupActionsOverlayEligible && !dragInProgress && (hovered || popupActionsOverlayHover.hovered || popupActionsOverlayMouseArea.containsMouse || _popupActionsOverlayPressed)
-    readonly property bool popupTimeoutHold: pauseTimeoutOnHover && (hovered || externalHoverHold || dragInProgress || popupActionsOverlayHover.hovered || popupActionsOverlayMouseArea.containsMouse || _popupActionsOverlayPressed)
-    readonly property real dragProgress: Math.min(1, Math.abs(dragOffsetX) / Math.max(1, dismissThresholdPx))
+    readonly property bool popupActionsOverlayShown: popupActionsOverlayEligible && !controlsSuppressedByDrag && (controlsVisibleEffective || popupActionsOverlayActiveHover)
+    readonly property real popupActionOverlayWidth: popupActionsOverlayBackground.implicitWidth
+    readonly property real popupActionOverlayHeight: popupActionsOverlayBackground.implicitHeight
+    readonly property real popupActionOverlayX: width - cardPadding - popupActionOverlayWidth
+    readonly property real popupActionOverlayY: height - (cardPadding + Math.max(0, popupActionsBottomGap)) - popupActionOverlayHeight
+    readonly property bool externalPopupActionsEligible: popupActionsOverlayEligible
+    readonly property real externalPopupActionsOpacity: popupActionsOverlayShown ? 1 : 0
+    readonly property bool popupActionsOverlayActiveHover: popupActionsOverlayHover.hovered || popupActionsOverlayMouseArea.containsMouse || _popupActionsOverlayPressed
+    readonly property real popupRightAvatarOpacity: controlsSuppressedByDrag ? 0 : (controlsVisibleEffective ? 0 : 1)
+    readonly property bool popupTimeoutHold: pauseTimeoutOnHover && (hovered || externalHoverHold || externalDismissHover || externalPopupActionsHover || controlsHandoffGraceActive || dragInProgress || popupActionsOverlayActiveHover)
+    readonly property real dragProgress: Math.min(1, dragOffsetX / Math.max(1, dismissThresholdPx))
     readonly property real dragOpacity: draggableDismiss ? (1 - (dragProgress * 0.24)) : 1
 
     property real dragOffsetX: 0
@@ -129,6 +156,49 @@ FocusScope {
         resetVisualState();
         _syncTimeoutPauseRegistration();
     }
+    onHoveredChanged: {
+        if (hovered) {
+            if (notificationId >= 0) {
+                root.requestControlsOwner(notificationId);
+            }
+            root._cancelControlsHandoffGrace();
+            return;
+        }
+
+        if (root._externalControlsEnabled() && isPopupMode && !externalDismissHover && !externalPopupActionsHover && !controlsSuppressedByDrag) {
+            root._startControlsHandoffGrace();
+        }
+    }
+    onExternalDismissHoverChanged: {
+        if (externalDismissHover) {
+            root._cancelControlsHandoffGrace();
+            return;
+        }
+
+        if (!hovered && !externalPopupActionsHover) {
+            root._cancelControlsHandoffGrace();
+        }
+    }
+    onExternalPopupActionsHoverChanged: {
+        if (externalPopupActionsHover) {
+            root._cancelControlsHandoffGrace();
+            return;
+        }
+
+        if (!hovered && !externalDismissHover) {
+            root._cancelControlsHandoffGrace();
+        }
+    }
+    onControlsHoverOwnerIdChanged: if (!controlsOwnedByThisCard)
+        root._cancelControlsHandoffGrace()
+    onControlsSuppressedByDragChanged: if (controlsSuppressedByDrag)
+        root._cancelControlsHandoffGrace()
+    onInteractionModeChanged: if (!isPopupMode)
+        root._cancelControlsHandoffGrace()
+    onExternalDismissOverlayEnabledChanged: if (!root._externalControlsEnabled())
+        root._cancelControlsHandoffGrace()
+    onExternalPopupActionsOverlayEnabledChanged: if (!root._externalControlsEnabled())
+        root._cancelControlsHandoffGrace()
     onPauseTimeoutOnHoverChanged: _syncTimeoutPauseRegistration()
     onPopupTimeoutHoldChanged: _updateTimeoutPauseState()
 
@@ -136,14 +206,16 @@ FocusScope {
         resetVisualState();
         _syncTimeoutPauseRegistration();
     }
-    Component.onDestruction: _releaseTimeoutPause()
+    Component.onDestruction: {
+        _releaseTimeoutPause();
+        root._cancelControlsHandoffGrace();
+    }
 
-    Behavior on dragOffsetX {
-        enabled: !root.dragInProgress
-        NumberAnimation {
-            duration: 170
-            easing.type: Easing.OutCubic
-        }
+    Timer {
+        id: controlsHandoffGraceTimer
+        interval: Math.max(1, root.controlsHandoffGraceMs)
+        repeat: false
+        onTriggered: root._setControlsHandoffGraceActive(false)
     }
 
     function _trimmed(value) {
@@ -194,6 +266,26 @@ FocusScope {
             return "";
         }
         return String(action.text);
+    }
+
+    function _popupVisibleActions() {
+        var visible = [];
+        var i = 0;
+
+        for (i = 0; i < actionButtonCount; i++) {
+            var action = _safeAction(i);
+            var actionId = _actionId(action);
+            var actionText = _actionText(action);
+            if (actionText.length === 0) {
+                continue;
+            }
+            visible.push({
+                "id": actionId,
+                "text": actionText
+            });
+        }
+
+        return visible;
     }
 
     function _hasMediaValue(value) {
@@ -297,6 +389,40 @@ FocusScope {
         notificationService.setPopupTimeoutPaused(_timeoutPauseId, popupTimeoutHold);
     }
 
+    function _externalControlsEnabled() {
+        return externalDismissOverlayEnabled || externalPopupActionsOverlayEnabled;
+    }
+
+    function _setControlsHandoffGraceActive(active) {
+        var next = !!active;
+        if (controlsHandoffGraceActive === next) {
+            return;
+        }
+
+        controlsHandoffGraceActive = next;
+        if (notificationId >= 0) {
+            controlsHandoffGraceChanged(notificationId, next);
+        }
+    }
+
+    function _startControlsHandoffGrace() {
+        if (controlsHandoffGraceMs <= 0 || !root._externalControlsEnabled()) {
+            root._setControlsHandoffGraceActive(false);
+            return;
+        }
+
+        root._setControlsHandoffGraceActive(true);
+        controlsHandoffGraceTimer.restart();
+    }
+
+    function _cancelControlsHandoffGrace() {
+        if (controlsHandoffGraceTimer.running) {
+            controlsHandoffGraceTimer.stop();
+        }
+
+        root._setControlsHandoffGraceActive(false);
+    }
+
     function resetVisualState() {
         // Reset transform/opacity/drag state to avoid recycled delegate visual leakage in popup bursts.
         x = 0;
@@ -305,6 +431,7 @@ FocusScope {
         dragInProgress = false;
         dragOffsetX = 0;
         _popupActionsOverlayPressed = false;
+        root._cancelControlsHandoffGrace();
         _suppressNextDefaultActivation = false;
         _resetPointerState();
     }
@@ -326,19 +453,22 @@ FocusScope {
             return;
         }
 
-        var deltaX = mouse.x - _pressX;
+        // Mouse coordinates are local to a moving card surface, so compensate by
+        // adding the current drag offset to recover pointer movement in stable space.
+        var deltaX = (mouse.x + dragOffsetX) - _pressX;
         var deltaY = mouse.y - _pressY;
+        var clampedDeltaX = Math.max(0, deltaX);
 
         if (!dragInProgress) {
-            var movedFarEnough = Math.abs(deltaX) >= dragStartThresholdPx;
-            var horizontalDominant = Math.abs(deltaX) > Math.abs(deltaY);
+            var movedFarEnough = clampedDeltaX >= dragStartThresholdPx;
+            var horizontalDominant = clampedDeltaX > (Math.abs(deltaY) * 1.35);
             if (!movedFarEnough || !horizontalDominant) {
                 return;
             }
             dragInProgress = true;
         }
 
-        dragOffsetX = deltaX;
+        dragOffsetX = clampedDeltaX;
     }
 
     function _handlePointerRelease() {
@@ -359,7 +489,7 @@ FocusScope {
             return;
         }
 
-        var shouldDismiss = Math.abs(dragOffsetX) >= dismissThresholdPx;
+        var shouldDismiss = dragOffsetX >= dismissThresholdPx;
         dragInProgress = false;
 
         if (shouldDismiss) {
@@ -415,7 +545,7 @@ FocusScope {
     Item {
         id: cardSurface
         anchors.fill: parent
-        x: root.dragOffsetX
+        x: 0
         opacity: root.dragOpacity
 
         Rectangle {
@@ -627,17 +757,16 @@ FocusScope {
                             radius: 8
                             clip: true
                             visible: root.hasRightImage
-                            opacity: root.hovered ? 0 : 1
-                            color: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.07)
-                            border.width: 1
-                            border.color: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.10)
-
+                            opacity: root.popupRightAvatarOpacity
                             Behavior on opacity {
                                 NumberAnimation {
-                                    duration: 120
+                                    duration: root.popupRightAvatarOpacity > popupRightRailImageFrame.opacity ? root.popupControlsFadeInMs : root.popupControlsFadeOutMs
                                     easing.type: Easing.OutCubic
                                 }
                             }
+                            color: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.07)
+                            border.width: 1
+                            border.color: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.10)
 
                             Image {
                                 id: popupRightRailImage
@@ -1040,7 +1169,7 @@ FocusScope {
 
         Item {
             id: popupActionsOverlay
-            visible: root.popupActionsOverlayEligible
+            visible: root.popupActionsOverlayEligible && !root.externalPopupActionsOverlayEnabled
             enabled: root.popupActionsOverlayShown
             z: 2
             anchors.right: parent.right
@@ -1052,13 +1181,6 @@ FocusScope {
             width: implicitWidth
             height: implicitHeight
             opacity: root.popupActionsOverlayShown ? 1 : 0
-
-            Behavior on opacity {
-                NumberAnimation {
-                    duration: 120
-                    easing.type: Easing.OutCubic
-                }
-            }
 
             Rectangle {
                 id: popupActionsOverlayBackground
@@ -1213,14 +1335,14 @@ FocusScope {
         // Popup-only dismiss overlay: corner-straddled, hover-revealed, and out of normal flow.
         Rectangle {
             id: popupDismissButton
-            visible: root.showDismissButton && root.isPopupMode
+            visible: !root.externalDismissOverlayEnabled && root.showDismissButton && root.isPopupMode
             width: root.popupDismissSize
             height: root.popupDismissSize
             radius: 11
             z: 1
-            x: cardSurface.x - Math.round(width / 2) + root.popupOverlayInset
-            y: cardSurface.y - Math.round(height / 2) + root.popupOverlayInset
-            opacity: root.revealDismissOnHover ? ((root.hovered || popupDismissHover.hovered || popupDismissMouseArea.containsMouse) ? 1 : 0) : 1
+            x: root.dismissVisualX
+            y: root.dismissVisualY
+            opacity: root.controlsSuppressedByDrag ? 0 : (root.revealDismissOnHover ? ((root.controlsVisibleEffective || popupDismissHover.hovered || popupDismissMouseArea.containsMouse) ? 1 : 0) : 1)
             color: "transparent"
 
             Rectangle {
@@ -1250,13 +1372,6 @@ FocusScope {
                 property real uEdgeOpacity: root.buttonEdgeLightOpacity
                 property color uEdgeTint: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.95) : Qt.rgba(1, 1, 1, 0.92)
                 fragmentShader: "../../shaders/notification_edge_light.frag.qsb"
-            }
-
-            Behavior on opacity {
-                NumberAnimation {
-                    duration: 120
-                    easing.type: Easing.OutCubic
-                }
             }
 
             Text {

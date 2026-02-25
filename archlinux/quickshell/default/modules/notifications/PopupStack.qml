@@ -16,7 +16,15 @@ Item {
     property int popupOverlayTopBleed: 14
     property int maxHeight: 720
     property string anchorCorner: "top-right"
+    property bool externalDismissEnabled: false
+    property bool externalPopupActionsEnabled: false
     readonly property bool stackHovered: stackHoverHandler.hovered
+    property alias dismissButtonModel: dismissWindowModel
+    property alias actionOverlayModel: actionOverlayModelData
+    property int activeControlsOwnerId: -1
+    signal dismissHoverStateChanged(int notificationId, bool hovered)
+    signal popupActionsHoverStateChanged(int notificationId, bool hovered)
+    signal controlsHandoffGraceStateChanged(int notificationId, bool active)
 
     readonly property var notificationService: Root.NotificationService
     readonly property int visibleCount: notificationService.activeCount
@@ -32,6 +40,57 @@ Item {
 
     Component.onCompleted: _syncServiceActiveLimit()
     onMaxVisibleChanged: _syncServiceActiveLimit()
+    onVisibleCountChanged: _pruneStaleExternalState()
+    onExternalDismissEnabledChanged: {
+        if (!externalDismissEnabled) {
+            var dismissKey = "";
+            var graceKey = "";
+            for (dismissKey in _dismissHoverById) {
+                if (Object.prototype.hasOwnProperty.call(_dismissHoverById, dismissKey) && _boolFromMap(_dismissHoverById, dismissKey)) {
+                    dismissHoverStateChanged(Number(dismissKey), false);
+                }
+            }
+            for (graceKey in _controlsHandoffGraceById) {
+                if (Object.prototype.hasOwnProperty.call(_controlsHandoffGraceById, graceKey) && _boolFromMap(_controlsHandoffGraceById, graceKey)) {
+                    controlsHandoffGraceStateChanged(Number(graceKey), false);
+                }
+            }
+            dismissWindowModel.clear();
+            _dismissHoverById = ({});
+            _controlsHandoffGraceById = ({});
+            if (!externalPopupActionsEnabled) {
+                activeControlsOwnerId = -1;
+                _activePopupById = ({});
+            }
+        } else {
+            _syncAllOverlayEntries();
+        }
+    }
+    onExternalPopupActionsEnabledChanged: {
+        if (!externalPopupActionsEnabled) {
+            var actionKey = "";
+            var graceKey = "";
+            for (actionKey in _popupActionsHoverById) {
+                if (Object.prototype.hasOwnProperty.call(_popupActionsHoverById, actionKey) && _boolFromMap(_popupActionsHoverById, actionKey)) {
+                    popupActionsHoverStateChanged(Number(actionKey), false);
+                }
+            }
+            for (graceKey in _controlsHandoffGraceById) {
+                if (Object.prototype.hasOwnProperty.call(_controlsHandoffGraceById, graceKey) && _boolFromMap(_controlsHandoffGraceById, graceKey)) {
+                    controlsHandoffGraceStateChanged(Number(graceKey), false);
+                }
+            }
+            actionOverlayModelData.clear();
+            _popupActionsHoverById = ({});
+            _controlsHandoffGraceById = ({});
+            if (!externalDismissEnabled) {
+                activeControlsOwnerId = -1;
+                _activePopupById = ({});
+            }
+        } else {
+            _syncAllOverlayEntries();
+        }
+    }
 
     function _syncServiceActiveLimit() {
         if (!notificationService || notificationService.maxActive === undefined) {
@@ -42,6 +101,364 @@ Item {
         if (notificationService.maxActive !== nextLimit) {
             notificationService.maxActive = nextLimit;
         }
+    }
+
+    function setActiveControlsOwner(notificationId) {
+        var numericId = Number(notificationId);
+        if (!isFinite(numericId) || numericId < 0) {
+            return;
+        }
+
+        activeControlsOwnerId = Math.floor(numericId);
+    }
+
+    function clearActiveControlsOwner(notificationId) {
+        var numericId = Number(notificationId);
+        if (!isFinite(numericId) || numericId < 0) {
+            return;
+        }
+
+        if (activeControlsOwnerId === Math.floor(numericId)) {
+            activeControlsOwnerId = -1;
+        }
+    }
+
+    property var _dismissHoverById: ({})
+    property var _popupActionsHoverById: ({})
+    property var _controlsHandoffGraceById: ({})
+    property var _activePopupById: ({})
+
+    function _boolFromMap(map, key) {
+        return Object.prototype.hasOwnProperty.call(map, key) && !!map[key];
+    }
+
+    function _setMapFlag(map, key, enabled) {
+        var source = map || ({});
+        var next = ({});
+        var mapKey = "";
+
+        for (mapKey in source) {
+            if (!Object.prototype.hasOwnProperty.call(source, mapKey) || (!source[mapKey] && mapKey !== key)) {
+                continue;
+            }
+            next[mapKey] = source[mapKey];
+        }
+
+        if (enabled) {
+            next[key] = true;
+        } else {
+            delete next[key];
+        }
+
+        return next;
+    }
+
+    function _setPopupActive(notificationId, active) {
+        var numericId = Number(notificationId);
+        if (!isFinite(numericId) || numericId < 0) {
+            return;
+        }
+
+        var key = String(Math.floor(numericId));
+        _activePopupById = _setMapFlag(_activePopupById, key, !!active);
+    }
+
+    function isPopupNotificationActive(notificationId) {
+        var numericId = Number(notificationId);
+        if (!isFinite(numericId) || numericId < 0) {
+            return false;
+        }
+
+        return _boolFromMap(_activePopupById, String(Math.floor(numericId)));
+    }
+
+    function setControlsHandoffGrace(notificationId, active) {
+        var numericId = Number(notificationId);
+        if (!isFinite(numericId) || numericId < 0) {
+            return;
+        }
+
+        var normalizedId = Math.floor(numericId);
+        var key = String(normalizedId);
+        var nextActive = !!active;
+        var prevActive = _boolFromMap(_controlsHandoffGraceById, key);
+        if (prevActive === nextActive) {
+            return;
+        }
+
+        _controlsHandoffGraceById = _setMapFlag(_controlsHandoffGraceById, key, nextActive);
+        controlsHandoffGraceStateChanged(normalizedId, nextActive);
+    }
+
+    function beginNotificationExternalClose(notificationId) {
+        var numericId = Number(notificationId);
+        if (!isFinite(numericId) || numericId < 0) {
+            return;
+        }
+
+        var normalizedId = Math.floor(numericId);
+        // Gate external windows immediately so closure is not dependent on hover updates.
+        _setPopupActive(normalizedId, false);
+        setExternalDismissHovered(normalizedId, false);
+        setExternalPopupActionsHovered(normalizedId, false);
+        setControlsHandoffGrace(normalizedId, false);
+        clearActiveControlsOwner(normalizedId);
+        _removeDismissModelEntry(normalizedId);
+        _removeActionModelEntry(normalizedId);
+    }
+
+    function clearNotificationExternalState(notificationId) {
+        beginNotificationExternalClose(notificationId);
+    }
+
+    function _pruneStaleExternalState() {
+        var mapKey = "";
+
+        for (mapKey in _dismissHoverById) {
+            if (!Object.prototype.hasOwnProperty.call(_dismissHoverById, mapKey)) {
+                continue;
+            }
+            if (_boolFromMap(_dismissHoverById, mapKey) && !_boolFromMap(_activePopupById, mapKey)) {
+                setExternalDismissHovered(Number(mapKey), false);
+            }
+        }
+
+        for (mapKey in _popupActionsHoverById) {
+            if (!Object.prototype.hasOwnProperty.call(_popupActionsHoverById, mapKey)) {
+                continue;
+            }
+            if (_boolFromMap(_popupActionsHoverById, mapKey) && !_boolFromMap(_activePopupById, mapKey)) {
+                setExternalPopupActionsHovered(Number(mapKey), false);
+            }
+        }
+
+        for (mapKey in _controlsHandoffGraceById) {
+            if (!Object.prototype.hasOwnProperty.call(_controlsHandoffGraceById, mapKey)) {
+                continue;
+            }
+            if (_boolFromMap(_controlsHandoffGraceById, mapKey) && !_boolFromMap(_activePopupById, mapKey)) {
+                setControlsHandoffGrace(Number(mapKey), false);
+            }
+        }
+
+        if (activeControlsOwnerId >= 0 && !isPopupNotificationActive(activeControlsOwnerId)) {
+            activeControlsOwnerId = -1;
+        }
+    }
+
+    function _dismissHoverKey(notificationId) {
+        return String(notificationId);
+    }
+
+    function isExternalDismissHovered(notificationId) {
+        var key = _dismissHoverKey(notificationId);
+        return Object.prototype.hasOwnProperty.call(_dismissHoverById, key) && !!_dismissHoverById[key];
+    }
+
+    function setExternalDismissHovered(notificationId, hovered) {
+        var normalizedId = Math.floor(Number(notificationId));
+        if (!isFinite(normalizedId) || normalizedId < 0) {
+            return;
+        }
+
+        var key = _dismissHoverKey(normalizedId);
+        var nextHovered = !!hovered;
+        var previousHovered = _boolFromMap(_dismissHoverById, key);
+        if (previousHovered === nextHovered) {
+            return;
+        }
+
+        _dismissHoverById = _setMapFlag(_dismissHoverById, key, nextHovered);
+        dismissHoverStateChanged(normalizedId, nextHovered);
+
+        if (nextHovered) {
+            setActiveControlsOwner(normalizedId);
+            return;
+        }
+
+        if (!isExternalPopupActionsHovered(normalizedId) && !isPopupNotificationActive(normalizedId)) {
+            clearActiveControlsOwner(normalizedId);
+        }
+    }
+
+    function _popupActionsHoverKey(notificationId) {
+        return String(notificationId);
+    }
+
+    function isExternalPopupActionsHovered(notificationId) {
+        var key = _popupActionsHoverKey(notificationId);
+        return Object.prototype.hasOwnProperty.call(_popupActionsHoverById, key) && !!_popupActionsHoverById[key];
+    }
+
+    function setExternalPopupActionsHovered(notificationId, hovered) {
+        var normalizedId = Math.floor(Number(notificationId));
+        if (!isFinite(normalizedId) || normalizedId < 0) {
+            return;
+        }
+
+        var key = _popupActionsHoverKey(normalizedId);
+        var nextHovered = !!hovered;
+        var previousHovered = _boolFromMap(_popupActionsHoverById, key);
+        if (previousHovered === nextHovered) {
+            return;
+        }
+
+        _popupActionsHoverById = _setMapFlag(_popupActionsHoverById, key, nextHovered);
+        popupActionsHoverStateChanged(normalizedId, nextHovered);
+
+        if (nextHovered) {
+            setActiveControlsOwner(normalizedId);
+            return;
+        }
+
+        if (!isExternalDismissHovered(normalizedId) && !isPopupNotificationActive(normalizedId)) {
+            clearActiveControlsOwner(normalizedId);
+        }
+    }
+
+    function _dismissModelIndex(notificationId) {
+        var i = 0;
+        for (i = 0; i < dismissWindowModel.count; i++) {
+            if (Number(dismissWindowModel.get(i).notificationId) === notificationId) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    function _removeDismissModelEntry(notificationId) {
+        var index = _dismissModelIndex(notificationId);
+        if (index >= 0) {
+            dismissWindowModel.remove(index);
+        }
+    }
+
+    function _upsertDismissModelEntry(notificationId, buttonX, buttonY, buttonSize, buttonOpacity) {
+        var roundedX = Math.round(buttonX);
+        var roundedY = Math.round(buttonY);
+        var roundedSize = Math.round(buttonSize);
+        var clampedOpacity = Math.max(0.0, Math.min(1.0, Number(buttonOpacity)));
+        var index = _dismissModelIndex(notificationId);
+
+        if (index < 0) {
+            dismissWindowModel.append({
+                notificationId: notificationId,
+                buttonX: roundedX,
+                buttonY: roundedY,
+                buttonSize: roundedSize,
+                buttonOpacity: clampedOpacity
+            });
+            return;
+        }
+
+        dismissWindowModel.set(index, {
+            notificationId: notificationId,
+            buttonX: roundedX,
+            buttonY: roundedY,
+            buttonSize: roundedSize,
+            buttonOpacity: clampedOpacity
+        });
+    }
+
+    function _actionModelIndex(notificationId) {
+        var i = 0;
+        for (i = 0; i < actionOverlayModelData.count; i++) {
+            if (Number(actionOverlayModelData.get(i).notificationId) === notificationId) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    function _removeActionModelEntry(notificationId) {
+        var index = _actionModelIndex(notificationId);
+        if (index >= 0) {
+            actionOverlayModelData.remove(index);
+        }
+    }
+
+    function _upsertActionModelEntry(notificationId, overlayX, overlayY, overlayWidth, overlayHeight, overlayOpacity, actionsData) {
+        var roundedX = Math.round(overlayX);
+        var roundedY = Math.round(overlayY);
+        var roundedWidth = Math.round(Math.max(0, overlayWidth));
+        var roundedHeight = Math.round(Math.max(0, overlayHeight));
+        var clampedOpacity = Math.max(0.0, Math.min(1.0, Number(overlayOpacity)));
+        var normalizedActions = [];
+        var actionsLength = actionsData && actionsData.length !== undefined ? Number(actionsData.length) : 0;
+        var i = 0;
+        var index = _actionModelIndex(notificationId);
+
+        for (i = 0; i < actionsLength; i++) {
+            var action = actionsData[i];
+            if (!action) {
+                continue;
+            }
+
+            var actionId = action.id === undefined || action.id === null ? "" : String(action.id);
+            var actionText = action.text === undefined || action.text === null ? "" : String(action.text);
+            if (actionText.length === 0) {
+                continue;
+            }
+
+            normalizedActions.push({
+                "id": actionId,
+                "text": actionText
+            });
+        }
+
+        var actionsJson = JSON.stringify(normalizedActions);
+        var actionsCount = normalizedActions.length;
+
+        if (index < 0) {
+            actionOverlayModelData.append({
+                notificationId: notificationId,
+                overlayX: roundedX,
+                overlayY: roundedY,
+                overlayWidth: roundedWidth,
+                overlayHeight: roundedHeight,
+                overlayOpacity: clampedOpacity,
+                actionsCount: actionsCount,
+                actionsJson: actionsJson
+            });
+            return;
+        }
+
+        actionOverlayModelData.set(index, {
+            notificationId: notificationId,
+            overlayX: roundedX,
+            overlayY: roundedY,
+            overlayWidth: roundedWidth,
+            overlayHeight: roundedHeight,
+            overlayOpacity: clampedOpacity,
+            actionsCount: actionsCount,
+            actionsJson: actionsJson
+        });
+    }
+
+    function _syncAllOverlayEntries() {
+        var children = listView.contentItem ? listView.contentItem.children : [];
+        var i = 0;
+
+        for (i = 0; i < children.length; i++) {
+            var child = children[i];
+            if (!child) {
+                continue;
+            }
+            if (child.syncExternalDismissEntry !== undefined) {
+                child.syncExternalDismissEntry();
+            }
+            if (child.syncExternalActionEntry !== undefined) {
+                child.syncExternalActionEntry();
+            }
+        }
+    }
+
+    ListModel {
+        id: dismissWindowModel
+    }
+
+    ListModel {
+        id: actionOverlayModelData
     }
 
     ListView {
@@ -64,41 +481,15 @@ Item {
         orientation: ListView.Vertical
         verticalLayoutDirection: ListView.BottomToTop
 
-        add: Transition {
-            // Do not animate opacity during popup churn; keep rows fully legible.
-            NumberAnimation {
-                property: "x"
-                from: 24
-                to: 0
-                duration: 160
-                easing.type: Easing.OutCubic
-            }
-        }
-
-        remove: Transition {
-            // Keep removal motion simple and opacity-stable to avoid ghosting.
-            NumberAnimation {
-                property: "x"
-                to: 24
-                duration: 130
-                easing.type: Easing.InCubic
-            }
-        }
-
-        displaced: Transition {
-            // Only animate vertical reflow to prevent transient opacity/x leakage.
-            NumberAnimation {
-                property: "y"
-                duration: 150
-                easing.type: Easing.OutCubic
-            }
-        }
-
         delegate: Item {
             id: rowWrapper
             required property var model
             readonly property int rowNotificationId: model && model.notificationId !== undefined ? Number(model.notificationId) : (model && model.id !== undefined ? Number(model.id) : -1)
             readonly property int rowRevision: model && model.revision !== undefined ? Number(model.revision) : 0
+            property int _trackedDismissNotificationId: -1
+            property int _trackedActionNotificationId: -1
+            property bool externalDismissHoverState: false
+            property bool externalPopupActionsHoverState: false
             readonly property var notificationSnapshot: {
                 // Popups are capped service-side (maxActive) to avoid delegate visible/index gating loops.
                 if (rowRevision < -1) {
@@ -112,6 +503,52 @@ Item {
 
             width: listView.width
             height: card.implicitHeight
+
+            function _refreshExternalHoverSnapshots() {
+                externalDismissHoverState = root.isExternalDismissHovered(rowNotificationId);
+                externalPopupActionsHoverState = root.isExternalPopupActionsHovered(rowNotificationId);
+            }
+
+            function syncExternalDismissEntry() {
+                if (_trackedDismissNotificationId >= 0 && _trackedDismissNotificationId !== rowNotificationId) {
+                    root.clearNotificationExternalState(_trackedDismissNotificationId);
+                }
+
+                _trackedDismissNotificationId = rowNotificationId;
+
+                if (!root.externalDismissEnabled || rowNotificationId < 0 || !card.externalDismissEligible) {
+                    root._removeDismissModelEntry(rowNotificationId);
+                    root.setExternalDismissHovered(rowNotificationId, false);
+                    return;
+                }
+
+                var topLeft = card.mapToItem(root, card.dismissVisualX, card.dismissVisualY);
+                root._upsertDismissModelEntry(rowNotificationId, topLeft.x, topLeft.y, card.popupDismissSize, card.externalDismissOpacity);
+            }
+
+            function syncExternalActionEntry() {
+                if (_trackedActionNotificationId >= 0 && _trackedActionNotificationId !== rowNotificationId) {
+                    root.clearNotificationExternalState(_trackedActionNotificationId);
+                }
+
+                _trackedActionNotificationId = rowNotificationId;
+
+                if (!root.externalPopupActionsEnabled || rowNotificationId < 0 || !card.externalPopupActionsEligible) {
+                    root._removeActionModelEntry(rowNotificationId);
+                    root.setExternalPopupActionsHovered(rowNotificationId, false);
+                    return;
+                }
+
+                var actionsData = card.popupVisibleActions;
+                if (!actionsData || actionsData.length === 0) {
+                    root._removeActionModelEntry(rowNotificationId);
+                    root.setExternalPopupActionsHovered(rowNotificationId, false);
+                    return;
+                }
+
+                var topLeft = card.mapToItem(root, card.popupActionOverlayX, card.popupActionOverlayY);
+                root._upsertActionModelEntry(rowNotificationId, topLeft.x, topLeft.y, card.popupActionOverlayWidth, card.popupActionOverlayHeight, card.externalPopupActionsOpacity, actionsData);
+            }
 
             NotificationCard {
                 id: card
@@ -141,11 +578,124 @@ Item {
                 draggableDismiss: true
                 pauseTimeoutOnHover: true
                 externalHoverHold: root.stackHovered
+                externalDismissOverlayEnabled: root.externalDismissEnabled
+                externalDismissHover: rowWrapper.externalDismissHoverState
+                externalPopupActionsOverlayEnabled: root.externalPopupActionsEnabled
+                externalPopupActionsHover: rowWrapper.externalPopupActionsHoverState
+                controlsHoverOwnerId: root.activeControlsOwnerId
                 expandable: false
             }
 
-            onRowNotificationIdChanged: card.resetVisualState()
-            onRowRevisionChanged: card.resetVisualState()
+            function syncExternalOverlays() {
+                syncExternalDismissEntry();
+                syncExternalActionEntry();
+            }
+
+            onXChanged: syncExternalOverlays()
+            onYChanged: syncExternalOverlays()
+            onWidthChanged: syncExternalOverlays()
+            onHeightChanged: syncExternalOverlays()
+
+            onRowNotificationIdChanged: {
+                root._setPopupActive(_trackedDismissNotificationId, false);
+                root._setPopupActive(_trackedActionNotificationId, false);
+                root._setPopupActive(rowNotificationId, true);
+                _refreshExternalHoverSnapshots();
+                card.resetVisualState();
+                syncExternalOverlays();
+            }
+            onRowRevisionChanged: {
+                card.resetVisualState();
+                syncExternalOverlays();
+            }
+
+            Component.onCompleted: {
+                root._setPopupActive(rowNotificationId, true);
+                _refreshExternalHoverSnapshots();
+                syncExternalOverlays();
+            }
+            Component.onDestruction: {
+                root.clearNotificationExternalState(_trackedDismissNotificationId);
+                if (_trackedActionNotificationId !== _trackedDismissNotificationId) {
+                    root.clearNotificationExternalState(_trackedActionNotificationId);
+                }
+            }
+
+            Connections {
+                target: card
+
+                function onDismissVisualXChanged() {
+                    rowWrapper.syncExternalDismissEntry();
+                }
+
+                function onDismissVisualYChanged() {
+                    rowWrapper.syncExternalDismissEntry();
+                }
+
+                function onExternalDismissEligibleChanged() {
+                    rowWrapper.syncExternalDismissEntry();
+                }
+
+                function onExternalDismissOpacityChanged() {
+                    rowWrapper.syncExternalDismissEntry();
+                }
+
+                function onPopupDismissSizeChanged() {
+                    rowWrapper.syncExternalDismissEntry();
+                }
+
+                function onPopupActionOverlayXChanged() {
+                    rowWrapper.syncExternalActionEntry();
+                }
+
+                function onPopupActionOverlayYChanged() {
+                    rowWrapper.syncExternalActionEntry();
+                }
+
+                function onPopupActionOverlayWidthChanged() {
+                    rowWrapper.syncExternalActionEntry();
+                }
+
+                function onPopupActionOverlayHeightChanged() {
+                    rowWrapper.syncExternalActionEntry();
+                }
+
+                function onExternalPopupActionsEligibleChanged() {
+                    rowWrapper.syncExternalActionEntry();
+                }
+
+                function onExternalPopupActionsOpacityChanged() {
+                    rowWrapper.syncExternalActionEntry();
+                }
+
+                function onPopupVisibleActionsChanged() {
+                    rowWrapper.syncExternalActionEntry();
+                }
+
+                function onRequestControlsOwner(notificationId) {
+                    root.setActiveControlsOwner(notificationId);
+                }
+
+                function onControlsHandoffGraceChanged(notificationId, active) {
+                    root.setControlsHandoffGrace(notificationId, active);
+                }
+            }
+
+            Connections {
+                target: root
+
+                function onDismissHoverStateChanged(notificationId, hovered) {
+                    if (notificationId === rowWrapper.rowNotificationId) {
+                        rowWrapper.externalDismissHoverState = hovered;
+                    }
+                }
+
+                function onPopupActionsHoverStateChanged(notificationId, hovered) {
+                    if (notificationId === rowWrapper.rowNotificationId) {
+                        rowWrapper.externalPopupActionsHoverState = hovered;
+                    }
+                }
+            }
         }
     }
 

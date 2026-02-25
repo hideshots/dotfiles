@@ -302,31 +302,6 @@ FocusScope {
                 orientation: ListView.Vertical
                 verticalLayoutDirection: ListView.TopToBottom
 
-                add: Transition {
-                    NumberAnimation {
-                        property: "opacity"
-                        from: 0
-                        to: 1
-                        duration: 130
-                    }
-                }
-
-                remove: Transition {
-                    NumberAnimation {
-                        property: "opacity"
-                        to: 0
-                        duration: 110
-                    }
-                }
-
-                displaced: Transition {
-                    NumberAnimation {
-                        properties: "x,y"
-                        duration: 140
-                        easing.type: Easing.OutCubic
-                    }
-                }
-
                 delegate: NotificationCard {
                     required property int index
                     required property var model
