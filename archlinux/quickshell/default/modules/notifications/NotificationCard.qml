@@ -74,12 +74,16 @@ FocusScope {
     readonly property int popupAvatarSize: 32
     readonly property int popupRailWidth: 32
     readonly property int popupOverlayInset: 6
-    readonly property bool popupTimeoutHold: pauseTimeoutOnHover && (hovered || externalHoverHold || dragInProgress)
+    property int popupActionsBottomGap: 0
+    readonly property bool popupActionsOverlayEligible: isPopupMode && actionsVisible
+    readonly property bool popupActionsOverlayShown: popupActionsOverlayEligible && !dragInProgress && (hovered || popupActionsOverlayHover.hovered || popupActionsOverlayMouseArea.containsMouse || _popupActionsOverlayPressed)
+    readonly property bool popupTimeoutHold: pauseTimeoutOnHover && (hovered || externalHoverHold || dragInProgress || popupActionsOverlayHover.hovered || popupActionsOverlayMouseArea.containsMouse || _popupActionsOverlayPressed)
     readonly property real dragProgress: Math.min(1, Math.abs(dragOffsetX) / Math.max(1, dismissThresholdPx))
     readonly property real dragOpacity: draggableDismiss ? (1 - (dragProgress * 0.24)) : 1
 
     property real dragOffsetX: 0
     property bool dragInProgress: false
+    property bool _popupActionsOverlayPressed: false
     property real _pressX: 0
     property real _pressY: 0
     property bool _pointerPressed: false
@@ -278,6 +282,7 @@ FocusScope {
         scale = 1;
         dragInProgress = false;
         dragOffsetX = 0;
+        _popupActionsOverlayPressed = false;
         _suppressNextDefaultActivation = false;
         _resetPointerState();
     }
@@ -345,6 +350,7 @@ FocusScope {
 
     function _handlePointerCancel() {
         _resetPointerState();
+        _popupActionsOverlayPressed = false;
         _suppressNextDefaultActivation = false;
 
         if (dragInProgress) {
@@ -525,9 +531,9 @@ FocusScope {
                                 opacity: 0.92
                                 font.family: Root.Theme.fontFamily
                                 font.pixelSize: 12
-                                elide: root.expandable && root.expanded ? Text.ElideNone : Text.ElideRight
-                                maximumLineCount: root.expandable ? (root.expanded ? 8 : 2) : 2
-                                wrapMode: root.expandable && root.expanded ? Text.WrapAnywhere : Text.WordWrap
+                                elide: Text.ElideRight
+                                maximumLineCount: 4
+                                wrapMode: Text.WrapAtWordBoundaryOrAnywhere
                                 renderType: Text.NativeRendering
                             }
                         }
@@ -563,64 +569,6 @@ FocusScope {
                                 renderType: Text.NativeRendering
                             }
                         }
-
-                        Row {
-                            id: popupActionRow
-                            visible: root.actionsVisible
-                            spacing: 6
-
-                            Repeater {
-                                model: root.actionButtonCount
-
-                                Rectangle {
-                                    id: popupActionButton
-                                    required property int index
-                                    readonly property var actionData: root._safeAction(index)
-                                    readonly property string actionId: root._actionId(actionData)
-                                    readonly property string actionText: root._actionText(actionData)
-
-                                    visible: actionText.length > 0
-                                    implicitHeight: 24
-                                    implicitWidth: Math.min(150, Math.max(70, popupActionLabel.implicitWidth + 16))
-                                    radius: 8
-                                    color: popupActionMouseArea.containsMouse ? Qt.rgba(Root.Theme.menuHighlight.r, Root.Theme.menuHighlight.g, Root.Theme.menuHighlight.b, 0.22) : (Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.08))
-                                    border.width: 1
-                                    border.color: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.10)
-
-                                    Text {
-                                        id: popupActionLabel
-                                        anchors.centerIn: parent
-                                        text: popupActionButton.actionText
-                                        color: Root.Theme.textPrimary
-                                        font.family: Root.Theme.fontFamily
-                                        font.pixelSize: 11
-                                        elide: Text.ElideRight
-                                        maximumLineCount: 1
-                                        renderType: Text.NativeRendering
-                                    }
-
-                                    MouseArea {
-                                        id: popupActionMouseArea
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        acceptedButtons: Qt.LeftButton
-                                        preventStealing: true
-                                        cursorShape: Qt.PointingHandCursor
-
-                                        onPressed: function (mouse) {
-                                            mouse.accepted = true;
-                                            root._consumeCardReleaseActivation();
-                                        }
-
-                                        onClicked: function (mouse) {
-                                            mouse.accepted = true;
-                                            root.invokeAction(popupActionButton.actionId);
-                                            root._suppressNextDefaultActivation = false;
-                                        }
-                                    }
-                                }
-                            }
-                        }
                     }
 
                     Item {
@@ -636,9 +584,17 @@ FocusScope {
                             radius: 8
                             clip: true
                             visible: root.hasRightImage
+                            opacity: root.hovered ? 0 : 1
                             color: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.07)
                             border.width: 1
                             border.color: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.10)
+
+                            Behavior on opacity {
+                                NumberAnimation {
+                                    duration: 120
+                                    easing.type: Easing.OutCubic
+                                }
+                            }
 
                             Image {
                                 id: popupRightRailImage
@@ -980,6 +936,140 @@ FocusScope {
                         }
                     }
                 }
+            }
+        }
+
+        Item {
+            id: popupActionsOverlay
+            visible: root.popupActionsOverlayEligible
+            enabled: root.popupActionsOverlayShown
+            z: 2
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            anchors.rightMargin: root.cardPadding
+            anchors.bottomMargin: root.cardPadding + Math.max(0, root.popupActionsBottomGap)
+            implicitWidth: popupActionsOverlayBackground.implicitWidth
+            implicitHeight: popupActionsOverlayBackground.implicitHeight
+            width: implicitWidth
+            height: implicitHeight
+            opacity: root.popupActionsOverlayShown ? 1 : 0
+
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: 120
+                    easing.type: Easing.OutCubic
+                }
+            }
+
+            Rectangle {
+                id: popupActionsOverlayBackground
+                implicitWidth: popupActionsOverlayRow.implicitWidth + 8
+                implicitHeight: popupActionsOverlayRow.implicitHeight + 8
+                radius: 9
+                color: "transparent"
+                border.width: 0
+                border.color: "transparent"
+                width: implicitWidth
+                height: implicitHeight
+
+                MouseArea {
+                    id: popupActionsOverlayMouseArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    acceptedButtons: Qt.LeftButton
+                    preventStealing: true
+                    cursorShape: Qt.ArrowCursor
+
+                    onPressed: function (mouse) {
+                        mouse.accepted = true;
+                        root._popupActionsOverlayPressed = true;
+                        root._consumeCardReleaseActivation();
+                    }
+
+                    onReleased: function (mouse) {
+                        mouse.accepted = true;
+                        root._popupActionsOverlayPressed = false;
+                    }
+
+                    onCanceled: root._popupActionsOverlayPressed = false
+
+                    onClicked: function (mouse) {
+                        mouse.accepted = true;
+                        root._suppressNextDefaultActivation = false;
+                    }
+                }
+
+                Row {
+                    id: popupActionsOverlayRow
+                    anchors.right: parent.right
+                    anchors.rightMargin: 4
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 6
+
+                    Repeater {
+                        model: root.actionButtonCount
+
+                        Rectangle {
+                            id: popupActionButton
+                            required property int index
+                            readonly property var actionData: root._safeAction(index)
+                            readonly property string actionId: root._actionId(actionData)
+                            readonly property string actionText: root._actionText(actionData)
+
+                            visible: actionText.length > 0
+                            implicitHeight: 24
+                            implicitWidth: Math.min(150, Math.max(70, popupActionLabel.implicitWidth + 16))
+                            radius: 8
+                            color: popupActionMouseArea.containsMouse ? Qt.rgba(Root.Theme.menuHighlight.r, Root.Theme.menuHighlight.g, Root.Theme.menuHighlight.b, 0.22) : (Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.08))
+                            border.width: 1
+                            border.color: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.10)
+
+                            Text {
+                                id: popupActionLabel
+                                anchors.centerIn: parent
+                                text: popupActionButton.actionText
+                                color: Root.Theme.textPrimary
+                                font.family: Root.Theme.fontFamily
+                                font.pixelSize: 11
+                                elide: Text.ElideRight
+                                maximumLineCount: 1
+                                renderType: Text.NativeRendering
+                            }
+
+                            MouseArea {
+                                id: popupActionMouseArea
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                acceptedButtons: Qt.LeftButton
+                                preventStealing: true
+                                cursorShape: Qt.PointingHandCursor
+
+                                onPressed: function (mouse) {
+                                    mouse.accepted = true;
+                                    root._popupActionsOverlayPressed = true;
+                                    root._consumeCardReleaseActivation();
+                                }
+
+                                onReleased: function (mouse) {
+                                    mouse.accepted = true;
+                                    root._popupActionsOverlayPressed = false;
+                                }
+
+                                onCanceled: root._popupActionsOverlayPressed = false
+
+                                onClicked: function (mouse) {
+                                    mouse.accepted = true;
+                                    root.invokeAction(popupActionButton.actionId);
+                                    root._suppressNextDefaultActivation = false;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            HoverHandler {
+                id: popupActionsOverlayHover
             }
         }
 
