@@ -74,6 +74,8 @@ FocusScope {
     readonly property int popupAvatarSize: 32
     readonly property int popupRailWidth: 32
     readonly property int popupOverlayInset: 6
+    readonly property int popupRightRailReservedWidth: hasRightImage ? popupRailWidth : 0
+    readonly property int popupRightRailReservedSpacing: hasRightImage ? popupMainRow.spacing : 0
     property int popupActionsBottomGap: 0
     readonly property bool popupActionsOverlayEligible: isPopupMode && actionsVisible
     readonly property bool popupActionsOverlayShown: popupActionsOverlayEligible && !dragInProgress && (hovered || popupActionsOverlayHover.hovered || popupActionsOverlayMouseArea.containsMouse || _popupActionsOverlayPressed)
@@ -502,7 +504,7 @@ FocusScope {
 
                     Column {
                         id: popupTextColumn
-                        width: Math.max(0, popupMainRow.width - leftRail.width - rightRail.width - (popupMainRow.spacing * 2))
+                        width: Math.max(0, popupMainRow.width - leftRail.width - root.popupRightRailReservedWidth - popupMainRow.spacing - root.popupRightRailReservedSpacing)
                         spacing: 8
 
                         Column {
@@ -573,7 +575,8 @@ FocusScope {
 
                     Item {
                         id: rightRail
-                        width: root.popupRailWidth
+                        visible: root.hasRightImage
+                        width: visible ? root.popupRailWidth : 0
                         height: popupTextColumn.implicitHeight
 
                         Rectangle {
