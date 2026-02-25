@@ -11,13 +11,16 @@ Item {
     property int spacing: 8
     property int maxVisible: 5
     property int cardWidth: 352
+    property int popupOverlayBleed: 11
+    // Extra headroom so the top-most popup can render corner overlays above card bounds.
+    property int popupOverlayTopBleed: 14
     property int maxHeight: 720
     property string anchorCorner: "top-right"
     readonly property bool stackHovered: stackHoverHandler.hovered
 
     readonly property var notificationService: Root.NotificationService
     readonly property int visibleCount: notificationService.activeCount
-    readonly property real contentHeightWithMargins: listView.contentHeight + (edgeMargin * 2)
+    readonly property real contentHeightWithMargins: listView.contentHeight + (edgeMargin * 2) + popupOverlayTopBleed
 
     implicitWidth: cardWidth + (edgeMargin * 2)
     implicitHeight: visibleCount > 0 ? Math.min(maxHeight, contentHeightWithMargins) : 0
@@ -44,7 +47,13 @@ Item {
     ListView {
         id: listView
         anchors.fill: parent
-        anchors.margins: root.edgeMargin
+        anchors.leftMargin: Math.max(0, root.edgeMargin - root.popupOverlayBleed)
+        anchors.topMargin: root.edgeMargin
+        anchors.rightMargin: root.edgeMargin
+        anchors.bottomMargin: root.edgeMargin
+        // Reserve renderable space *inside* the viewport so the first popup's
+        // corner overlay can protrude above its delegate bounds without clipping.
+        topMargin: root.popupOverlayTopBleed
         spacing: root.spacing
         clip: true
         // Keep popup delegates non-reused to avoid stale role visuals near maxVisible boundaries.
@@ -106,7 +115,10 @@ Item {
 
             NotificationCard {
                 id: card
-                anchors.fill: parent
+                width: root.cardWidth
+                height: parent.height
+                anchors.right: parent.right
+                anchors.top: parent.top
 
                 notificationId: rowWrapper.rowNotificationId
                 appName: rowWrapper.notificationSnapshot && rowWrapper.notificationSnapshot.appName !== undefined ? String(rowWrapper.notificationSnapshot.appName) : (rowWrapper.model && rowWrapper.model.appName ? String(rowWrapper.model.appName) : "")

@@ -73,7 +73,7 @@ FocusScope {
     readonly property int popupDismissSize: 22
     readonly property int popupAvatarSize: 32
     readonly property int popupRailWidth: 32
-    readonly property int popupOverlayInset: 6
+    readonly property int popupOverlayInset: 5
     readonly property int popupRightRailReservedWidth: hasRightImage ? popupRailWidth : 0
     readonly property int popupRightRailReservedSpacing: hasRightImage ? popupMainRow.spacing : 0
     property int popupActionsBottomGap: 0
@@ -1076,19 +1076,27 @@ FocusScope {
             }
         }
 
-        // Popup-only dismiss overlay: top-left, hover-revealed, and out of normal layout flow
-        // so it does not steal width from title/body/timestamp columns.
+        HoverHandler {
+            id: hoverTracker
+        }
+    }
+
+    Item {
+        id: overlayLayer
+        anchors.fill: parent
+        clip: false
+        z: 6
+
+        // Popup-only dismiss overlay: corner-straddled, hover-revealed, and out of normal flow.
         Rectangle {
             id: popupDismissButton
             visible: root.showDismissButton && root.isPopupMode
             width: root.popupDismissSize
             height: root.popupDismissSize
             radius: 11
-            z: 3
-            anchors.left: parent.left
-            anchors.top: parent.top
-            anchors.leftMargin: root.popupOverlayInset
-            anchors.topMargin: root.popupOverlayInset
+            z: 1
+            x: cardSurface.x - Math.round(width / 2) + root.popupOverlayInset
+            y: cardSurface.y - Math.round(height / 2) + root.popupOverlayInset
             opacity: root.revealDismissOnHover ? ((root.hovered || popupDismissHover.hovered || popupDismissMouseArea.containsMouse) ? 1 : 0) : 1
             color: popupDismissMouseArea.containsMouse ? (Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.16) : Qt.rgba(0, 0, 0, 0.14)) : (opacity > 0 ? (Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.09) : Qt.rgba(0, 0, 0, 0.08)) : "transparent")
 
@@ -1132,10 +1140,6 @@ FocusScope {
                     root._suppressNextDefaultActivation = false;
                 }
             }
-        }
-
-        HoverHandler {
-            id: hoverTracker
         }
     }
 }

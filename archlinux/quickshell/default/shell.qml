@@ -20,7 +20,7 @@ ShellRoot {
   property bool weatherEnabled: true
   property bool calendarEnabled: true
   property bool notificationsPopupEnabled: true
-  property int notificationsPopupTopMargin: 44
+  property int notificationsPopupTopMargin: 33
   property int notificationsPopupRightMargin: 16
   property int notificationsPopupMaxVisible: 5
   property bool notificationCenterOpen: false
