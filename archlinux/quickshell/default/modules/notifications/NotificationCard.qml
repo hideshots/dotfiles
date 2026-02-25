@@ -58,7 +58,16 @@ FocusScope {
     property real edgeLightWidthPx: 4.0
     property real edgeLightSharpness: 0.1
     property real edgeLightOpacity: 1.0
+    property bool buttonEdgeLightEnabled: true
+    property real buttonEdgeLightStrength: Math.max(0.2, edgeLightStrength * 0.55)
+    property real buttonEdgeLightWidthPx: Math.max(2.0, edgeLightWidthPx * 0.85)
+    property real buttonEdgeLightSharpness: Math.min(1.0, edgeLightSharpness + 0.18)
+    property real buttonEdgeLightOpacity: Math.min(1.0, edgeLightOpacity * 0.72)
+    property real buttonTintOpacity: isPopupMode ? (Root.Theme.isDark ? 0.24 : 0.30) : (Root.Theme.isDark ? 0.22 : 0.24)
     property real cardTintOpacity: isPopupMode ? (Root.Theme.isDark ? 0.46 : 0.54) : 0.96
+    readonly property color buttonTintColor: Root.Theme.isDark ? Qt.rgba(1, 1, 1, buttonTintOpacity) : Qt.rgba(0.98, 0.99, 1.0, buttonTintOpacity)
+    readonly property color buttonHoverTintColor: Root.Theme.isDark ? Qt.rgba(1, 1, 1, buttonTintOpacity + 0.06) : Qt.rgba(1, 1, 1, buttonTintOpacity + 0.14)
+    readonly property color buttonHairlineColor: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(1, 1, 1, 0.58)
     readonly property color cardTintColor: Root.Theme.isDark ? Qt.rgba(0.10, 0.11, 0.13, cardTintOpacity) : Qt.rgba(0.97, 0.98, 0.99, cardTintOpacity)
     readonly property color cardContrastColor: Root.Theme.isDark ? Qt.rgba(1, 1, 1, isPopupMode ? 0.030 : 0.0) : Qt.rgba(1, 1, 1, isPopupMode ? 0.16 : 0.0)
     readonly property color cardHairlineColor: Root.Theme.isDark ? Qt.rgba(1, 1, 1, isPopupMode ? 0.07 : 0.05) : Qt.rgba(1, 1, 1, isPopupMode ? 0.52 : 0.70)
@@ -845,7 +854,36 @@ FocusScope {
                                 height: 20
                                 radius: 10
                                 x: parent.width - width
-                                color: centerDismissMouseArea.containsMouse ? (Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.12)) : "transparent"
+                                color: "transparent"
+
+                                Rectangle {
+                                    anchors.fill: parent
+                                    radius: parent.radius
+                                    color: centerDismissMouseArea.containsMouse ? root.buttonHoverTintColor : root.buttonTintColor
+                                    border.width: 1
+                                    border.color: root.buttonHairlineColor
+                                }
+
+                                Rectangle {
+                                    anchors.fill: parent
+                                    radius: parent.radius
+                                    color: centerDismissMouseArea.containsMouse ? Qt.rgba(Root.Theme.menuHighlight.r, Root.Theme.menuHighlight.g, Root.Theme.menuHighlight.b, 0.16) : "transparent"
+                                }
+
+                                ShaderEffect {
+                                    anchors.fill: parent
+                                    visible: root.buttonEdgeLightEnabled
+                                    property vector2d uSize: Qt.vector2d(width, height)
+                                    property real uRadius: centerDismissButton.radius
+                                    property real uLightAngleDeg: root.edgeLightAngleDeg
+                                    property real uLightStrength: root.buttonEdgeLightStrength
+                                    property real uLightWidthPx: root.buttonEdgeLightWidthPx
+                                    property real uLightSharpness: root.buttonEdgeLightSharpness
+                                    property real uCornerBoost: 0.45
+                                    property real uEdgeOpacity: root.buttonEdgeLightOpacity
+                                    property color uEdgeTint: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.95) : Qt.rgba(1, 1, 1, 0.92)
+                                    fragmentShader: "../../shaders/notification_edge_light.frag.qsb"
+                                }
 
                                 Text {
                                     anchors.centerIn: parent
@@ -931,9 +969,36 @@ FocusScope {
                                 implicitHeight: 24
                                 implicitWidth: Math.min(150, Math.max(70, actionLabel.implicitWidth + 16))
                                 radius: 8
-                                color: actionMouseArea.containsMouse ? Qt.rgba(Root.Theme.menuHighlight.r, Root.Theme.menuHighlight.g, Root.Theme.menuHighlight.b, 0.22) : (Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.08))
-                                border.width: 1
-                                border.color: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.10)
+                                color: "transparent"
+
+                                Rectangle {
+                                    anchors.fill: parent
+                                    radius: parent.radius
+                                    color: actionMouseArea.containsMouse ? root.buttonHoverTintColor : root.buttonTintColor
+                                    border.width: 1
+                                    border.color: root.buttonHairlineColor
+                                }
+
+                                Rectangle {
+                                    anchors.fill: parent
+                                    radius: parent.radius
+                                    color: actionMouseArea.containsMouse ? Qt.rgba(Root.Theme.menuHighlight.r, Root.Theme.menuHighlight.g, Root.Theme.menuHighlight.b, 0.22) : "transparent"
+                                }
+
+                                ShaderEffect {
+                                    anchors.fill: parent
+                                    visible: root.buttonEdgeLightEnabled
+                                    property vector2d uSize: Qt.vector2d(width, height)
+                                    property real uRadius: actionButton.radius
+                                    property real uLightAngleDeg: root.edgeLightAngleDeg
+                                    property real uLightStrength: root.buttonEdgeLightStrength
+                                    property real uLightWidthPx: root.buttonEdgeLightWidthPx
+                                    property real uLightSharpness: root.buttonEdgeLightSharpness
+                                    property real uCornerBoost: 0.5
+                                    property real uEdgeOpacity: root.buttonEdgeLightOpacity
+                                    property color uEdgeTint: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.95) : Qt.rgba(1, 1, 1, 0.92)
+                                    fragmentShader: "../../shaders/notification_edge_light.frag.qsb"
+                                }
 
                                 Text {
                                     id: actionLabel
@@ -1054,9 +1119,36 @@ FocusScope {
                             implicitHeight: 24
                             implicitWidth: Math.min(150, Math.max(70, popupActionLabel.implicitWidth + 16))
                             radius: 8
-                            color: popupActionMouseArea.containsMouse ? Qt.rgba(Root.Theme.menuHighlight.r, Root.Theme.menuHighlight.g, Root.Theme.menuHighlight.b, 0.22) : (Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.08))
-                            border.width: 1
-                            border.color: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.10)
+                            color: "transparent"
+
+                            Rectangle {
+                                anchors.fill: parent
+                                radius: parent.radius
+                                color: popupActionMouseArea.containsMouse ? root.buttonHoverTintColor : root.buttonTintColor
+                                border.width: 1
+                                border.color: root.buttonHairlineColor
+                            }
+
+                            Rectangle {
+                                anchors.fill: parent
+                                radius: parent.radius
+                                color: popupActionMouseArea.containsMouse ? Qt.rgba(Root.Theme.menuHighlight.r, Root.Theme.menuHighlight.g, Root.Theme.menuHighlight.b, 0.22) : "transparent"
+                            }
+
+                            ShaderEffect {
+                                anchors.fill: parent
+                                visible: root.buttonEdgeLightEnabled
+                                property vector2d uSize: Qt.vector2d(width, height)
+                                property real uRadius: popupActionButton.radius
+                                property real uLightAngleDeg: root.edgeLightAngleDeg
+                                property real uLightStrength: root.buttonEdgeLightStrength
+                                property real uLightWidthPx: root.buttonEdgeLightWidthPx
+                                property real uLightSharpness: root.buttonEdgeLightSharpness
+                                property real uCornerBoost: 0.5
+                                property real uEdgeOpacity: root.buttonEdgeLightOpacity
+                                property color uEdgeTint: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.95) : Qt.rgba(1, 1, 1, 0.92)
+                                fragmentShader: "../../shaders/notification_edge_light.frag.qsb"
+                            }
 
                             Text {
                                 id: popupActionLabel
@@ -1129,7 +1221,36 @@ FocusScope {
             x: cardSurface.x - Math.round(width / 2) + root.popupOverlayInset
             y: cardSurface.y - Math.round(height / 2) + root.popupOverlayInset
             opacity: root.revealDismissOnHover ? ((root.hovered || popupDismissHover.hovered || popupDismissMouseArea.containsMouse) ? 1 : 0) : 1
-            color: popupDismissMouseArea.containsMouse ? (Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.16) : Qt.rgba(0, 0, 0, 0.14)) : (opacity > 0 ? (Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.09) : Qt.rgba(0, 0, 0, 0.08)) : "transparent")
+            color: "transparent"
+
+            Rectangle {
+                anchors.fill: parent
+                radius: parent.radius
+                color: popupDismissMouseArea.containsMouse ? root.buttonHoverTintColor : root.buttonTintColor
+                border.width: 1
+                border.color: root.buttonHairlineColor
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                radius: parent.radius
+                color: popupDismissMouseArea.containsMouse ? Qt.rgba(Root.Theme.menuHighlight.r, Root.Theme.menuHighlight.g, Root.Theme.menuHighlight.b, 0.16) : "transparent"
+            }
+
+            ShaderEffect {
+                anchors.fill: parent
+                visible: root.buttonEdgeLightEnabled
+                property vector2d uSize: Qt.vector2d(width, height)
+                property real uRadius: popupDismissButton.radius
+                property real uLightAngleDeg: root.edgeLightAngleDeg
+                property real uLightStrength: root.buttonEdgeLightStrength
+                property real uLightWidthPx: root.buttonEdgeLightWidthPx
+                property real uLightSharpness: root.buttonEdgeLightSharpness
+                property real uCornerBoost: 0.45
+                property real uEdgeOpacity: root.buttonEdgeLightOpacity
+                property color uEdgeTint: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.95) : Qt.rgba(1, 1, 1, 0.92)
+                fragmentShader: "../../shaders/notification_edge_light.frag.qsb"
+            }
 
             Behavior on opacity {
                 NumberAnimation {
