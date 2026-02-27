@@ -1,4 +1,5 @@
 module notifications
+singleton NotificationStyle 1.0 NotificationStyle.qml
 NotificationCard 1.0 NotificationCard.qml
 PopupStack 1.0 PopupStack.qml
 NotificationCenter 1.0 NotificationCenter.qml

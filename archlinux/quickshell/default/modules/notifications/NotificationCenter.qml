@@ -1,7 +1,9 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import Qt5Compat.GraphicalEffects
 
+import "." as Notifications
 import "../.." as Root
 
 FocusScope {
@@ -9,20 +11,35 @@ FocusScope {
 
     property bool open: false
     property int panelWidth: 392
-    property int panelHeight: 560
+    property int panelMinHeight: 560
     property int panelPadding: 10
-    property int headerHeight: 42
+    property int headerHeight: 44
     property int listSpacing: 8
     property int maxHistoryVisible: 100
-    property var expandedById: ({})
+    property int clearButtonCompactWidth: 22
+    property int clearButtonHorizontalPadding: 10
+    property bool externalDismissEnabled: false
+    property bool externalPopupActionsEnabled: false
+    property alias dismissButtonModel: dismissWindowModel
+    property alias actionOverlayModel: actionOverlayModelData
+    property int activeControlsOwnerId: -1
+    readonly property real clearButtonExpandedWidth: Math.max(clearButtonCompactWidth, Math.ceil(clearExpandedLabelMeasure.implicitWidth + (clearButtonHorizontalPadding * 2)))
 
     readonly property var notificationService: Root.NotificationService
+    readonly property var notificationStyle: Notifications.NotificationStyle
     readonly property bool hasHistory: notificationService.historyCount > 0
+    property int _cardHoverOwnerId: -1
+    property int _dismissHoverOwnerId: -1
+    property int _popupActionsHoverOwnerId: -1
+    property int _controlsHandoffGraceOwnerId: -1
+    property int _externalExitGraceOwnerId: -1
 
     signal requestClose
+    signal dismissHoverStateChanged(int notificationId, bool hovered)
+    signal popupActionsHoverStateChanged(int notificationId, bool hovered)
 
     implicitWidth: panelWidth
-    implicitHeight: panelHeight
+    implicitHeight: panelMinHeight
 
     visible: open || opacity > 0.01
     opacity: open ? 1 : 0
@@ -39,15 +56,6 @@ FocusScope {
         root.requestClose();
     }
 
-    onOpenChanged: {
-        if (open) {
-            pruneExpandedState();
-            return;
-        }
-
-        clearExpandedState();
-    }
-
     Behavior on opacity {
         NumberAnimation {
             duration: 150
@@ -62,168 +70,603 @@ FocusScope {
         }
     }
 
+    onOpenChanged: {
+        if (!open) {
+            clearAllExternalState();
+        }
+    }
+    onHasHistoryChanged: {
+        if (!hasHistory) {
+            clearAllExternalState();
+        }
+    }
+    onExternalDismissEnabledChanged: {
+        if (!externalDismissEnabled) {
+            dismissWindowModel.clear();
+            if (_dismissHoverOwnerId >= 0) {
+                dismissHoverStateChanged(_dismissHoverOwnerId, false);
+            }
+            _dismissHoverOwnerId = -1;
+            _controlsHandoffGraceOwnerId = -1;
+            _externalExitGraceOwnerId = -1;
+            _syncOwnerLifetime(activeControlsOwnerId);
+        } else {
+            _syncAllOverlayEntries();
+        }
+    }
+    onExternalPopupActionsEnabledChanged: {
+        if (!externalPopupActionsEnabled) {
+            actionOverlayModelData.clear();
+            if (_popupActionsHoverOwnerId >= 0) {
+                popupActionsHoverStateChanged(_popupActionsHoverOwnerId, false);
+            }
+            _popupActionsHoverOwnerId = -1;
+            _controlsHandoffGraceOwnerId = -1;
+            _externalExitGraceOwnerId = -1;
+            _syncOwnerLifetime(activeControlsOwnerId);
+        } else {
+            _syncAllOverlayEntries();
+        }
+    }
+
     Connections {
         target: root.notificationService
 
         function onHistoryCountChanged() {
-            root.pruneExpandedState();
+            if (root.activeControlsOwnerId >= 0 && !root._hasHistoryNotification(root.activeControlsOwnerId)) {
+                root.clearExternalState(root.activeControlsOwnerId);
+                return;
+            }
+            root._syncAllOverlayEntries();
         }
     }
 
-    function _idKey(value) {
-        if (value === undefined || value === null) {
-            return "";
+    function _normalizeNotificationId(notificationId) {
+        var numericId = Number(notificationId);
+        if (!isFinite(numericId) || numericId < 0) {
+            return -1;
         }
-        return String(value);
+        return Math.floor(numericId);
     }
 
-    function _hasOwn(objectValue, key) {
-        return Object.prototype.hasOwnProperty.call(objectValue, key);
+    function _hasHistoryNotification(notificationId) {
+        var normalizedId = _normalizeNotificationId(notificationId);
+        var historyList = notificationService ? notificationService.historyList : null;
+        var i = 0;
+        if (normalizedId < 0 || !historyList || historyList.count === undefined) {
+            return false;
+        }
+
+        for (i = 0; i < historyList.count; i++) {
+            var row = historyList.get(i);
+            var rowId = row && row.notificationId !== undefined ? _normalizeNotificationId(row.notificationId) : _normalizeNotificationId(row ? row.id : -1);
+            if (rowId === normalizedId) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
-    function clearExpandedState() {
-        expandedById = ({});
+    function isCenterNotificationOverlayActive(notificationId) {
+        var normalizedId = _normalizeNotificationId(notificationId);
+        return open && normalizedId >= 0 && activeControlsOwnerId === normalizedId && _hasHistoryNotification(normalizedId);
     }
 
-    function isExpanded(notificationId) {
-        var key = _idKey(notificationId);
-        return _hasOwn(expandedById, key) && !!expandedById[key];
+    function _setDismissHoverState(notificationId, hovered) {
+        var normalizedId = _normalizeNotificationId(notificationId);
+        if (normalizedId < 0) {
+            return;
+        }
+        var nextHovered = !!hovered;
+        if (nextHovered) {
+            if (_dismissHoverOwnerId === normalizedId) {
+                return;
+            }
+            if (_dismissHoverOwnerId >= 0) {
+                dismissHoverStateChanged(_dismissHoverOwnerId, false);
+            }
+            _dismissHoverOwnerId = normalizedId;
+            dismissHoverStateChanged(normalizedId, true);
+            return;
+        }
+
+        if (_dismissHoverOwnerId === normalizedId) {
+            _dismissHoverOwnerId = -1;
+            dismissHoverStateChanged(normalizedId, false);
+        }
     }
 
-    function setExpanded(notificationId, expanded) {
-        var next = ({});
-        var key = _idKey(notificationId);
-        var source = expandedById || ({});
-        var mapKey = "";
+    function _setPopupActionsHoverState(notificationId, hovered) {
+        var normalizedId = _normalizeNotificationId(notificationId);
+        if (normalizedId < 0) {
+            return;
+        }
+        var nextHovered = !!hovered;
+        if (nextHovered) {
+            if (_popupActionsHoverOwnerId === normalizedId) {
+                return;
+            }
+            if (_popupActionsHoverOwnerId >= 0) {
+                popupActionsHoverStateChanged(_popupActionsHoverOwnerId, false);
+            }
+            _popupActionsHoverOwnerId = normalizedId;
+            popupActionsHoverStateChanged(normalizedId, true);
+            return;
+        }
 
-        for (mapKey in source) {
-            if (!_hasOwn(source, mapKey) || mapKey === key || !source[mapKey]) {
+        if (_popupActionsHoverOwnerId === normalizedId) {
+            _popupActionsHoverOwnerId = -1;
+            popupActionsHoverStateChanged(normalizedId, false);
+        }
+    }
+
+    function setActiveControlsOwner(notificationId) {
+        var normalizedId = _normalizeNotificationId(notificationId);
+        if (normalizedId < 0 || !_hasHistoryNotification(normalizedId)) {
+            return;
+        }
+
+        if (activeControlsOwnerId >= 0 && activeControlsOwnerId !== normalizedId) {
+            clearExternalState(activeControlsOwnerId);
+        }
+
+        activeControlsOwnerId = normalizedId;
+        _cardHoverOwnerId = normalizedId;
+        _syncAllOverlayEntries();
+    }
+
+    function clearCardHover(notificationId) {
+        var normalizedId = _normalizeNotificationId(notificationId);
+        if (normalizedId < 0) {
+            return;
+        }
+
+        if (_cardHoverOwnerId === normalizedId) {
+            _cardHoverOwnerId = -1;
+        }
+        _syncOwnerLifetime(normalizedId);
+        _syncAllOverlayEntries();
+    }
+
+    function setExternalDismissHovered(notificationId, hovered) {
+        var normalizedId = _normalizeNotificationId(notificationId);
+        if (normalizedId < 0) {
+            return;
+        }
+        var nextHovered = !!hovered;
+        if (nextHovered) {
+            if (!isCenterNotificationOverlayActive(normalizedId)) {
+                return;
+            }
+            _setDismissHoverState(normalizedId, true);
+        } else {
+            _setDismissHoverState(normalizedId, false);
+        }
+
+        _syncOwnerLifetime(normalizedId);
+        _syncAllOverlayEntries();
+    }
+
+    function setExternalPopupActionsHovered(notificationId, hovered) {
+        var normalizedId = _normalizeNotificationId(notificationId);
+        if (normalizedId < 0) {
+            return;
+        }
+        var nextHovered = !!hovered;
+        if (nextHovered) {
+            if (!isCenterNotificationOverlayActive(normalizedId)) {
+                return;
+            }
+            _setPopupActionsHoverState(normalizedId, true);
+        } else {
+            _setPopupActionsHoverState(normalizedId, false);
+        }
+
+        _syncOwnerLifetime(normalizedId);
+        _syncAllOverlayEntries();
+    }
+
+    function setControlsHandoffGrace(notificationId, active) {
+        var normalizedId = _normalizeNotificationId(notificationId);
+        if (normalizedId < 0) {
+            return;
+        }
+
+        var nextActive = !!active;
+        if (nextActive) {
+            if (!open || !_hasHistoryNotification(normalizedId)) {
+                return;
+            }
+
+            if (_controlsHandoffGraceOwnerId >= 0 && _controlsHandoffGraceOwnerId !== normalizedId) {
+                clearExternalState(_controlsHandoffGraceOwnerId);
+            }
+            _controlsHandoffGraceOwnerId = normalizedId;
+            if (activeControlsOwnerId !== normalizedId) {
+                activeControlsOwnerId = normalizedId;
+            }
+        } else if (_controlsHandoffGraceOwnerId === normalizedId) {
+            _controlsHandoffGraceOwnerId = -1;
+        }
+
+        _syncOwnerLifetime(normalizedId);
+        _syncAllOverlayEntries();
+    }
+
+    function setExternalExitGrace(notificationId, active) {
+        var normalizedId = _normalizeNotificationId(notificationId);
+        if (normalizedId < 0) {
+            return;
+        }
+
+        var nextActive = !!active;
+        if (nextActive) {
+            if (!open || !_hasHistoryNotification(normalizedId)) {
+                return;
+            }
+
+            if (_externalExitGraceOwnerId >= 0 && _externalExitGraceOwnerId !== normalizedId) {
+                clearExternalState(_externalExitGraceOwnerId);
+            }
+            _externalExitGraceOwnerId = normalizedId;
+            if (activeControlsOwnerId !== normalizedId) {
+                activeControlsOwnerId = normalizedId;
+            }
+        } else if (_externalExitGraceOwnerId === normalizedId) {
+            _externalExitGraceOwnerId = -1;
+        }
+
+        _syncOwnerLifetime(normalizedId);
+        _syncAllOverlayEntries();
+    }
+
+    function _syncOwnerLifetime(notificationId) {
+        var normalizedId = _normalizeNotificationId(notificationId);
+        if (normalizedId < 0 || activeControlsOwnerId !== normalizedId) {
+            return;
+        }
+        if (!isCenterNotificationOverlayActive(normalizedId)) {
+            clearExternalState(normalizedId);
+            return;
+        }
+
+        var heldByCard = _cardHoverOwnerId === normalizedId;
+        var heldByExternal = _dismissHoverOwnerId === normalizedId || _popupActionsHoverOwnerId === normalizedId;
+        var heldByGrace = _controlsHandoffGraceOwnerId === normalizedId;
+        var heldByExternalExitGrace = _externalExitGraceOwnerId === normalizedId;
+        if (!heldByCard && !heldByExternal && !heldByGrace && !heldByExternalExitGrace) {
+            clearExternalState(normalizedId);
+        }
+    }
+
+    function clearAllExternalState() {
+        if (activeControlsOwnerId >= 0) {
+            clearExternalState(activeControlsOwnerId);
+            return;
+        }
+
+        dismissWindowModel.clear();
+        actionOverlayModelData.clear();
+
+        if (_dismissHoverOwnerId >= 0) {
+            dismissHoverStateChanged(_dismissHoverOwnerId, false);
+            _dismissHoverOwnerId = -1;
+        }
+        if (_popupActionsHoverOwnerId >= 0) {
+            popupActionsHoverStateChanged(_popupActionsHoverOwnerId, false);
+            _popupActionsHoverOwnerId = -1;
+        }
+        _controlsHandoffGraceOwnerId = -1;
+        _externalExitGraceOwnerId = -1;
+        _cardHoverOwnerId = -1;
+    }
+
+    function clearExternalState(notificationId) {
+        var normalizedId = _normalizeNotificationId(notificationId);
+        if (normalizedId < 0) {
+            return;
+        }
+
+        _removeDismissModelEntry(normalizedId);
+        _removeActionModelEntry(normalizedId);
+        _setDismissHoverState(normalizedId, false);
+        _setPopupActionsHoverState(normalizedId, false);
+        if (_controlsHandoffGraceOwnerId === normalizedId) {
+            _controlsHandoffGraceOwnerId = -1;
+        }
+        if (_externalExitGraceOwnerId === normalizedId) {
+            _externalExitGraceOwnerId = -1;
+        }
+
+        if (_cardHoverOwnerId === normalizedId) {
+            _cardHoverOwnerId = -1;
+        }
+        if (activeControlsOwnerId === normalizedId) {
+            activeControlsOwnerId = -1;
+        }
+    }
+
+    function _dismissModelIndex(notificationId) {
+        var i = 0;
+        for (i = 0; i < dismissWindowModel.count; i++) {
+            if (_normalizeNotificationId(dismissWindowModel.get(i).notificationId) === notificationId) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    function _removeDismissModelEntry(notificationId) {
+        var index = _dismissModelIndex(notificationId);
+        if (index >= 0) {
+            dismissWindowModel.remove(index);
+        }
+    }
+
+    function _upsertDismissModelEntry(notificationId, buttonX, buttonY, buttonSize, buttonOpacity) {
+        var normalizedId = _normalizeNotificationId(notificationId);
+        if (normalizedId < 0 || !externalDismissEnabled || !isCenterNotificationOverlayActive(normalizedId)) {
+            _removeDismissModelEntry(normalizedId);
+            return;
+        }
+
+        var roundedX = Math.round(buttonX);
+        var roundedY = Math.round(buttonY);
+        var roundedSize = Math.round(Math.max(0, buttonSize));
+        var clampedOpacity = Math.max(0.0, Math.min(1.0, Number(buttonOpacity)));
+        var index = _dismissModelIndex(normalizedId);
+
+        if (index < 0) {
+            dismissWindowModel.append({
+                notificationId: normalizedId,
+                buttonX: roundedX,
+                buttonY: roundedY,
+                buttonSize: roundedSize,
+                buttonOpacity: clampedOpacity
+            });
+            return;
+        }
+
+        dismissWindowModel.set(index, {
+            notificationId: normalizedId,
+            buttonX: roundedX,
+            buttonY: roundedY,
+            buttonSize: roundedSize,
+            buttonOpacity: clampedOpacity
+        });
+    }
+
+    function _actionModelIndex(notificationId) {
+        var i = 0;
+        for (i = 0; i < actionOverlayModelData.count; i++) {
+            if (_normalizeNotificationId(actionOverlayModelData.get(i).notificationId) === notificationId) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    function _removeActionModelEntry(notificationId) {
+        var index = _actionModelIndex(notificationId);
+        if (index >= 0) {
+            actionOverlayModelData.remove(index);
+        }
+    }
+
+    function _upsertActionModelEntry(notificationId, overlayX, overlayY, overlayWidth, overlayHeight, overlayOpacity, actionsData) {
+        var normalizedId = _normalizeNotificationId(notificationId);
+        if (normalizedId < 0 || !externalPopupActionsEnabled || !isCenterNotificationOverlayActive(normalizedId)) {
+            _removeActionModelEntry(normalizedId);
+            return;
+        }
+
+        var roundedX = Math.round(overlayX);
+        var roundedY = Math.round(overlayY);
+        var roundedWidth = Math.round(Math.max(0, overlayWidth));
+        var roundedHeight = Math.round(Math.max(0, overlayHeight));
+        var clampedOpacity = Math.max(0.0, Math.min(1.0, Number(overlayOpacity)));
+        var normalizedActions = [];
+        var actionsLength = actionsData && actionsData.length !== undefined ? Number(actionsData.length) : 0;
+        var i = 0;
+        var index = _actionModelIndex(normalizedId);
+
+        for (i = 0; i < actionsLength; i++) {
+            var action = actionsData[i];
+            if (!action) {
                 continue;
             }
-            next[mapKey] = true;
+
+            var actionId = action.id === undefined || action.id === null ? "" : String(action.id);
+            var actionText = action.text === undefined || action.text === null ? "" : String(action.text);
+            if (actionText.length === 0) {
+                continue;
+            }
+
+            normalizedActions.push({
+                "id": actionId,
+                "text": actionText
+            });
         }
 
-        if (expanded) {
-            next[key] = true;
+        var actionsJson = JSON.stringify(normalizedActions);
+        var actionsCount = normalizedActions.length;
+
+        if (index < 0) {
+            actionOverlayModelData.append({
+                notificationId: normalizedId,
+                overlayX: roundedX,
+                overlayY: roundedY,
+                overlayWidth: roundedWidth,
+                overlayHeight: roundedHeight,
+                overlayOpacity: clampedOpacity,
+                actionsCount: actionsCount,
+                actionsJson: actionsJson
+            });
+            return;
         }
 
-        expandedById = next;
+        actionOverlayModelData.set(index, {
+            notificationId: normalizedId,
+            overlayX: roundedX,
+            overlayY: roundedY,
+            overlayWidth: roundedWidth,
+            overlayHeight: roundedHeight,
+            overlayOpacity: clampedOpacity,
+            actionsCount: actionsCount,
+            actionsJson: actionsJson
+        });
     }
 
-    function toggleExpanded(notificationId) {
-        setExpanded(notificationId, !isExpanded(notificationId));
-    }
-
-    function pruneExpandedState() {
-        var allowed = ({});
+    function _syncAllOverlayEntries() {
+        var children = historyListView.contentItem ? historyListView.contentItem.children : [];
         var i = 0;
 
-        for (i = 0; i < notificationService.historyCount; i++) {
-            var row = notificationService.historyList.get(i);
-            var rowId = row && row.notificationId !== undefined ? row.notificationId : row.id;
-            allowed[_idKey(rowId)] = true;
-        }
-
-        var next = ({});
-        var source = expandedById || ({});
-        var key = "";
-
-        for (key in source) {
-            if (!_hasOwn(source, key) || !source[key] || !_hasOwn(allowed, key)) {
+        for (i = 0; i < children.length; i++) {
+            var child = children[i];
+            if (!child) {
                 continue;
             }
-            next[key] = true;
+            if (child.syncExternalDismissEntry !== undefined) {
+                child.syncExternalDismissEntry();
+            }
+            if (child.syncExternalActionEntry !== undefined) {
+                child.syncExternalActionEntry();
+            }
         }
-
-        expandedById = next;
     }
 
-    Rectangle {
-        anchors.fill: parent
-        radius: 14
-        color: Root.Theme.isDark ? Qt.rgba(0.10, 0.10, 0.10, 0.97) : Qt.rgba(0.98, 0.98, 0.98, 0.97)
-        border.width: 1
-        border.color: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(0, 0, 0, 0.12)
+    Text {
+        id: clearExpandedLabelMeasure
+        visible: false
+        text: "Clear All"
+        font.family: Root.Theme.fontFamily
+        font.pixelSize: 11
+        font.weight: Font.Medium
+        renderType: Text.NativeRendering
     }
 
-    Rectangle {
-        anchors.fill: parent
-        radius: 14
-        color: "transparent"
-        border.width: 1
-        border.color: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.05) : Qt.rgba(1, 1, 1, 0.72)
+    ListModel {
+        id: dismissWindowModel
     }
+
+    ListModel {
+        id: actionOverlayModelData
+    }
+
 
     Column {
         anchors.fill: parent
         anchors.margins: root.panelPadding
         spacing: 8
 
-        Rectangle {
+        Item {
             id: header
             width: parent.width
             height: root.headerHeight
-            radius: 10
-            color: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.05) : Qt.rgba(0, 0, 0, 0.04)
+
+            Text {
+                id: headerTitle
+                anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
+                width: Math.max(0, header.width - headerControls.width - 14)
+                text: "Notification Center"
+                elide: Text.ElideRight
+                font.family: Root.Theme.fontFamilyDisplay
+                font.pixelSize: 19
+                font.weight: Font.Medium
+                font.letterSpacing: -0.76
+                color: "#ffffff"
+                renderType: Text.NativeRendering
+            }
+
+            DropShadow {
+                anchors.fill: headerTitle
+                source: headerTitle
+                horizontalOffset: 0
+                verticalOffset: 0
+                radius: 6
+                samples: 17
+                spread: 0
+                color: Qt.rgba(0, 0, 0, 0.5)
+                cached: true
+            }
 
             Row {
-                anchors.fill: parent
-                anchors.leftMargin: 10
-                anchors.rightMargin: 10
+                id: headerControls
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
                 spacing: 8
 
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: "Notifications"
-                    font.family: Root.Theme.fontFamilyDisplay
-                    font.pixelSize: 14
-                    font.weight: Font.DemiBold
-                    color: Root.Theme.textPrimary
-                    renderType: Text.NativeRendering
-                }
-
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: root.notificationService.historyCount
-                    font.family: Root.Theme.fontFamily
-                    font.pixelSize: 12
-                    color: Root.Theme.textSecondary
-                    opacity: 0.88
-                    renderType: Text.NativeRendering
-                }
-
-                Item {
-                    width: Math.max(0, parent.width - clearAllButton.width - closeButton.width - 145)
-                    height: 1
-                }
-
                 Rectangle {
-                    id: clearAllButton
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 62
-                    height: 24
-                    radius: 7
-                    visible: root.hasHistory
-                    color: clearAllMouseArea.containsMouse ? Qt.rgba(Root.Theme.menuHighlight.r, Root.Theme.menuHighlight.g, Root.Theme.menuHighlight.b, 0.20) : (Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.08))
-                    border.width: 1
-                    border.color: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.08)
+                    id: clearButton
+                    property bool hovered: clearButtonHover.hovered || clearMouseArea.containsMouse
+                    width: hovered ? root.clearButtonExpandedWidth : root.clearButtonCompactWidth
+                    height: 22
+                    radius: 11
+                    color: "transparent"
+                    enabled: root.hasHistory
+                    opacity: enabled ? 1 : 0.55
+                    clip: true
+
+                    Behavior on width {
+                        NumberAnimation {
+                            duration: 120
+                            easing.type: Easing.OutCubic
+                        }
+                    }
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: parent.radius
+                        color: clearMouseArea.containsMouse ? root.notificationStyle.buttonHoverTintColor : root.notificationStyle.buttonTintColor
+                        border.width: 1
+                        border.color: root.notificationStyle.buttonHairlineColor
+                    }
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: parent.radius
+                        color: clearMouseArea.containsMouse ? Qt.rgba(Root.Theme.menuHighlight.r, Root.Theme.menuHighlight.g, Root.Theme.menuHighlight.b, 0.16) : "transparent"
+                    }
+
+                    ShaderEffect {
+                        anchors.fill: parent
+                        property vector2d uSize: Qt.vector2d(width, height)
+                        property real uRadius: clearButton.radius
+                        property real uLightAngleDeg: root.notificationStyle.edgeLightAngleDeg
+                        property real uLightStrength: root.notificationStyle.buttonEdgeLightStrength
+                        property real uLightWidthPx: root.notificationStyle.buttonEdgeLightWidthPx
+                        property real uLightSharpness: root.notificationStyle.buttonEdgeLightSharpness
+                        property real uCornerBoost: 0.45
+                        property real uEdgeOpacity: root.notificationStyle.buttonEdgeLightOpacity
+                        property color uEdgeTint: root.notificationStyle.edgeLightTint
+                        fragmentShader: "../../shaders/notification_edge_light.frag.qsb"
+                    }
 
                     Text {
+                        id: clearButtonLabel
                         anchors.centerIn: parent
-                        text: "Clear All"
-                        font.family: Root.Theme.fontFamily
-                        font.pixelSize: 11
-                        color: Root.Theme.textPrimary
+                        text: clearButton.hovered ? "Clear All" : "􀅾"
+                        color: Root.Theme.textSecondary
+                        font.family: clearButton.hovered ? Root.Theme.fontFamily : Root.Theme.fontFamilyDisplay
+                        font.pixelSize: clearButton.hovered ? 11 : 12
+                        font.weight: clearButton.hovered ? Font.Medium : Font.DemiBold
                         renderType: Text.NativeRendering
                     }
 
+                    HoverHandler {
+                        id: clearButtonHover
+                    }
+
                     MouseArea {
-                        id: clearAllMouseArea
+                        id: clearMouseArea
                         anchors.fill: parent
+                        enabled: clearButton.enabled
                         hoverEnabled: true
                         acceptedButtons: Qt.LeftButton
                         preventStealing: true
-                        cursorShape: Qt.PointingHandCursor
+                        cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
 
                         onPressed: function (mouse) {
                             mouse.accepted = true;
@@ -232,42 +675,6 @@ FocusScope {
                         onClicked: function (mouse) {
                             mouse.accepted = true;
                             root.notificationService.clearHistory();
-                        }
-                    }
-                }
-
-                Rectangle {
-                    id: closeButton
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 24
-                    height: 24
-                    radius: 12
-                    color: closeMouseArea.containsMouse ? (Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.12)) : "transparent"
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: "x"
-                        font.family: Root.Theme.fontFamilyDisplay
-                        font.pixelSize: 12
-                        color: Root.Theme.textSecondary
-                        renderType: Text.NativeRendering
-                    }
-
-                    MouseArea {
-                        id: closeMouseArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        acceptedButtons: Qt.LeftButton
-                        preventStealing: true
-                        cursorShape: Qt.PointingHandCursor
-
-                        onPressed: function (mouse) {
-                            mouse.accepted = true;
-                        }
-
-                        onClicked: function (mouse) {
-                            mouse.accepted = true;
-                            root.requestClose();
                         }
                     }
                 }
@@ -302,58 +709,243 @@ FocusScope {
                 orientation: ListView.Vertical
                 verticalLayoutDirection: ListView.TopToBottom
 
-                delegate: NotificationCard {
+                delegate: Item {
+                    id: rowWrapper
                     required property int index
                     required property var model
 
                     readonly property bool withinVisibleLimit: index < Math.max(0, root.maxHistoryVisible)
+                    readonly property int rowNotificationId: model && model.notificationId !== undefined ? Number(model.notificationId) : Number(model.id)
                     readonly property int rowRevision: model && model.revision !== undefined ? Number(model.revision) : 0
+                    property int _trackedDismissNotificationId: -1
+                    property int _trackedActionNotificationId: -1
+                    property bool externalDismissHoverState: false
+                    property bool externalPopupActionsHoverState: false
                     readonly property var notificationSnapshot: {
                         if (rowRevision < -1) {
                             return null;
                         }
-                        if (notificationId < 0) {
+                        if (rowNotificationId < 0) {
                             return null;
                         }
-                        return root.notificationService.getNotification(notificationId);
+                        return root.notificationService.getNotification(rowNotificationId);
                     }
 
                     width: historyListView.width
                     visible: withinVisibleLimit
-                    height: visible ? implicitHeight : 0
+                    height: visible ? card.implicitHeight : 0
                     opacity: visible ? 1 : 0
 
-                    notificationId: model && model.notificationId !== undefined ? Number(model.notificationId) : Number(model.id)
-                    appName: notificationSnapshot && notificationSnapshot.appName !== undefined ? String(notificationSnapshot.appName) : (model.appName ? String(model.appName) : "")
-                    appIcon: notificationSnapshot ? notificationSnapshot.appIcon : (model.appIconHint ? String(model.appIconHint) : "")
-                    appIconHint: notificationSnapshot && notificationSnapshot.appIconHint !== undefined ? String(notificationSnapshot.appIconHint) : (model.appIconHint ? String(model.appIconHint) : "")
-                    resolvedAppIconSource: notificationSnapshot && notificationSnapshot.resolvedAppIconSource !== undefined ? notificationSnapshot.resolvedAppIconSource : (model.resolvedAppIconHint ? String(model.resolvedAppIconHint) : "")
-                    resolvedAppIconHint: notificationSnapshot && notificationSnapshot.resolvedAppIconHint !== undefined ? String(notificationSnapshot.resolvedAppIconHint) : (model.resolvedAppIconHint ? String(model.resolvedAppIconHint) : "")
-                    summary: notificationSnapshot && notificationSnapshot.summary !== undefined ? String(notificationSnapshot.summary) : (model.summary ? String(model.summary) : "")
-                    body: notificationSnapshot && notificationSnapshot.body !== undefined ? String(notificationSnapshot.body) : (model.body ? String(model.body) : "")
-                    image: notificationSnapshot ? notificationSnapshot.image : (model.imageHint ? String(model.imageHint) : "")
-                    imageHint: notificationSnapshot && notificationSnapshot.imageHint !== undefined ? String(notificationSnapshot.imageHint) : (model.imageHint ? String(model.imageHint) : "")
-                    rightSideImageSource: notificationSnapshot && notificationSnapshot.rightSideImageSource !== undefined ? String(notificationSnapshot.rightSideImageSource) : (model.rightSideImageSource ? String(model.rightSideImageSource) : "")
-                    contentPreviewImageSource: notificationSnapshot && notificationSnapshot.contentPreviewImageSource !== undefined ? String(notificationSnapshot.contentPreviewImageSource) : (model.contentPreviewImageSource ? String(model.contentPreviewImageSource) : "")
-                    hints: notificationSnapshot && notificationSnapshot.hints !== undefined ? notificationSnapshot.hints : ({})
-                    timeLabel: notificationSnapshot && notificationSnapshot.timeLabel !== undefined ? String(notificationSnapshot.timeLabel) : (model.timeLabel ? String(model.timeLabel) : "")
-                    actions: notificationSnapshot && notificationSnapshot.actions ? notificationSnapshot.actions : []
+                    function _refreshExternalHoverSnapshots() {
+                        externalDismissHoverState = root._dismissHoverOwnerId === rowNotificationId;
+                        externalPopupActionsHoverState = root._popupActionsHoverOwnerId === rowNotificationId;
+                    }
 
-                    keyboardInteractive: false
-                    showActions: true
-                    showDismissButton: true
-                    showTimeLabel: true
-                    dismissMode: "removeHistory"
-                    clickActivatesDefault: true
+                    function syncExternalDismissEntry() {
+                        if (_trackedDismissNotificationId >= 0 && _trackedDismissNotificationId !== rowNotificationId) {
+                            root.clearExternalState(_trackedDismissNotificationId);
+                        }
 
-                    interactionMode: "center"
-                    draggableDismiss: false
-                    pauseTimeoutOnHover: false
-                    expandable: true
-                    expanded: root.isExpanded(notificationId)
-                    showActionsWhenExpanded: true
+                        _trackedDismissNotificationId = rowNotificationId;
 
-                    onRequestExpandToggle: root.toggleExpanded(notificationId)
+                        if (!root.externalDismissEnabled || rowNotificationId < 0 || !card.externalDismissEligible || !root.isCenterNotificationOverlayActive(rowNotificationId)) {
+                            root._removeDismissModelEntry(rowNotificationId);
+                            return;
+                        }
+
+                        var topLeft = card.mapToItem(root, card.dismissVisualX, card.dismissVisualY);
+                        root._upsertDismissModelEntry(rowNotificationId, topLeft.x, topLeft.y, card.popupDismissSize, card.externalDismissOpacity);
+                    }
+
+                    function syncExternalActionEntry() {
+                        if (_trackedActionNotificationId >= 0 && _trackedActionNotificationId !== rowNotificationId) {
+                            root.clearExternalState(_trackedActionNotificationId);
+                        }
+
+                        _trackedActionNotificationId = rowNotificationId;
+
+                        if (!root.externalPopupActionsEnabled || rowNotificationId < 0 || !card.externalPopupActionsEligible || !root.isCenterNotificationOverlayActive(rowNotificationId)) {
+                            root._removeActionModelEntry(rowNotificationId);
+                            return;
+                        }
+
+                        var actionsData = card.popupVisibleActions;
+                        if (!actionsData || actionsData.length === 0) {
+                            root._removeActionModelEntry(rowNotificationId);
+                            return;
+                        }
+
+                        var topLeft = card.mapToItem(root, card.popupActionOverlayX, card.popupActionOverlayY);
+                        root._upsertActionModelEntry(rowNotificationId, topLeft.x, topLeft.y, card.popupActionOverlayWidth, card.popupActionOverlayHeight, card.externalPopupActionsOpacity, actionsData);
+                    }
+
+                    function syncExternalOverlays() {
+                        syncExternalDismissEntry();
+                        syncExternalActionEntry();
+                    }
+
+                    NotificationCard {
+                        id: card
+                        width: parent.width
+                        height: implicitHeight
+
+                        notificationId: rowWrapper.rowNotificationId
+                        appName: rowWrapper.notificationSnapshot && rowWrapper.notificationSnapshot.appName !== undefined ? String(rowWrapper.notificationSnapshot.appName) : (rowWrapper.model.appName ? String(rowWrapper.model.appName) : "")
+                        appIcon: rowWrapper.notificationSnapshot ? rowWrapper.notificationSnapshot.appIcon : (rowWrapper.model.appIconHint ? String(rowWrapper.model.appIconHint) : "")
+                        appIconHint: rowWrapper.notificationSnapshot && rowWrapper.notificationSnapshot.appIconHint !== undefined ? String(rowWrapper.notificationSnapshot.appIconHint) : (rowWrapper.model.appIconHint ? String(rowWrapper.model.appIconHint) : "")
+                        resolvedAppIconSource: rowWrapper.notificationSnapshot && rowWrapper.notificationSnapshot.resolvedAppIconSource !== undefined ? rowWrapper.notificationSnapshot.resolvedAppIconSource : (rowWrapper.model.resolvedAppIconHint ? String(rowWrapper.model.resolvedAppIconHint) : "")
+                        resolvedAppIconHint: rowWrapper.notificationSnapshot && rowWrapper.notificationSnapshot.resolvedAppIconHint !== undefined ? String(rowWrapper.notificationSnapshot.resolvedAppIconHint) : (rowWrapper.model.resolvedAppIconHint ? String(rowWrapper.model.resolvedAppIconHint) : "")
+                        summary: rowWrapper.notificationSnapshot && rowWrapper.notificationSnapshot.summary !== undefined ? String(rowWrapper.notificationSnapshot.summary) : (rowWrapper.model.summary ? String(rowWrapper.model.summary) : "")
+                        body: rowWrapper.notificationSnapshot && rowWrapper.notificationSnapshot.body !== undefined ? String(rowWrapper.notificationSnapshot.body) : (rowWrapper.model.body ? String(rowWrapper.model.body) : "")
+                        image: rowWrapper.notificationSnapshot ? rowWrapper.notificationSnapshot.image : (rowWrapper.model.imageHint ? String(rowWrapper.model.imageHint) : "")
+                        imageHint: rowWrapper.notificationSnapshot && rowWrapper.notificationSnapshot.imageHint !== undefined ? String(rowWrapper.notificationSnapshot.imageHint) : (rowWrapper.model.imageHint ? String(rowWrapper.model.imageHint) : "")
+                        rightSideImageSource: rowWrapper.notificationSnapshot && rowWrapper.notificationSnapshot.rightSideImageSource !== undefined ? String(rowWrapper.notificationSnapshot.rightSideImageSource) : (rowWrapper.model.rightSideImageSource ? String(rowWrapper.model.rightSideImageSource) : "")
+                        contentPreviewImageSource: rowWrapper.notificationSnapshot && rowWrapper.notificationSnapshot.contentPreviewImageSource !== undefined ? String(rowWrapper.notificationSnapshot.contentPreviewImageSource) : (rowWrapper.model.contentPreviewImageSource ? String(rowWrapper.model.contentPreviewImageSource) : "")
+                        hints: rowWrapper.notificationSnapshot && rowWrapper.notificationSnapshot.hints !== undefined ? rowWrapper.notificationSnapshot.hints : ({})
+                        timeLabel: rowWrapper.notificationSnapshot && rowWrapper.notificationSnapshot.timeLabel !== undefined ? String(rowWrapper.notificationSnapshot.timeLabel) : (rowWrapper.model.timeLabel ? String(rowWrapper.model.timeLabel) : "")
+                        actions: rowWrapper.notificationSnapshot && rowWrapper.notificationSnapshot.actions ? rowWrapper.notificationSnapshot.actions : []
+
+                        keyboardInteractive: false
+                        showActions: true
+                        showDismissButton: true
+                        showTimeLabel: true
+                        dismissMode: "removeHistory"
+                        clickActivatesDefault: true
+
+                        mode: "center"
+                        draggableDismiss: false
+                        pauseTimeoutOnHover: false
+                        revealDismissOnHover: true
+                        externalDismissOverlayEnabled: root.externalDismissEnabled
+                        externalDismissHover: rowWrapper.externalDismissHoverState
+                        externalPopupActionsOverlayEnabled: root.externalPopupActionsEnabled
+                        externalPopupActionsHover: rowWrapper.externalPopupActionsHoverState
+                        controlsHoverOwnerId: root.activeControlsOwnerId
+                    }
+
+                    onXChanged: syncExternalOverlays()
+                    onYChanged: syncExternalOverlays()
+                    onWidthChanged: syncExternalOverlays()
+                    onHeightChanged: syncExternalOverlays()
+
+                    onRowNotificationIdChanged: {
+                        root.clearExternalState(_trackedDismissNotificationId);
+                        if (_trackedActionNotificationId !== _trackedDismissNotificationId) {
+                            root.clearExternalState(_trackedActionNotificationId);
+                        }
+
+                        _refreshExternalHoverSnapshots();
+                        syncExternalOverlays();
+                    }
+                    onRowRevisionChanged: {
+                        card.resetVisualState();
+                        syncExternalOverlays();
+                    }
+
+                    Component.onCompleted: {
+                        _refreshExternalHoverSnapshots();
+                        syncExternalOverlays();
+                    }
+                    Component.onDestruction: {
+                        root.clearExternalState(_trackedDismissNotificationId);
+                        if (_trackedActionNotificationId !== _trackedDismissNotificationId) {
+                            root.clearExternalState(_trackedActionNotificationId);
+                        }
+                    }
+
+                    Connections {
+                        target: card
+
+                        function onDismissVisualXChanged() {
+                            rowWrapper.syncExternalDismissEntry();
+                        }
+
+                        function onDismissVisualYChanged() {
+                            rowWrapper.syncExternalDismissEntry();
+                        }
+
+                        function onExternalDismissEligibleChanged() {
+                            rowWrapper.syncExternalDismissEntry();
+                        }
+
+                        function onExternalDismissOpacityChanged() {
+                            rowWrapper.syncExternalDismissEntry();
+                        }
+
+                        function onPopupDismissSizeChanged() {
+                            rowWrapper.syncExternalDismissEntry();
+                        }
+
+                        function onPopupActionOverlayXChanged() {
+                            rowWrapper.syncExternalActionEntry();
+                        }
+
+                        function onPopupActionOverlayYChanged() {
+                            rowWrapper.syncExternalActionEntry();
+                        }
+
+                        function onPopupActionOverlayWidthChanged() {
+                            rowWrapper.syncExternalActionEntry();
+                        }
+
+                        function onPopupActionOverlayHeightChanged() {
+                            rowWrapper.syncExternalActionEntry();
+                        }
+
+                        function onExternalPopupActionsEligibleChanged() {
+                            rowWrapper.syncExternalActionEntry();
+                        }
+
+                        function onExternalPopupActionsOpacityChanged() {
+                            rowWrapper.syncExternalActionEntry();
+                        }
+
+                        function onPopupVisibleActionsChanged() {
+                            rowWrapper.syncExternalActionEntry();
+                        }
+
+                        function onRequestControlsOwner(notificationId) {
+                            root.setActiveControlsOwner(notificationId);
+                            rowWrapper.syncExternalOverlays();
+                        }
+
+                        function onControlsHandoffGraceChanged(notificationId, active) {
+                            root.setControlsHandoffGrace(notificationId, active);
+                            rowWrapper.syncExternalOverlays();
+                        }
+
+                        function onExternalExitGraceChanged(notificationId, active) {
+                            root.setExternalExitGrace(notificationId, active);
+                            rowWrapper.syncExternalOverlays();
+                        }
+
+                        function onHoveredChanged() {
+                            if (card.hovered) {
+                                root.setActiveControlsOwner(rowWrapper.rowNotificationId);
+                            } else {
+                                root.clearCardHover(rowWrapper.rowNotificationId);
+                            }
+                            rowWrapper.syncExternalOverlays();
+                        }
+                    }
+
+                    Connections {
+                        target: root
+
+                        function onDismissHoverStateChanged(notificationId, hovered) {
+                            if (notificationId === rowWrapper.rowNotificationId) {
+                                rowWrapper.externalDismissHoverState = hovered;
+                                rowWrapper.syncExternalDismissEntry();
+                            }
+                        }
+
+                        function onPopupActionsHoverStateChanged(notificationId, hovered) {
+                            if (notificationId === rowWrapper.rowNotificationId) {
+                                rowWrapper.externalPopupActionsHoverState = hovered;
+                                rowWrapper.syncExternalActionEntry();
+                            }
+                        }
+                    }
                 }
             }
         }

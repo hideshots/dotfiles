@@ -61,6 +61,7 @@ Item {
             dismissWindowModel.clear();
             _dismissHoverById = ({});
             _controlsHandoffGraceById = ({});
+            _externalExitGraceById = ({});
             if (!externalPopupActionsEnabled) {
                 activeControlsOwnerId = -1;
                 _activePopupById = ({});
@@ -87,6 +88,7 @@ Item {
             actionOverlayModelData.clear();
             _popupActionsHoverById = ({});
             _controlsHandoffGraceById = ({});
+            _externalExitGraceById = ({});
             if (!externalDismissEnabled) {
                 activeControlsOwnerId = -1;
                 _activePopupById = ({});
@@ -131,6 +133,7 @@ Item {
     property var _dismissHoverById: ({})
     property var _popupActionsHoverById: ({})
     property var _controlsHandoffGraceById: ({})
+    property var _externalExitGraceById: ({})
     property var _activePopupById: ({})
 
     function _normalizeNotificationId(notificationId) {
@@ -278,6 +281,38 @@ Item {
         controlsHandoffGraceStateChanged(normalizedId, nextActive);
     }
 
+    function isExternalExitGraceActive(notificationId) {
+        var normalizedId = _normalizeNotificationId(notificationId);
+        if (normalizedId < 0) {
+            return false;
+        }
+        return _boolFromMap(_externalExitGraceById, String(normalizedId));
+    }
+
+    function setExternalExitGrace(notificationId, active) {
+        var normalizedId = _normalizeNotificationId(notificationId);
+        if (normalizedId < 0) {
+            return;
+        }
+
+        var key = String(normalizedId);
+        var nextActive = !!active;
+        if (nextActive && !isPopupNotificationActive(normalizedId)) {
+            return;
+        }
+
+        var prevActive = _boolFromMap(_externalExitGraceById, key);
+        if (prevActive === nextActive) {
+            return;
+        }
+
+        _externalExitGraceById = _setMapFlag(_externalExitGraceById, key, nextActive);
+
+        if (!nextActive && !isPopupNotificationActive(normalizedId) && !isExternalDismissHovered(normalizedId) && !isExternalPopupActionsHovered(normalizedId) && !_boolFromMap(_controlsHandoffGraceById, key)) {
+            clearActiveControlsOwner(normalizedId);
+        }
+    }
+
     function beginNotificationExternalClose(notificationId) {
         clearExternalState(notificationId);
     }
@@ -293,6 +328,7 @@ Item {
         setExternalDismissHovered(normalizedId, false);
         setExternalPopupActionsHovered(normalizedId, false);
         setControlsHandoffGrace(normalizedId, false);
+        setExternalExitGrace(normalizedId, false);
         clearActiveControlsOwner(normalizedId);
         _removeDismissModelEntry(normalizedId);
         _removeActionModelEntry(normalizedId);
@@ -329,6 +365,15 @@ Item {
             }
             if (_boolFromMap(_controlsHandoffGraceById, mapKey) && !_boolFromMap(_activePopupById, mapKey)) {
                 setControlsHandoffGrace(Number(mapKey), false);
+            }
+        }
+
+        for (mapKey in _externalExitGraceById) {
+            if (!Object.prototype.hasOwnProperty.call(_externalExitGraceById, mapKey)) {
+                continue;
+            }
+            if (_boolFromMap(_externalExitGraceById, mapKey) && !_boolFromMap(_activePopupById, mapKey)) {
+                setExternalExitGrace(Number(mapKey), false);
             }
         }
 
@@ -371,7 +416,7 @@ Item {
             return;
         }
 
-        if (!isExternalPopupActionsHovered(normalizedId) && !isPopupNotificationActive(normalizedId)) {
+        if (!isExternalPopupActionsHovered(normalizedId) && !isPopupNotificationActive(normalizedId) && !isExternalExitGraceActive(normalizedId) && !_boolFromMap(_controlsHandoffGraceById, key)) {
             clearActiveControlsOwner(normalizedId);
         }
     }
@@ -410,7 +455,7 @@ Item {
             return;
         }
 
-        if (!isExternalDismissHovered(normalizedId) && !isPopupNotificationActive(normalizedId)) {
+        if (!isExternalDismissHovered(normalizedId) && !isPopupNotificationActive(normalizedId) && !isExternalExitGraceActive(normalizedId) && !_boolFromMap(_controlsHandoffGraceById, key)) {
             clearActiveControlsOwner(normalizedId);
         }
     }
@@ -700,7 +745,6 @@ Item {
                 externalPopupActionsOverlayEnabled: root.externalPopupActionsEnabled
                 externalPopupActionsHover: rowWrapper.externalPopupActionsHoverState
                 controlsHoverOwnerId: root.activeControlsOwnerId
-                expandable: false
             }
 
             function syncExternalOverlays() {
@@ -799,6 +843,10 @@ Item {
 
                 function onControlsHandoffGraceChanged(notificationId, active) {
                     root.setControlsHandoffGrace(notificationId, active);
+                }
+
+                function onExternalExitGraceChanged(notificationId, active) {
+                    root.setExternalExitGrace(notificationId, active);
                 }
             }
 

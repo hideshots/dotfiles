@@ -676,6 +676,345 @@ ShellRoot {
         }
     }
 
+    Instantiator {
+        id: centerDismissWindowInstantiator
+        model: shell.notificationCenterEnabled && shell.notificationsExternalDismissEnabled ? notificationCenter.dismissButtonModel : null
+
+        delegate: PanelWindow {
+            id: centerDismissWindow
+            required property int notificationId
+            required property int buttonX
+            required property int buttonY
+            required property int buttonSize
+            required property real buttonOpacity
+            readonly property int hoverOverlapTowardsCard: Math.max(0, shell.notificationsDismissHoverOverlapPx)
+            readonly property bool centerActive: notificationCenter.isCenterNotificationOverlayActive(notificationId)
+            readonly property int clampedButtonSize: Math.max(0, buttonSize)
+            readonly property bool hasValidGeometry: notificationId >= 0 && clampedButtonSize > 0
+            readonly property real effectiveButtonOpacity: centerActive && hasValidGeometry ? Math.max(0.0, Math.min(1.0, Number(buttonOpacity))) : 0.0
+            property int _trackedNotificationId: -1
+
+            function _clearTrackedDismissHover(notificationIdToClear) {
+                if (notificationIdToClear >= 0) {
+                    notificationCenter.setExternalDismissHovered(notificationIdToClear, false);
+                }
+            }
+
+            visible: shell.notificationCenterEnabled && shell.notificationCenterOpen && shell.notificationsExternalDismissEnabled && centerActive && hasValidGeometry
+            exclusionMode: ExclusionMode.Ignore
+            anchors.top: true
+            anchors.right: true
+            margins.top: shell.notificationCenterTopMargin + buttonY - shell.notificationsDismissWindowBleed
+            margins.right: shell.notificationCenterRightMargin + notificationCenter.width - (buttonX + clampedButtonSize + shell.notificationsDismissWindowBleed) - hoverOverlapTowardsCard
+            screen: notificationCenterOverlayPanel.screen
+
+            color: "transparent"
+            surfaceFormat.opaque: false
+            focusable: false
+            WlrLayershell.layer: WlrLayer.Overlay
+            WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+            WlrLayershell.namespace: "quickshell:notification-dismiss"
+
+            implicitWidth: clampedButtonSize + (shell.notificationsDismissWindowBleed * 2) + hoverOverlapTowardsCard
+            implicitHeight: clampedButtonSize + (shell.notificationsDismissWindowBleed * 2) + hoverOverlapTowardsCard
+
+            onVisibleChanged: {
+                if (!visible) {
+                    _clearTrackedDismissHover(_trackedNotificationId);
+                }
+            }
+
+            onNotificationIdChanged: {
+                if (_trackedNotificationId === notificationId) {
+                    return;
+                }
+                _clearTrackedDismissHover(_trackedNotificationId);
+                _trackedNotificationId = notificationId;
+            }
+
+            Component.onCompleted: _trackedNotificationId = notificationId
+
+            Component.onDestruction: _clearTrackedDismissHover(_trackedNotificationId)
+
+            Item {
+                anchors.fill: parent
+
+                HoverHandler {
+                    onHoveredChanged: {
+                        if (!centerDismissWindow.centerActive || !centerDismissWindow.hasValidGeometry) {
+                            notificationCenter.setExternalDismissHovered(centerDismissWindow.notificationId, false);
+                            return;
+                        }
+                        notificationCenter.setExternalDismissHovered(centerDismissWindow.notificationId, hovered);
+                    }
+                }
+
+                Rectangle {
+                    id: centerDismissButton
+                    x: shell.notificationsDismissWindowBleed
+                    y: shell.notificationsDismissWindowBleed
+                    width: centerDismissWindow.clampedButtonSize
+                    height: centerDismissWindow.clampedButtonSize
+                    radius: Math.round(height / 2)
+                    opacity: centerDismissWindow.effectiveButtonOpacity
+                    Behavior on opacity {
+                        NumberAnimation {
+                            duration: centerDismissWindow.effectiveButtonOpacity > centerDismissButton.opacity ? shell.notificationsControlFadeInMs : shell.notificationsControlFadeOutMs
+                            easing.type: Easing.OutCubic
+                        }
+                    }
+                    color: centerDismissMouseArea.containsMouse ? shell.notificationsControlHoverTintColor : shell.notificationsControlTintColor
+                    border.width: 1
+                    border.color: shell.notificationsControlBorderColor
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: parent.radius
+                        color: centerDismissMouseArea.containsMouse ? Qt.rgba(Root.Theme.menuHighlight.r, Root.Theme.menuHighlight.g, Root.Theme.menuHighlight.b, 0.16) : "transparent"
+                    }
+
+                    ShaderEffect {
+                        anchors.fill: parent
+                        property vector2d uSize: Qt.vector2d(width, height)
+                        property real uRadius: centerDismissButton.radius
+                        property real uLightAngleDeg: 330
+                        property real uLightStrength: 5.1
+                        property real uLightWidthPx: 4.2
+                        property real uLightSharpness: 0.28
+                        property real uCornerBoost: 0.45
+                        property real uEdgeOpacity: 0.72
+                        property color uEdgeTint: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.95) : Qt.rgba(1, 1, 1, 0.92)
+                        fragmentShader: "shaders/notification_edge_light.frag.qsb"
+                    }
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "􀅾"
+                        color: Root.Theme.textSecondary
+                        font.family: Root.Theme.fontFamilyDisplay
+                        font.pixelSize: 12
+                        font.weight: Font.DemiBold
+                        renderType: Text.NativeRendering
+                    }
+
+                    MouseArea {
+                        id: centerDismissMouseArea
+                        anchors.fill: parent
+                        enabled: centerDismissWindow.effectiveButtonOpacity > 0.01
+                        hoverEnabled: true
+                        acceptedButtons: Qt.LeftButton
+                        preventStealing: true
+                        cursorShape: Qt.PointingHandCursor
+
+                        onPressed: function (mouse) {
+                            mouse.accepted = true;
+                        }
+
+                        onClicked: function (mouse) {
+                            mouse.accepted = true;
+                            if (centerDismissWindow.centerActive && centerDismissWindow.notificationId >= 0) {
+                                var targetNotificationId = centerDismissWindow.notificationId;
+                                var notificationService = Root.NotificationService;
+                                notificationCenter.clearExternalState(targetNotificationId);
+                                notificationService.removeFromHistory(targetNotificationId);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Instantiator {
+        id: centerActionWindowInstantiator
+        model: shell.notificationCenterEnabled && shell.notificationsExternalPopupActionsEnabled ? notificationCenter.actionOverlayModel : null
+
+        delegate: PanelWindow {
+            id: centerActionWindow
+            required property int notificationId
+            required property int overlayX
+            required property int overlayY
+            required property int overlayWidth
+            required property int overlayHeight
+            required property real overlayOpacity
+            required property int actionsCount
+            required property string actionsJson
+            readonly property var resolvedActionsData: _decodedActions(actionsJson)
+            readonly property int hoverOverlapTowardsCard: Math.max(0, shell.notificationsActionHoverOverlapPx)
+            readonly property bool centerActive: notificationCenter.isCenterNotificationOverlayActive(notificationId)
+            readonly property bool hasValidGeometry: notificationId >= 0 && overlayWidth > 0 && overlayHeight > 0
+            readonly property bool hasRenderableActions: actionsCount > 0 && resolvedActionsData.length > 0
+            readonly property real effectiveOverlayOpacity: centerActive && hasValidGeometry && hasRenderableActions ? Math.max(0.0, Math.min(1.0, Number(overlayOpacity))) : 0.0
+            property int _trackedNotificationId: -1
+
+            function _clearTrackedActionHover(notificationIdToClear) {
+                if (notificationIdToClear >= 0) {
+                    notificationCenter.setExternalPopupActionsHovered(notificationIdToClear, false);
+                }
+            }
+
+            function _decodedActions(jsonText) {
+                if (!jsonText || jsonText.length === 0) {
+                    return [];
+                }
+                try {
+                    var parsed = JSON.parse(jsonText);
+                    return parsed && parsed.length !== undefined ? parsed : [];
+                } catch (err) {
+                    return [];
+                }
+            }
+
+            visible: shell.notificationCenterEnabled && shell.notificationCenterOpen && shell.notificationsExternalPopupActionsEnabled && centerActive && hasValidGeometry && hasRenderableActions
+            exclusionMode: ExclusionMode.Ignore
+            anchors.top: true
+            anchors.right: true
+            margins.top: shell.notificationCenterTopMargin + overlayY - shell.notificationsActionWindowBleed
+            margins.right: shell.notificationCenterRightMargin + notificationCenter.width - (overlayX + overlayWidth + shell.notificationsActionWindowBleed)
+            screen: notificationCenterOverlayPanel.screen
+
+            color: "transparent"
+            surfaceFormat.opaque: false
+            focusable: false
+            WlrLayershell.layer: WlrLayer.Overlay
+            WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+            WlrLayershell.namespace: "quickshell:notification-actions"
+
+            implicitWidth: Math.max(0, overlayWidth) + (shell.notificationsActionWindowBleed * 2) + hoverOverlapTowardsCard
+            implicitHeight: Math.max(0, overlayHeight) + (shell.notificationsActionWindowBleed * 2)
+
+            onVisibleChanged: {
+                if (!visible) {
+                    _clearTrackedActionHover(_trackedNotificationId);
+                }
+            }
+
+            onNotificationIdChanged: {
+                if (_trackedNotificationId === notificationId) {
+                    return;
+                }
+                _clearTrackedActionHover(_trackedNotificationId);
+                _trackedNotificationId = notificationId;
+            }
+
+            Component.onCompleted: _trackedNotificationId = notificationId
+
+            Component.onDestruction: _clearTrackedActionHover(_trackedNotificationId)
+
+            Item {
+                anchors.fill: parent
+
+                HoverHandler {
+                    onHoveredChanged: {
+                        if (!centerActionWindow.centerActive || !centerActionWindow.hasValidGeometry || !centerActionWindow.hasRenderableActions) {
+                            notificationCenter.setExternalPopupActionsHovered(centerActionWindow.notificationId, false);
+                            return;
+                        }
+                        notificationCenter.setExternalPopupActionsHovered(centerActionWindow.notificationId, hovered);
+                    }
+                }
+
+                Item {
+                    id: centerActionSurface
+                    x: shell.notificationsActionWindowBleed + centerActionWindow.hoverOverlapTowardsCard
+                    y: shell.notificationsActionWindowBleed
+                    width: centerActionWindow.overlayWidth
+                    height: centerActionWindow.overlayHeight
+                    opacity: centerActionWindow.effectiveOverlayOpacity
+                    Behavior on opacity {
+                        NumberAnimation {
+                            duration: centerActionWindow.effectiveOverlayOpacity > centerActionSurface.opacity ? shell.notificationsControlFadeInMs : shell.notificationsControlFadeOutMs
+                            easing.type: Easing.OutCubic
+                        }
+                    }
+
+                    Row {
+                        id: centerActionRow
+                        anchors.right: parent.right
+                        anchors.rightMargin: 4
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: 6
+
+                        Repeater {
+                            model: centerActionWindow.resolvedActionsData
+
+                            Rectangle {
+                                id: centerActionButton
+                                required property var modelData
+                                readonly property string actionId: modelData && modelData.id !== undefined ? String(modelData.id) : ""
+                                readonly property string actionText: modelData && modelData.text !== undefined ? String(modelData.text) : ""
+
+                                visible: actionText.length > 0
+                                implicitHeight: 24
+                                implicitWidth: Math.min(150, Math.max(70, centerActionLabel.implicitWidth + 16))
+                                radius: 8
+                                color: centerActionMouseArea.containsMouse ? shell.notificationsControlHoverTintColor : shell.notificationsControlTintColor
+                                border.width: 1
+                                border.color: shell.notificationsControlBorderColor
+
+                                Rectangle {
+                                    anchors.fill: parent
+                                    radius: parent.radius
+                                    color: centerActionMouseArea.containsMouse ? Qt.rgba(Root.Theme.menuHighlight.r, Root.Theme.menuHighlight.g, Root.Theme.menuHighlight.b, 0.22) : "transparent"
+                                }
+
+                                ShaderEffect {
+                                    anchors.fill: parent
+                                    property vector2d uSize: Qt.vector2d(width, height)
+                                    property real uRadius: centerActionButton.radius
+                                    property real uLightAngleDeg: 330
+                                    property real uLightStrength: 5.1
+                                    property real uLightWidthPx: 3.5
+                                    property real uLightSharpness: 0.28
+                                    property real uCornerBoost: 0.45
+                                    property real uEdgeOpacity: 0.72
+                                    property color uEdgeTint: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.95) : Qt.rgba(1, 1, 1, 0.92)
+                                    fragmentShader: "shaders/notification_edge_light.frag.qsb"
+                                }
+
+                                Text {
+                                    id: centerActionLabel
+                                    anchors.centerIn: parent
+                                    text: centerActionButton.actionText
+                                    color: Root.Theme.textPrimary
+                                    font.family: Root.Theme.fontFamily
+                                    font.pixelSize: 11
+                                    elide: Text.ElideRight
+                                    maximumLineCount: 1
+                                    renderType: Text.NativeRendering
+                                }
+
+                                MouseArea {
+                                    id: centerActionMouseArea
+                                    anchors.fill: parent
+                                    enabled: centerActionWindow.effectiveOverlayOpacity > 0.01
+                                    hoverEnabled: true
+                                    acceptedButtons: Qt.LeftButton
+                                    preventStealing: true
+                                    cursorShape: Qt.PointingHandCursor
+
+                                    onPressed: function (mouse) {
+                                        mouse.accepted = true;
+                                    }
+
+                                    onClicked: function (mouse) {
+                                        mouse.accepted = true;
+                                        if (centerActionWindow.centerActive && centerActionWindow.notificationId >= 0 && centerActionButton.actionId.length > 0) {
+                                            var targetNotificationId = centerActionWindow.notificationId;
+                                            var targetActionId = centerActionButton.actionId;
+                                            var notificationService = Root.NotificationService;
+                                            notificationService.invokeAction(targetNotificationId, targetActionId);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     PanelWindow {
         id: notificationCenterOverlayPanel
         visible: shell.notificationCenterEnabled && (shell.notificationCenterOpen || notificationCenter.opacity > 0.01)
@@ -691,7 +1030,7 @@ ShellRoot {
         focusable: false
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
-        WlrLayershell.namespace: "quickshell:notification-center-overlay"
+        WlrLayershell.namespace: "quickshell:notification-center"
 
         MouseArea {
             id: notificationCenterBackdropMouseArea
@@ -719,12 +1058,15 @@ ShellRoot {
             id: notificationCenter
             z: 1
             width: implicitWidth
-            height: implicitHeight
             anchors.top: parent.top
+            anchors.bottom: parent.bottom
             anchors.right: parent.right
             anchors.topMargin: shell.notificationCenterTopMargin
+            anchors.bottomMargin: 0
             anchors.rightMargin: shell.notificationCenterRightMargin
             open: shell.notificationCenterOpen
+            externalDismissEnabled: shell.notificationsExternalDismissEnabled
+            externalPopupActionsEnabled: shell.notificationsExternalPopupActionsEnabled
             onRequestClose: shell.notificationCenterOpen = false
         }
     }

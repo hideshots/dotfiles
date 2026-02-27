@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell.Widgets
 
+import "." as Notifications
 import "../.." as Root
 
 FocusScope {
@@ -33,13 +34,11 @@ FocusScope {
     property string dismissMode: "dismiss"
 
     // Shared interaction model across popup and center usages.
-    property string interactionMode: "popup" // "popup" | "center"
+    property string mode: "popup" // "popup" | "center"
+    property alias interactionMode: root.mode
     property bool draggableDismiss: interactionMode === "popup"
-    property bool expandable: interactionMode === "center"
-    property bool expanded: false
     readonly property bool hovered: hoverTracker.hovered
     readonly property bool pressed: cardMouseArea.pressed && !dragInProgress
-    property bool showActionsWhenExpanded: interactionMode === "center"
     property bool pauseTimeoutOnHover: interactionMode === "popup"
     property bool externalHoverHold: false
     property bool externalDismissOverlayEnabled: false
@@ -50,44 +49,46 @@ FocusScope {
     property bool revealDismissOnHover: interactionMode === "popup"
     property int controlsHandoffGraceMs: 80
     property bool controlsHandoffGraceActive: false
+    property int externalExitGraceMs: 90
+    property bool externalExitGraceActive: false
     property int popupControlsFadeInMs: 70
     property int popupControlsFadeOutMs: 110
 
     property real dismissThresholdPx: Math.max(140, width * 9.1)
     property real dragStartThresholdPx: 14
 
-    signal requestExpandToggle
     signal requestControlsOwner(int notificationId)
     signal controlsHandoffGraceChanged(int notificationId, bool active)
+    signal externalExitGraceChanged(int notificationId, bool active)
 
     readonly property var notificationService: Root.NotificationService
+    readonly property var notificationStyle: Notifications.NotificationStyle
     readonly property int cardPadding: 10
     readonly property real cardRadius: 14
-    property bool edgeLightEnabled: isPopupMode
-    property real edgeLightStrength: 2
-    property real edgeLightAngleDeg: 330
-    property real edgeLightWidthPx: 4.0
-    property real edgeLightSharpness: 0.1
-    property real edgeLightOpacity: 1.0
+    property bool edgeLightEnabled: true
+    property real edgeLightStrength: notificationStyle.edgeLightStrength
+    property real edgeLightAngleDeg: notificationStyle.edgeLightAngleDeg
+    property real edgeLightWidthPx: notificationStyle.edgeLightWidthPx
+    property real edgeLightSharpness: notificationStyle.edgeLightSharpness
+    property real edgeLightOpacity: notificationStyle.edgeLightOpacity
     property bool buttonEdgeLightEnabled: true
-    property real buttonEdgeLightStrength: Math.max(0.2, edgeLightStrength * 0.55)
-    property real buttonEdgeLightWidthPx: Math.max(2.0, edgeLightWidthPx * 0.85)
-    property real buttonEdgeLightSharpness: Math.min(1.0, edgeLightSharpness + 0.18)
-    property real buttonEdgeLightOpacity: Math.min(1.0, edgeLightOpacity * 0.72)
-    property real buttonTintOpacity: isPopupMode ? (Root.Theme.isDark ? 0.24 : 0.30) : (Root.Theme.isDark ? 0.22 : 0.24)
-    property real cardTintOpacity: isPopupMode ? (Root.Theme.isDark ? 0.46 : 0.54) : 0.96
-    readonly property color buttonTintColor: Root.Theme.isDark ? Qt.rgba(1, 1, 1, buttonTintOpacity) : Qt.rgba(0.98, 0.99, 1.0, buttonTintOpacity)
-    readonly property color buttonHoverTintColor: Root.Theme.isDark ? Qt.rgba(1, 1, 1, buttonTintOpacity + 0.06) : Qt.rgba(1, 1, 1, buttonTintOpacity + 0.14)
-    readonly property color buttonHairlineColor: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(1, 1, 1, 0.58)
+    property real buttonEdgeLightStrength: notificationStyle.buttonEdgeLightStrength
+    property real buttonEdgeLightWidthPx: notificationStyle.buttonEdgeLightWidthPx
+    property real buttonEdgeLightSharpness: notificationStyle.buttonEdgeLightSharpness
+    property real buttonEdgeLightOpacity: notificationStyle.buttonEdgeLightOpacity
+    property real cardTintOpacity: Root.Theme.isDark ? 0.46 : 0.54
+    readonly property color buttonTintColor: notificationStyle.buttonTintColor
+    readonly property color buttonHoverTintColor: notificationStyle.buttonHoverTintColor
+    readonly property color buttonHairlineColor: notificationStyle.buttonHairlineColor
     readonly property color cardTintColor: Root.Theme.isDark ? Qt.rgba(0.10, 0.11, 0.13, cardTintOpacity) : Qt.rgba(0.97, 0.98, 0.99, cardTintOpacity)
-    readonly property color cardContrastColor: Root.Theme.isDark ? Qt.rgba(1, 1, 1, isPopupMode ? 0.030 : 0.0) : Qt.rgba(1, 1, 1, isPopupMode ? 0.16 : 0.0)
-    readonly property color cardHairlineColor: Root.Theme.isDark ? Qt.rgba(1, 1, 1, isPopupMode ? 0.07 : 0.05) : Qt.rgba(1, 1, 1, isPopupMode ? 0.52 : 0.70)
+    readonly property color cardContrastColor: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.030) : Qt.rgba(1, 1, 1, 0.16)
+    readonly property color cardHairlineColor: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.07) : Qt.rgba(1, 1, 1, 0.52)
     readonly property bool hasBody: _trimmed(body).length > 0
     readonly property int actionButtonCount: Math.min(maxActionButtons, _safeLength(actions))
     readonly property var popupVisibleActions: _popupVisibleActions()
     readonly property string effectiveTitle: _trimmed(summary).length > 0 ? _trimmed(summary) : (_trimmed(appName).length > 0 ? _trimmed(appName) : "Notification")
     readonly property string fallbackIconText: _fallbackLabel()
-    readonly property bool actionsVisible: showActions && actionButtonCount > 0 && (!showActionsWhenExpanded || expanded)
+    readonly property bool actionsVisible: showActions && actionButtonCount > 0
     readonly property var effectiveAppIconSource: _hasMediaValue(resolvedAppIconSource) ? resolvedAppIconSource : appIcon
     readonly property string effectiveAppIconHint: _trimmed(resolvedAppIconHint).length > 0 ? _trimmed(resolvedAppIconHint) : (_trimmed(appIconHint).length > 0 ? _trimmed(appIconHint) : _mediaHint(effectiveAppIconSource))
     readonly property bool iconUsesRasterImage: _looksLikePathOrUrl(effectiveAppIconHint)
@@ -110,20 +111,21 @@ FocusScope {
     readonly property int popupRightRailReservedSpacing: hasRightImage ? popupMainRow.spacing : 0
     readonly property real dismissVisualX: -Math.round(popupDismissSize / 2) + popupOverlayInset
     readonly property real dismissVisualY: -Math.round(popupDismissSize / 2) + popupOverlayInset
-    readonly property bool externalDismissEligible: showDismissButton && isPopupMode
+    readonly property bool externalDismissEligible: showDismissButton && (isPopupMode || isCenterMode)
     readonly property bool controlsSuppressedByDrag: dragInProgress || dragOffsetX > 0
     readonly property bool controlsOwnedByThisCard: controlsHoverOwnerId < 0 || controlsHoverOwnerId === notificationId
-    readonly property bool controlsVisibleEffective: controlsOwnedByThisCard && (hovered || externalDismissHover || externalPopupActionsHover || controlsHandoffGraceActive)
-    readonly property real externalDismissOpacity: controlsSuppressedByDrag ? 0 : (revealDismissOnHover ? (controlsVisibleEffective ? 1 : 0) : 1)
+    readonly property bool controlsVisibleEffective: controlsOwnedByThisCard && (hovered || externalDismissHover || externalPopupActionsHover || controlsHandoffGraceActive || externalExitGraceActive)
+    readonly property bool centerControlsVisibleEffective: controlsOwnedByThisCard && (hovered || externalDismissHover || externalPopupActionsHover || controlsHandoffGraceActive || externalExitGraceActive)
+    readonly property real externalDismissOpacity: controlsSuppressedByDrag ? 0 : (isCenterMode ? (centerControlsVisibleEffective ? 1 : 0) : (revealDismissOnHover ? (controlsVisibleEffective ? 1 : 0) : 1))
     property int popupActionsBottomGap: 0
-    readonly property bool popupActionsOverlayEligible: isPopupMode && actionsVisible
-    readonly property bool popupActionsOverlayShown: popupActionsOverlayEligible && !controlsSuppressedByDrag && (controlsVisibleEffective || popupActionsOverlayActiveHover)
+    readonly property bool popupActionsOverlayEligible: actionsVisible && (isPopupMode || isCenterMode)
+    readonly property bool popupActionsOverlayShown: popupActionsOverlayEligible && !controlsSuppressedByDrag && (isPopupMode ? (controlsVisibleEffective || popupActionsOverlayActiveHover) : (centerControlsVisibleEffective || popupActionsOverlayActiveHover))
     readonly property real popupActionOverlayWidth: popupActionsOverlayBackground.implicitWidth
     readonly property real popupActionOverlayHeight: popupActionsOverlayBackground.implicitHeight
     readonly property real popupActionOverlayX: width - cardPadding - popupActionOverlayWidth
     readonly property real popupActionOverlayY: height - (cardPadding + Math.max(0, popupActionsBottomGap)) - popupActionOverlayHeight
-    readonly property bool externalPopupActionsEligible: popupActionsOverlayEligible
-    readonly property real externalPopupActionsOpacity: popupActionsOverlayShown ? 1 : 0
+    readonly property bool externalPopupActionsEligible: popupActionsOverlayEligible && (isPopupMode || isCenterMode)
+    readonly property real externalPopupActionsOpacity: externalPopupActionsEligible ? (isCenterMode ? (centerControlsVisibleEffective ? 1 : 0) : (popupActionsOverlayShown ? 1 : 0)) : 0
     readonly property bool popupActionsOverlayActiveHover: popupActionsOverlayHover.hovered || popupActionsOverlayMouseArea.containsMouse || _popupActionsOverlayPressed
     readonly property real popupRightAvatarOpacity: controlsSuppressedByDrag ? 0 : (controlsVisibleEffective ? 0 : 1)
     readonly property bool popupTimeoutHold: pauseTimeoutOnHover && (hovered || externalHoverHold || externalDismissHover || externalPopupActionsHover || controlsHandoffGraceActive || dragInProgress || popupActionsOverlayActiveHover)
@@ -162,43 +164,56 @@ FocusScope {
                 root.requestControlsOwner(notificationId);
             }
             root._cancelControlsHandoffGrace();
+            root._cancelExternalExitGrace();
             return;
         }
 
-        if (root._externalControlsEnabled() && isPopupMode && !externalDismissHover && !externalPopupActionsHover && !controlsSuppressedByDrag) {
+        if (root._externalControlsEnabled() && (isPopupMode || isCenterMode) && !externalDismissHover && !externalPopupActionsHover && !controlsSuppressedByDrag) {
             root._startControlsHandoffGrace();
         }
     }
     onExternalDismissHoverChanged: {
         if (externalDismissHover) {
             root._cancelControlsHandoffGrace();
+            root._cancelExternalExitGrace();
             return;
         }
 
-        if (!hovered && !externalPopupActionsHover) {
-            root._cancelControlsHandoffGrace();
+        if (!hovered && !externalPopupActionsHover && !controlsSuppressedByDrag) {
+            root._startExternalExitGrace();
         }
     }
     onExternalPopupActionsHoverChanged: {
         if (externalPopupActionsHover) {
             root._cancelControlsHandoffGrace();
+            root._cancelExternalExitGrace();
             return;
         }
 
-        if (!hovered && !externalDismissHover) {
-            root._cancelControlsHandoffGrace();
+        if (!hovered && !externalDismissHover && !controlsSuppressedByDrag) {
+            root._startExternalExitGrace();
         }
     }
-    onControlsHoverOwnerIdChanged: if (!controlsOwnedByThisCard)
+    onControlsHoverOwnerIdChanged: if (!controlsOwnedByThisCard) {
+        root._cancelExternalExitGrace();
         root._cancelControlsHandoffGrace()
-    onControlsSuppressedByDragChanged: if (controlsSuppressedByDrag)
+    }
+    onControlsSuppressedByDragChanged: if (controlsSuppressedByDrag) {
+        root._cancelExternalExitGrace();
         root._cancelControlsHandoffGrace()
-    onInteractionModeChanged: if (!isPopupMode)
+    }
+    onInteractionModeChanged: if (!isPopupMode && !isCenterMode) {
+        root._cancelExternalExitGrace();
         root._cancelControlsHandoffGrace()
-    onExternalDismissOverlayEnabledChanged: if (!root._externalControlsEnabled())
+    }
+    onExternalDismissOverlayEnabledChanged: if (!root._externalControlsEnabled()) {
+        root._cancelExternalExitGrace();
         root._cancelControlsHandoffGrace()
-    onExternalPopupActionsOverlayEnabledChanged: if (!root._externalControlsEnabled())
+    }
+    onExternalPopupActionsOverlayEnabledChanged: if (!root._externalControlsEnabled()) {
+        root._cancelExternalExitGrace();
         root._cancelControlsHandoffGrace()
+    }
     onPauseTimeoutOnHoverChanged: _syncTimeoutPauseRegistration()
     onPopupTimeoutHoldChanged: _updateTimeoutPauseState()
 
@@ -208,6 +223,7 @@ FocusScope {
     }
     Component.onDestruction: {
         _releaseTimeoutPause();
+        root._cancelExternalExitGrace();
         root._cancelControlsHandoffGrace();
     }
 
@@ -216,6 +232,13 @@ FocusScope {
         interval: Math.max(1, root.controlsHandoffGraceMs)
         repeat: false
         onTriggered: root._setControlsHandoffGraceActive(false)
+    }
+
+    Timer {
+        id: externalExitGraceTimer
+        interval: Math.max(1, root.externalExitGraceMs)
+        repeat: false
+        onTriggered: root._setExternalExitGraceActive(false)
     }
 
     function _trimmed(value) {
@@ -405,6 +428,18 @@ FocusScope {
         }
     }
 
+    function _setExternalExitGraceActive(active) {
+        var next = !!active;
+        if (externalExitGraceActive === next) {
+            return;
+        }
+
+        externalExitGraceActive = next;
+        if (notificationId >= 0) {
+            externalExitGraceChanged(notificationId, next);
+        }
+    }
+
     function _startControlsHandoffGrace() {
         if (controlsHandoffGraceMs <= 0 || !root._externalControlsEnabled()) {
             root._setControlsHandoffGraceActive(false);
@@ -423,6 +458,24 @@ FocusScope {
         root._setControlsHandoffGraceActive(false);
     }
 
+    function _startExternalExitGrace() {
+        if (externalExitGraceMs <= 0 || !root._externalControlsEnabled()) {
+            root._setExternalExitGraceActive(false);
+            return;
+        }
+
+        root._setExternalExitGraceActive(true);
+        externalExitGraceTimer.restart();
+    }
+
+    function _cancelExternalExitGrace() {
+        if (externalExitGraceTimer.running) {
+            externalExitGraceTimer.stop();
+        }
+
+        root._setExternalExitGraceActive(false);
+    }
+
     function resetVisualState() {
         // Reset transform/opacity/drag state to avoid recycled delegate visual leakage in popup bursts.
         x = 0;
@@ -431,6 +484,7 @@ FocusScope {
         dragInProgress = false;
         dragOffsetX = 0;
         _popupActionsOverlayPressed = false;
+        root._cancelExternalExitGrace();
         root._cancelControlsHandoffGrace();
         _suppressNextDefaultActivation = false;
         _resetPointerState();
@@ -571,7 +625,7 @@ FocusScope {
         ShaderEffect {
             id: edgeLightOverlay
             anchors.fill: parent
-            visible: root.isPopupMode && root.edgeLightEnabled
+            visible: root.edgeLightEnabled
             property vector2d uSize: Qt.vector2d(width, height)
             property real uRadius: root.cardRadius
             property real uLightAngleDeg: root.edgeLightAngleDeg
@@ -875,9 +929,9 @@ FocusScope {
                                 opacity: 0.92
                                 font.family: Root.Theme.fontFamily
                                 font.pixelSize: 12
-                                elide: root.expandable && root.expanded ? Text.ElideNone : Text.ElideRight
-                                maximumLineCount: root.expandable ? (root.expanded ? 8 : 2) : 2
-                                wrapMode: root.expandable && root.expanded ? Text.WrapAnywhere : Text.WordWrap
+                                elide: Text.ElideRight
+                                maximumLineCount: 4
+                                wrapMode: Text.WrapAtWordBoundaryOrAnywhere
                                 renderType: Text.NativeRendering
                             }
                         }
@@ -886,7 +940,7 @@ FocusScope {
                             id: controlsColumn
                             visible: root.isCenterMode
                             spacing: 4
-                            width: visible ? Math.max(timeText.implicitWidth, (centerDismissButton.visible ? centerDismissButton.width : 0), (expandButton.visible ? expandButton.width : 0), (rightImageFrame.visible ? rightImageFrame.width : 0)) : 0
+                            width: visible ? Math.max(timeText.implicitWidth, (rightImageFrame.visible ? rightImageFrame.width : 0)) : 0
 
                             Text {
                                 id: timeText
@@ -935,115 +989,6 @@ FocusScope {
                                     renderType: Text.NativeRendering
                                 }
                             }
-
-                            Rectangle {
-                                id: expandButton
-                                visible: root.expandable && (root.hasBody || root.actionButtonCount > 0)
-                                width: 20
-                                height: 20
-                                radius: 10
-                                x: parent.width - width
-                                color: expandMouseArea.containsMouse ? (Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.15) : Qt.rgba(0, 0, 0, 0.12)) : "transparent"
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: root.expanded ? "v" : ">"
-                                    color: Root.Theme.textSecondary
-                                    font.family: Root.Theme.fontFamilyDisplay
-                                    font.pixelSize: 11
-                                    font.weight: Font.DemiBold
-                                    renderType: Text.NativeRendering
-                                }
-
-                                MouseArea {
-                                    id: expandMouseArea
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    acceptedButtons: Qt.LeftButton
-                                    preventStealing: true
-                                    cursorShape: Qt.PointingHandCursor
-
-                                    onPressed: function (mouse) {
-                                        mouse.accepted = true;
-                                        root._consumeCardReleaseActivation();
-                                    }
-
-                                    onClicked: function (mouse) {
-                                        mouse.accepted = true;
-                                        root.requestExpandToggle();
-                                        root._suppressNextDefaultActivation = false;
-                                    }
-                                }
-                            }
-
-                            Rectangle {
-                                id: centerDismissButton
-                                visible: root.showDismissButton && root.interactionMode === "center"
-                                width: 20
-                                height: 20
-                                radius: 10
-                                x: parent.width - width
-                                color: "transparent"
-
-                                Rectangle {
-                                    anchors.fill: parent
-                                    radius: parent.radius
-                                    color: centerDismissMouseArea.containsMouse ? root.buttonHoverTintColor : root.buttonTintColor
-                                    border.width: 1
-                                    border.color: root.buttonHairlineColor
-                                }
-
-                                Rectangle {
-                                    anchors.fill: parent
-                                    radius: parent.radius
-                                    color: centerDismissMouseArea.containsMouse ? Qt.rgba(Root.Theme.menuHighlight.r, Root.Theme.menuHighlight.g, Root.Theme.menuHighlight.b, 0.16) : "transparent"
-                                }
-
-                                ShaderEffect {
-                                    anchors.fill: parent
-                                    visible: root.buttonEdgeLightEnabled
-                                    property vector2d uSize: Qt.vector2d(width, height)
-                                    property real uRadius: centerDismissButton.radius
-                                    property real uLightAngleDeg: root.edgeLightAngleDeg
-                                    property real uLightStrength: root.buttonEdgeLightStrength
-                                    property real uLightWidthPx: root.buttonEdgeLightWidthPx
-                                    property real uLightSharpness: root.buttonEdgeLightSharpness
-                                    property real uCornerBoost: 0.45
-                                    property real uEdgeOpacity: root.buttonEdgeLightOpacity
-                                    property color uEdgeTint: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.95) : Qt.rgba(1, 1, 1, 0.92)
-                                    fragmentShader: "../../shaders/notification_edge_light.frag.qsb"
-                                }
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: "􀅾"
-                                    color: Root.Theme.textSecondary
-                                    font.family: Root.Theme.fontFamilyDisplay
-                                    font.pixelSize: 12
-                                    font.weight: Font.DemiBold
-                                    renderType: Text.NativeRendering
-                                }
-
-                                MouseArea {
-                                    id: centerDismissMouseArea
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    acceptedButtons: Qt.LeftButton
-                                    preventStealing: true
-                                    cursorShape: Qt.PointingHandCursor
-
-                                    onPressed: function (mouse) {
-                                        mouse.accepted = true;
-                                        root._consumeCardReleaseActivation();
-                                    }
-
-                                    onClicked: function (mouse) {
-                                        mouse.accepted = true;
-                                        root.dismiss();
-                                        root._suppressNextDefaultActivation = false;
-                                    }
-                                }
-                            }
                         }
                     }
 
@@ -1079,90 +1024,6 @@ FocusScope {
                         }
                     }
 
-                    Row {
-                        id: actionRow
-                        visible: root.actionsVisible
-                        spacing: 6
-
-                        Repeater {
-                            model: root.actionButtonCount
-
-                            Rectangle {
-                                id: actionButton
-                                required property int index
-                                readonly property var actionData: root._safeAction(index)
-                                readonly property string actionId: root._actionId(actionData)
-                                readonly property string actionText: root._actionText(actionData)
-
-                                visible: actionText.length > 0
-                                implicitHeight: 24
-                                implicitWidth: Math.min(150, Math.max(70, actionLabel.implicitWidth + 16))
-                                radius: 8
-                                color: "transparent"
-
-                                Rectangle {
-                                    anchors.fill: parent
-                                    radius: parent.radius
-                                    color: actionMouseArea.containsMouse ? root.buttonHoverTintColor : root.buttonTintColor
-                                    border.width: 1
-                                    border.color: root.buttonHairlineColor
-                                }
-
-                                Rectangle {
-                                    anchors.fill: parent
-                                    radius: parent.radius
-                                    color: actionMouseArea.containsMouse ? Qt.rgba(Root.Theme.menuHighlight.r, Root.Theme.menuHighlight.g, Root.Theme.menuHighlight.b, 0.22) : "transparent"
-                                }
-
-                                ShaderEffect {
-                                    anchors.fill: parent
-                                    visible: root.buttonEdgeLightEnabled
-                                    property vector2d uSize: Qt.vector2d(width, height)
-                                    property real uRadius: actionButton.radius
-                                    property real uLightAngleDeg: root.edgeLightAngleDeg
-                                    property real uLightStrength: root.buttonEdgeLightStrength
-                                    property real uLightWidthPx: root.buttonEdgeLightWidthPx
-                                    property real uLightSharpness: root.buttonEdgeLightSharpness
-                                    property real uCornerBoost: 0.5
-                                    property real uEdgeOpacity: root.buttonEdgeLightOpacity
-                                    property color uEdgeTint: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.95) : Qt.rgba(1, 1, 1, 0.92)
-                                    fragmentShader: "../../shaders/notification_edge_light.frag.qsb"
-                                }
-
-                                Text {
-                                    id: actionLabel
-                                    anchors.centerIn: parent
-                                    text: actionButton.actionText
-                                    color: Root.Theme.textPrimary
-                                    font.family: Root.Theme.fontFamily
-                                    font.pixelSize: 11
-                                    elide: Text.ElideRight
-                                    maximumLineCount: 1
-                                    renderType: Text.NativeRendering
-                                }
-
-                                MouseArea {
-                                    id: actionMouseArea
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    acceptedButtons: Qt.LeftButton
-                                    preventStealing: true
-                                    cursorShape: Qt.PointingHandCursor
-
-                                    onPressed: function (mouse) {
-                                        mouse.accepted = true;
-                                        root._consumeCardReleaseActivation();
-                                    }
-
-                                    onClicked: function (mouse) {
-                                        mouse.accepted = true;
-                                        root.invokeAction(actionButton.actionId);
-                                        root._suppressNextDefaultActivation = false;
-                                    }
-                                }
-                            }
-                        }
-                    }
                 }
             }
         }
@@ -1268,7 +1129,7 @@ FocusScope {
                                 property real uLightSharpness: root.buttonEdgeLightSharpness
                                 property real uCornerBoost: 0.5
                                 property real uEdgeOpacity: root.buttonEdgeLightOpacity
-                                property color uEdgeTint: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.95) : Qt.rgba(1, 1, 1, 0.92)
+                                property color uEdgeTint: root.notificationStyle.edgeLightTint
                                 fragmentShader: "../../shaders/notification_edge_light.frag.qsb"
                             }
 
@@ -1335,14 +1196,15 @@ FocusScope {
         // Popup-only dismiss overlay: corner-straddled, hover-revealed, and out of normal flow.
         Rectangle {
             id: popupDismissButton
-            visible: !root.externalDismissOverlayEnabled && root.showDismissButton && root.isPopupMode
+            visible: root.showDismissButton && (root.isPopupMode || root.isCenterMode) && !root.externalDismissOverlayEnabled
+            enabled: opacity > 0.01
             width: root.popupDismissSize
             height: root.popupDismissSize
             radius: 11
             z: 1
             x: root.dismissVisualX
             y: root.dismissVisualY
-            opacity: root.controlsSuppressedByDrag ? 0 : (root.revealDismissOnHover ? ((root.controlsVisibleEffective || popupDismissHover.hovered || popupDismissMouseArea.containsMouse) ? 1 : 0) : 1)
+            opacity: root.controlsSuppressedByDrag ? 0 : (root.isPopupMode ? (root.revealDismissOnHover ? ((root.controlsVisibleEffective || popupDismissHover.hovered || popupDismissMouseArea.containsMouse) ? 1 : 0) : 1) : ((root.centerControlsVisibleEffective || popupDismissHover.hovered || popupDismissMouseArea.containsMouse) ? 1 : 0))
             color: "transparent"
 
             Rectangle {
@@ -1370,7 +1232,7 @@ FocusScope {
                 property real uLightSharpness: root.buttonEdgeLightSharpness
                 property real uCornerBoost: 0.45
                 property real uEdgeOpacity: root.buttonEdgeLightOpacity
-                property color uEdgeTint: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.95) : Qt.rgba(1, 1, 1, 0.92)
+                property color uEdgeTint: root.notificationStyle.edgeLightTint
                 fragmentShader: "../../shaders/notification_edge_light.frag.qsb"
             }
 
