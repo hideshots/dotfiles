@@ -345,6 +345,10 @@ ShellRoot {
             required property int buttonSize
             required property real buttonOpacity
             readonly property int hoverOverlapTowardsCard: Math.max(0, shell.notificationsDismissHoverOverlapPx)
+            readonly property bool popupActive: popupStack.isPopupNotificationActive(notificationId)
+            readonly property int clampedButtonSize: Math.max(0, buttonSize)
+            readonly property bool hasValidGeometry: notificationId >= 0 && clampedButtonSize > 0
+            readonly property real effectiveButtonOpacity: popupActive && hasValidGeometry ? Math.max(0.0, Math.min(1.0, Number(buttonOpacity))) : 0.0
             property int _trackedNotificationId: -1
 
             function _clearTrackedDismissHover(notificationIdToClear) {
@@ -353,12 +357,12 @@ ShellRoot {
                 }
             }
 
-            visible: shell.notificationsPopupEnabled && shell.notificationsExternalDismissEnabled && notificationId >= 0 && popupStack.isPopupNotificationActive(notificationId)
+            visible: shell.notificationsPopupEnabled && shell.notificationsExternalDismissEnabled && popupActive && hasValidGeometry
             exclusionMode: ExclusionMode.Ignore
             anchors.top: true
             anchors.right: true
             margins.top: shell.notificationsPopupTopMargin + buttonY - shell.notificationsDismissWindowBleed
-            margins.right: shell.notificationsPopupRightMargin + popupStack.width - (buttonX + buttonSize + shell.notificationsDismissWindowBleed) - hoverOverlapTowardsCard
+            margins.right: shell.notificationsPopupRightMargin + popupStack.width - (buttonX + clampedButtonSize + shell.notificationsDismissWindowBleed) - hoverOverlapTowardsCard
             screen: notificationsPopupPanel.screen
 
             color: "transparent"
@@ -368,8 +372,8 @@ ShellRoot {
             WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
             WlrLayershell.namespace: "quickshell:notification-dismiss"
 
-            implicitWidth: buttonSize + (shell.notificationsDismissWindowBleed * 2) + hoverOverlapTowardsCard
-            implicitHeight: buttonSize + (shell.notificationsDismissWindowBleed * 2) + hoverOverlapTowardsCard
+            implicitWidth: clampedButtonSize + (shell.notificationsDismissWindowBleed * 2) + hoverOverlapTowardsCard
+            implicitHeight: clampedButtonSize + (shell.notificationsDismissWindowBleed * 2) + hoverOverlapTowardsCard
 
             onVisibleChanged: {
                 if (!visible) {
@@ -394,20 +398,26 @@ ShellRoot {
 
                 HoverHandler {
                     id: dismissWindowHoverHandler
-                    onHoveredChanged: popupStack.setExternalDismissHovered(popupDismissWindow.notificationId, hovered)
+                    onHoveredChanged: {
+                        if (!popupDismissWindow.popupActive || !popupDismissWindow.hasValidGeometry) {
+                            popupStack.setExternalDismissHovered(popupDismissWindow.notificationId, false);
+                            return;
+                        }
+                        popupStack.setExternalDismissHovered(popupDismissWindow.notificationId, hovered);
+                    }
                 }
 
                 Rectangle {
                     id: dismissButton
                     x: shell.notificationsDismissWindowBleed
                     y: shell.notificationsDismissWindowBleed
-                    width: popupDismissWindow.buttonSize
-                    height: popupDismissWindow.buttonSize
+                    width: popupDismissWindow.clampedButtonSize
+                    height: popupDismissWindow.clampedButtonSize
                     radius: Math.round(height / 2)
-                    opacity: popupDismissWindow.buttonOpacity
+                    opacity: popupDismissWindow.effectiveButtonOpacity
                     Behavior on opacity {
                         NumberAnimation {
-                            duration: popupDismissWindow.buttonOpacity > dismissButton.opacity ? shell.notificationsControlFadeInMs : shell.notificationsControlFadeOutMs
+                            duration: popupDismissWindow.effectiveButtonOpacity > dismissButton.opacity ? shell.notificationsControlFadeInMs : shell.notificationsControlFadeOutMs
                             easing.type: Easing.OutCubic
                         }
                     }
@@ -448,7 +458,7 @@ ShellRoot {
                     MouseArea {
                         id: dismissMouseArea
                         anchors.fill: parent
-                        enabled: popupDismissWindow.buttonOpacity > 0.01
+                        enabled: popupDismissWindow.effectiveButtonOpacity > 0.01
                         hoverEnabled: true
                         acceptedButtons: Qt.LeftButton
                         preventStealing: true
@@ -460,7 +470,7 @@ ShellRoot {
 
                         onClicked: function (mouse) {
                             mouse.accepted = true;
-                            if (popupDismissWindow.notificationId >= 0) {
+                            if (popupDismissWindow.popupActive && popupDismissWindow.notificationId >= 0) {
                                 var targetNotificationId = popupDismissWindow.notificationId;
                                 var notificationService = Root.NotificationService;
                                 popupStack.beginNotificationExternalClose(targetNotificationId);
@@ -489,6 +499,10 @@ ShellRoot {
             required property string actionsJson
             readonly property var resolvedActionsData: _decodedActions(actionsJson)
             readonly property int hoverOverlapTowardsCard: Math.max(0, shell.notificationsActionHoverOverlapPx)
+            readonly property bool popupActive: popupStack.isPopupNotificationActive(notificationId)
+            readonly property bool hasValidGeometry: notificationId >= 0 && overlayWidth > 0 && overlayHeight > 0
+            readonly property bool hasRenderableActions: actionsCount > 0 && resolvedActionsData.length > 0
+            readonly property real effectiveOverlayOpacity: popupActive && hasValidGeometry && hasRenderableActions ? Math.max(0.0, Math.min(1.0, Number(overlayOpacity))) : 0.0
             property int _trackedNotificationId: -1
 
             function _clearTrackedActionHover(notificationIdToClear) {
@@ -509,7 +523,7 @@ ShellRoot {
                 }
             }
 
-            visible: shell.notificationsPopupEnabled && shell.notificationsExternalPopupActionsEnabled && notificationId >= 0 && popupStack.isPopupNotificationActive(notificationId) && actionsCount > 0 && overlayWidth > 0 && overlayHeight > 0
+            visible: shell.notificationsPopupEnabled && shell.notificationsExternalPopupActionsEnabled && popupActive && hasValidGeometry && hasRenderableActions
             exclusionMode: ExclusionMode.Ignore
             anchors.top: true
             anchors.right: true
@@ -550,7 +564,13 @@ ShellRoot {
 
                 HoverHandler {
                     id: actionWindowHoverHandler
-                    onHoveredChanged: popupStack.setExternalPopupActionsHovered(popupActionWindow.notificationId, hovered)
+                    onHoveredChanged: {
+                        if (!popupActionWindow.popupActive || !popupActionWindow.hasValidGeometry || !popupActionWindow.hasRenderableActions) {
+                            popupStack.setExternalPopupActionsHovered(popupActionWindow.notificationId, false);
+                            return;
+                        }
+                        popupStack.setExternalPopupActionsHovered(popupActionWindow.notificationId, hovered);
+                    }
                 }
 
                 Item {
@@ -559,10 +579,10 @@ ShellRoot {
                     y: shell.notificationsActionWindowBleed
                     width: popupActionWindow.overlayWidth
                     height: popupActionWindow.overlayHeight
-                    opacity: popupActionWindow.overlayOpacity
+                    opacity: popupActionWindow.effectiveOverlayOpacity
                     Behavior on opacity {
                         NumberAnimation {
-                            duration: popupActionWindow.overlayOpacity > actionSurface.opacity ? shell.notificationsControlFadeInMs : shell.notificationsControlFadeOutMs
+                            duration: popupActionWindow.effectiveOverlayOpacity > actionSurface.opacity ? shell.notificationsControlFadeInMs : shell.notificationsControlFadeOutMs
                             easing.type: Easing.OutCubic
                         }
                     }
@@ -626,7 +646,7 @@ ShellRoot {
                                 MouseArea {
                                     id: popupActionMouseArea
                                     anchors.fill: parent
-                                    enabled: popupActionWindow.overlayOpacity > 0.01
+                                    enabled: popupActionWindow.effectiveOverlayOpacity > 0.01
                                     hoverEnabled: true
                                     acceptedButtons: Qt.LeftButton
                                     preventStealing: true
@@ -638,7 +658,7 @@ ShellRoot {
 
                                     onClicked: function (mouse) {
                                         mouse.accepted = true;
-                                        if (popupActionWindow.notificationId >= 0 && popupActionButton.actionId.length > 0) {
+                                        if (popupActionWindow.popupActive && popupActionWindow.notificationId >= 0 && popupActionButton.actionId.length > 0) {
                                             var targetNotificationId = popupActionWindow.notificationId;
                                             var targetActionId = popupActionButton.actionId;
                                             var notificationService = Root.NotificationService;

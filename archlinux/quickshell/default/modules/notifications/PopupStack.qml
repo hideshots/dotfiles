@@ -38,9 +38,12 @@ Item {
     clip: true
     visible: visibleCount > 0
 
-    Component.onCompleted: _syncServiceActiveLimit()
+    Component.onCompleted: {
+        _syncServiceActiveLimit();
+        _syncActivePopupStateFromService();
+    }
     onMaxVisibleChanged: _syncServiceActiveLimit()
-    onVisibleCountChanged: _pruneStaleExternalState()
+    onVisibleCountChanged: _syncActivePopupStateFromService()
     onExternalDismissEnabledChanged: {
         if (!externalDismissEnabled) {
             var dismissKey = "";
@@ -63,6 +66,7 @@ Item {
                 _activePopupById = ({});
             }
         } else {
+            _syncActivePopupStateFromService();
             _syncAllOverlayEntries();
         }
     }
@@ -88,6 +92,7 @@ Item {
                 _activePopupById = ({});
             }
         } else {
+            _syncActivePopupStateFromService();
             _syncAllOverlayEntries();
         }
     }
@@ -104,12 +109,12 @@ Item {
     }
 
     function setActiveControlsOwner(notificationId) {
-        var numericId = Number(notificationId);
-        if (!isFinite(numericId) || numericId < 0) {
+        var normalizedId = _normalizeNotificationId(notificationId);
+        if (normalizedId < 0 || !isPopupNotificationActive(normalizedId)) {
             return;
         }
 
-        activeControlsOwnerId = Math.floor(numericId);
+        activeControlsOwnerId = normalizedId;
     }
 
     function clearActiveControlsOwner(notificationId) {
@@ -127,6 +132,14 @@ Item {
     property var _popupActionsHoverById: ({})
     property var _controlsHandoffGraceById: ({})
     property var _activePopupById: ({})
+
+    function _normalizeNotificationId(notificationId) {
+        var numericId = Number(notificationId);
+        if (!isFinite(numericId) || numericId < 0) {
+            return -1;
+        }
+        return Math.floor(numericId);
+    }
 
     function _boolFromMap(map, key) {
         return Object.prototype.hasOwnProperty.call(map, key) && !!map[key];
@@ -154,33 +167,108 @@ Item {
     }
 
     function _setPopupActive(notificationId, active) {
-        var numericId = Number(notificationId);
-        if (!isFinite(numericId) || numericId < 0) {
+        var normalizedId = _normalizeNotificationId(notificationId);
+        if (normalizedId < 0) {
             return;
         }
 
-        var key = String(Math.floor(numericId));
+        var key = String(normalizedId);
         _activePopupById = _setMapFlag(_activePopupById, key, !!active);
     }
 
-    function isPopupNotificationActive(notificationId) {
-        var numericId = Number(notificationId);
-        if (!isFinite(numericId) || numericId < 0) {
+    function _hasActivePopupInService(notificationId) {
+        var normalizedId = _normalizeNotificationId(notificationId);
+        var activeList = notificationService ? notificationService.activeList : null;
+        var i = 0;
+        if (normalizedId < 0 || !activeList || activeList.count === undefined) {
             return false;
         }
 
-        return _boolFromMap(_activePopupById, String(Math.floor(numericId)));
+        for (i = 0; i < activeList.count; i++) {
+            var row = activeList.get(i);
+            var rowId = row && row.notificationId !== undefined ? _normalizeNotificationId(row.notificationId) : _normalizeNotificationId(row ? row.id : -1);
+            if (rowId === normalizedId) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    function _buildServiceActivePopupMap() {
+        var activeMap = ({});
+        var activeList = notificationService ? notificationService.activeList : null;
+        var i = 0;
+        if (!activeList || activeList.count === undefined) {
+            return activeMap;
+        }
+
+        for (i = 0; i < activeList.count; i++) {
+            var row = activeList.get(i);
+            var rowId = row && row.notificationId !== undefined ? _normalizeNotificationId(row.notificationId) : _normalizeNotificationId(row ? row.id : -1);
+            if (rowId >= 0) {
+                activeMap[String(rowId)] = true;
+            }
+        }
+
+        return activeMap;
+    }
+
+    function _pruneInactiveOverlayEntries(activePopupMap) {
+        var staleByKey = ({});
+        var i = 0;
+        var mapKey = "";
+
+        for (i = 0; i < dismissWindowModel.count; i++) {
+            var dismissId = _normalizeNotificationId(dismissWindowModel.get(i).notificationId);
+            var dismissKey = String(dismissId);
+            if (dismissId < 0 || !_boolFromMap(activePopupMap, dismissKey)) {
+                staleByKey[dismissKey] = true;
+            }
+        }
+
+        for (i = 0; i < actionOverlayModelData.count; i++) {
+            var actionId = _normalizeNotificationId(actionOverlayModelData.get(i).notificationId);
+            var actionKey = String(actionId);
+            if (actionId < 0 || !_boolFromMap(activePopupMap, actionKey)) {
+                staleByKey[actionKey] = true;
+            }
+        }
+
+        for (mapKey in staleByKey) {
+            if (!Object.prototype.hasOwnProperty.call(staleByKey, mapKey)) {
+                continue;
+            }
+            clearExternalState(Number(mapKey));
+        }
+    }
+
+    function _syncActivePopupStateFromService() {
+        var activePopupMap = _buildServiceActivePopupMap();
+        _activePopupById = activePopupMap;
+        _pruneStaleExternalState();
+        _pruneInactiveOverlayEntries(activePopupMap);
+    }
+
+    function isPopupNotificationActive(notificationId) {
+        var normalizedId = _normalizeNotificationId(notificationId);
+        if (normalizedId < 0) {
+            return false;
+        }
+        return _hasActivePopupInService(normalizedId);
     }
 
     function setControlsHandoffGrace(notificationId, active) {
-        var numericId = Number(notificationId);
-        if (!isFinite(numericId) || numericId < 0) {
+        var normalizedId = _normalizeNotificationId(notificationId);
+        if (normalizedId < 0) {
             return;
         }
 
-        var normalizedId = Math.floor(numericId);
         var key = String(normalizedId);
         var nextActive = !!active;
+        if (nextActive && !isPopupNotificationActive(normalizedId)) {
+            return;
+        }
         var prevActive = _boolFromMap(_controlsHandoffGraceById, key);
         if (prevActive === nextActive) {
             return;
@@ -191,12 +279,15 @@ Item {
     }
 
     function beginNotificationExternalClose(notificationId) {
-        var numericId = Number(notificationId);
-        if (!isFinite(numericId) || numericId < 0) {
+        clearExternalState(notificationId);
+    }
+
+    function clearExternalState(notificationId) {
+        var normalizedId = _normalizeNotificationId(notificationId);
+        if (normalizedId < 0) {
             return;
         }
 
-        var normalizedId = Math.floor(numericId);
         // Gate external windows immediately so closure is not dependent on hover updates.
         _setPopupActive(normalizedId, false);
         setExternalDismissHovered(normalizedId, false);
@@ -208,7 +299,7 @@ Item {
     }
 
     function clearNotificationExternalState(notificationId) {
-        beginNotificationExternalClose(notificationId);
+        clearExternalState(notificationId);
     }
 
     function _pruneStaleExternalState() {
@@ -256,13 +347,17 @@ Item {
     }
 
     function setExternalDismissHovered(notificationId, hovered) {
-        var normalizedId = Math.floor(Number(notificationId));
-        if (!isFinite(normalizedId) || normalizedId < 0) {
+        var normalizedId = _normalizeNotificationId(notificationId);
+        if (normalizedId < 0) {
             return;
         }
 
         var key = _dismissHoverKey(normalizedId);
         var nextHovered = !!hovered;
+        if (nextHovered && !isPopupNotificationActive(normalizedId)) {
+            clearExternalState(normalizedId);
+            return;
+        }
         var previousHovered = _boolFromMap(_dismissHoverById, key);
         if (previousHovered === nextHovered) {
             return;
@@ -291,13 +386,17 @@ Item {
     }
 
     function setExternalPopupActionsHovered(notificationId, hovered) {
-        var normalizedId = Math.floor(Number(notificationId));
-        if (!isFinite(normalizedId) || normalizedId < 0) {
+        var normalizedId = _normalizeNotificationId(notificationId);
+        if (normalizedId < 0) {
             return;
         }
 
         var key = _popupActionsHoverKey(normalizedId);
         var nextHovered = !!hovered;
+        if (nextHovered && !isPopupNotificationActive(normalizedId)) {
+            clearExternalState(normalizedId);
+            return;
+        }
         var previousHovered = _boolFromMap(_popupActionsHoverById, key);
         if (previousHovered === nextHovered) {
             return;
@@ -334,15 +433,20 @@ Item {
     }
 
     function _upsertDismissModelEntry(notificationId, buttonX, buttonY, buttonSize, buttonOpacity) {
+        var normalizedId = _normalizeNotificationId(notificationId);
+        if (normalizedId < 0 || !isPopupNotificationActive(normalizedId)) {
+            _removeDismissModelEntry(normalizedId);
+            return;
+        }
         var roundedX = Math.round(buttonX);
         var roundedY = Math.round(buttonY);
-        var roundedSize = Math.round(buttonSize);
+        var roundedSize = Math.round(Math.max(0, buttonSize));
         var clampedOpacity = Math.max(0.0, Math.min(1.0, Number(buttonOpacity)));
-        var index = _dismissModelIndex(notificationId);
+        var index = _dismissModelIndex(normalizedId);
 
         if (index < 0) {
             dismissWindowModel.append({
-                notificationId: notificationId,
+                notificationId: normalizedId,
                 buttonX: roundedX,
                 buttonY: roundedY,
                 buttonSize: roundedSize,
@@ -352,7 +456,7 @@ Item {
         }
 
         dismissWindowModel.set(index, {
-            notificationId: notificationId,
+            notificationId: normalizedId,
             buttonX: roundedX,
             buttonY: roundedY,
             buttonSize: roundedSize,
@@ -378,6 +482,11 @@ Item {
     }
 
     function _upsertActionModelEntry(notificationId, overlayX, overlayY, overlayWidth, overlayHeight, overlayOpacity, actionsData) {
+        var normalizedId = _normalizeNotificationId(notificationId);
+        if (normalizedId < 0 || !isPopupNotificationActive(normalizedId)) {
+            _removeActionModelEntry(normalizedId);
+            return;
+        }
         var roundedX = Math.round(overlayX);
         var roundedY = Math.round(overlayY);
         var roundedWidth = Math.round(Math.max(0, overlayWidth));
@@ -386,7 +495,7 @@ Item {
         var normalizedActions = [];
         var actionsLength = actionsData && actionsData.length !== undefined ? Number(actionsData.length) : 0;
         var i = 0;
-        var index = _actionModelIndex(notificationId);
+        var index = _actionModelIndex(normalizedId);
 
         for (i = 0; i < actionsLength; i++) {
             var action = actionsData[i];
@@ -411,7 +520,7 @@ Item {
 
         if (index < 0) {
             actionOverlayModelData.append({
-                notificationId: notificationId,
+                notificationId: normalizedId,
                 overlayX: roundedX,
                 overlayY: roundedY,
                 overlayWidth: roundedWidth,
@@ -424,7 +533,7 @@ Item {
         }
 
         actionOverlayModelData.set(index, {
-            notificationId: notificationId,
+            notificationId: normalizedId,
             overlayX: roundedX,
             overlayY: roundedY,
             overlayWidth: roundedWidth,
@@ -521,6 +630,10 @@ Item {
                     root.setExternalDismissHovered(rowNotificationId, false);
                     return;
                 }
+                if (!root.isPopupNotificationActive(rowNotificationId)) {
+                    root.clearExternalState(rowNotificationId);
+                    return;
+                }
 
                 var topLeft = card.mapToItem(root, card.dismissVisualX, card.dismissVisualY);
                 root._upsertDismissModelEntry(rowNotificationId, topLeft.x, topLeft.y, card.popupDismissSize, card.externalDismissOpacity);
@@ -536,6 +649,10 @@ Item {
                 if (!root.externalPopupActionsEnabled || rowNotificationId < 0 || !card.externalPopupActionsEligible) {
                     root._removeActionModelEntry(rowNotificationId);
                     root.setExternalPopupActionsHovered(rowNotificationId, false);
+                    return;
+                }
+                if (!root.isPopupNotificationActive(rowNotificationId)) {
+                    root.clearExternalState(rowNotificationId);
                     return;
                 }
 
@@ -597,9 +714,12 @@ Item {
             onHeightChanged: syncExternalOverlays()
 
             onRowNotificationIdChanged: {
-                root._setPopupActive(_trackedDismissNotificationId, false);
-                root._setPopupActive(_trackedActionNotificationId, false);
+                root.clearExternalState(_trackedDismissNotificationId);
+                if (_trackedActionNotificationId !== _trackedDismissNotificationId) {
+                    root.clearExternalState(_trackedActionNotificationId);
+                }
                 root._setPopupActive(rowNotificationId, true);
+                root._syncActivePopupStateFromService();
                 _refreshExternalHoverSnapshots();
                 card.resetVisualState();
                 syncExternalOverlays();
@@ -611,6 +731,7 @@ Item {
 
             Component.onCompleted: {
                 root._setPopupActive(rowNotificationId, true);
+                root._syncActivePopupStateFromService();
                 _refreshExternalHoverSnapshots();
                 syncExternalOverlays();
             }

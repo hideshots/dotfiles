@@ -1016,7 +1016,7 @@ FocusScope {
 
                                 Text {
                                     anchors.centerIn: parent
-                                    text: "x"
+                                    text: "􀅾"
                                     color: Root.Theme.textSecondary
                                     font.family: Root.Theme.fontFamilyDisplay
                                     font.pixelSize: 12
@@ -1376,7 +1376,7 @@ FocusScope {
 
             Text {
                 anchors.centerIn: parent
-                text: "x"
+                text: "􀅾"
                 color: Root.Theme.textSecondary
                 font.family: Root.Theme.fontFamilyDisplay
                 font.pixelSize: 12
