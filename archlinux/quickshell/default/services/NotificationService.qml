@@ -377,11 +377,7 @@ Singleton {
         metadata.closeReason = "";
         metadata.sourceAlive = true;
         metadata.revision = _safeNumber(metadata.revision, 0) + 1;
-        if (metadata.inHistory !== true && _shouldAddToHistory(record)) {
-            metadata.inHistory = true;
-        } else if (metadata.inHistory !== true) {
-            metadata.inHistory = false;
-        }
+        metadata.inHistory = false;
 
         _byId[idKey] = record;
         _metadataById[idKey] = metadata;
@@ -498,11 +494,7 @@ Singleton {
         metadata.closeReason = "";
         metadata.sourceAlive = true;
         metadata.revision = _safeNumber(metadata.revision, 0) + 1;
-        if (metadata.inHistory !== true && _shouldAddToHistory(record)) {
-            metadata.inHistory = true;
-        } else if (metadata.inHistory !== true) {
-            metadata.inHistory = false;
-        }
+        metadata.inHistory = false;
 
         _byId[idKey] = record;
         _metadataById[idKey] = metadata;
@@ -586,18 +578,26 @@ Singleton {
         metadata.sourceAlive = sourceAlive;
         metadata.revision = _safeNumber(metadata.revision, 0) + 1;
 
-        if (reason === NotificationCloseReason.Dismissed || reasonName === "Dismissed") {
+        var isDismissed = reason === NotificationCloseReason.Dismissed || reasonName === "Dismissed";
+        var isExpired = reason === NotificationCloseReason.Expired || reasonName === "Expired";
+        if (isDismissed) {
             metadata.dismissed = true;
         }
 
-        if (reason === NotificationCloseReason.Expired || reasonName === "Expired") {
+        if (isExpired) {
             metadata.expired = true;
         }
+
+        metadata.inHistory = isExpired && _shouldAddToHistory(record);
 
         _metadataById[idKey] = metadata;
 
         _removeModelRowById(activeListModel, record.id);
-        _upsertHistoryRow(idKey);
+        if (metadata.inHistory) {
+            _upsertHistoryRow(idKey);
+        } else {
+            _removeModelRowById(historyListModel, record.id);
+        }
         _dropStateIfUnreferenced(idKey);
     }
 

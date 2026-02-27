@@ -120,6 +120,7 @@ FocusScope {
     property int popupActionsBottomGap: 0
     readonly property bool popupActionsOverlayEligible: actionsVisible && (isPopupMode || isCenterMode)
     readonly property bool popupActionsOverlayShown: popupActionsOverlayEligible && !controlsSuppressedByDrag && (isPopupMode ? (controlsVisibleEffective || popupActionsOverlayActiveHover) : (centerControlsVisibleEffective || popupActionsOverlayActiveHover))
+    readonly property bool popupActionsOverlayInputActive: popupActionsOverlayShown || _popupActionsOverlayPressed
     readonly property real popupActionOverlayWidth: popupActionsOverlayBackground.implicitWidth
     readonly property real popupActionOverlayHeight: popupActionsOverlayBackground.implicitHeight
     readonly property real popupActionOverlayX: width - cardPadding - popupActionOverlayWidth
@@ -958,12 +959,13 @@ FocusScope {
 
                             Rectangle {
                                 id: rightImageFrame
-                                width: root.isCenterMode && root.hasRightImage ? 32 : 0
-                                height: root.isCenterMode && root.hasRightImage ? 32 : 0
+                                readonly property bool ready: root.hasRightImage && rightImage.status === Image.Ready
+                                width: root.isCenterMode && ready ? 32 : 0
+                                height: root.isCenterMode && ready ? 32 : 0
                                 radius: 8
                                 x: parent.width - width
                                 clip: true
-                                visible: root.isCenterMode && root.hasRightImage
+                                visible: root.isCenterMode && ready
                                 color: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(0, 0, 0, 0.07)
                                 border.width: 1
                                 border.color: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(0, 0, 0, 0.10)
@@ -971,22 +973,10 @@ FocusScope {
                                 Image {
                                     id: rightImage
                                     anchors.fill: parent
-                                    source: rightImageFrame.visible ? root.rightImageSource : ""
+                                    source: root.hasRightImage ? root.rightImageSource : ""
                                     fillMode: Image.PreserveAspectCrop
                                     smooth: true
                                     asynchronous: true
-                                    visible: status === Image.Ready
-                                }
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    visible: rightImage.status === Image.Error
-                                    text: root.fallbackIconText
-                                    font.family: Root.Theme.fontFamilyDisplay
-                                    font.pixelSize: 12
-                                    font.weight: Font.DemiBold
-                                    color: Root.Theme.textPrimary
-                                    renderType: Text.NativeRendering
                                 }
                             }
                         }
@@ -1031,7 +1021,7 @@ FocusScope {
         Item {
             id: popupActionsOverlay
             visible: root.popupActionsOverlayEligible && !root.externalPopupActionsOverlayEnabled
-            enabled: root.popupActionsOverlayShown
+            enabled: root.popupActionsOverlayInputActive
             z: 2
             anchors.right: parent.right
             anchors.bottom: parent.bottom
@@ -1041,7 +1031,7 @@ FocusScope {
             implicitHeight: popupActionsOverlayBackground.implicitHeight
             width: implicitWidth
             height: implicitHeight
-            opacity: root.popupActionsOverlayShown ? 1 : 0
+            opacity: root.popupActionsOverlayInputActive ? 1 : 0
 
             Rectangle {
                 id: popupActionsOverlayBackground
@@ -1057,6 +1047,7 @@ FocusScope {
                 MouseArea {
                     id: popupActionsOverlayMouseArea
                     anchors.fill: parent
+                    propagateComposedEvents: false
                     hoverEnabled: true
                     acceptedButtons: Qt.LeftButton
                     preventStealing: true
@@ -1070,13 +1061,18 @@ FocusScope {
 
                     onReleased: function (mouse) {
                         mouse.accepted = true;
+                        if (!root.isCenterMode) {
+                            root._popupActionsOverlayPressed = false;
+                        }
+                    }
+
+                    onCanceled: function () {
                         root._popupActionsOverlayPressed = false;
                     }
 
-                    onCanceled: root._popupActionsOverlayPressed = false
-
                     onClicked: function (mouse) {
                         mouse.accepted = true;
+                        root._popupActionsOverlayPressed = false;
                         root._suppressNextDefaultActivation = false;
                     }
                 }
@@ -1148,6 +1144,7 @@ FocusScope {
                             MouseArea {
                                 id: popupActionMouseArea
                                 anchors.fill: parent
+                                propagateComposedEvents: false
                                 hoverEnabled: true
                                 acceptedButtons: Qt.LeftButton
                                 preventStealing: true
@@ -1161,14 +1158,29 @@ FocusScope {
 
                                 onReleased: function (mouse) {
                                     mouse.accepted = true;
+                                    if (!root.isCenterMode) {
+                                        root._popupActionsOverlayPressed = false;
+                                    }
+                                }
+
+                                onCanceled: function () {
                                     root._popupActionsOverlayPressed = false;
                                 }
 
-                                onCanceled: root._popupActionsOverlayPressed = false
-
                                 onClicked: function (mouse) {
                                     mouse.accepted = true;
-                                    root.invokeAction(popupActionButton.actionId);
+                                    var targetActionId = popupActionButton.actionId;
+                                    if (root.isCenterMode) {
+                                        console.log("[NotificationCenter][DEBUG] in-card action clicked notificationId=" + root.notificationId + " actionId=" + targetActionId);
+                                    }
+                                    root._popupActionsOverlayPressed = false;
+                                    if (root.isCenterMode && root.notificationId >= 0 && root._trimmed(targetActionId).length > 0) {
+                                        root.invokeAction(targetActionId);
+                                        root.notificationService.removeFromHistory(root.notificationId);
+                                        console.log("[NotificationCenter][DEBUG] removed from history id=" + root.notificationId + " after action " + targetActionId);
+                                    } else {
+                                        root.invokeAction(targetActionId);
+                                    }
                                     root._suppressNextDefaultActivation = false;
                                 }
                             }

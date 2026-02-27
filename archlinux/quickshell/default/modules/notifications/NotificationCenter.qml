@@ -27,7 +27,8 @@ FocusScope {
 
     readonly property var notificationService: Root.NotificationService
     readonly property var notificationStyle: Notifications.NotificationStyle
-    readonly property bool hasHistory: notificationService.historyCount > 0
+    readonly property bool isEmpty: notificationService.historyCount === 0
+    readonly property bool hasHistory: !isEmpty
     property int _cardHoverOwnerId: -1
     property int _dismissHoverOwnerId: -1
     property int _popupActionsHoverOwnerId: -1
@@ -566,10 +567,11 @@ FocusScope {
             height: root.headerHeight
 
             Text {
-                id: headerTitle
+                id: leftTitle
+                visible: !root.isEmpty
                 anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
-                width: Math.max(0, header.width - headerControls.width - 14)
+                width: Math.max(0, header.width - (headerControls.visible ? headerControls.width + 14 : 0))
                 text: "Notification Center"
                 elide: Text.ElideRight
                 font.family: Root.Theme.fontFamilyDisplay
@@ -581,8 +583,36 @@ FocusScope {
             }
 
             DropShadow {
-                anchors.fill: headerTitle
-                source: headerTitle
+                visible: leftTitle.visible
+                anchors.fill: leftTitle
+                source: leftTitle
+                horizontalOffset: 0
+                verticalOffset: 0
+                radius: 6
+                samples: 17
+                spread: 0
+                color: Qt.rgba(0, 0, 0, 0.5)
+                cached: true
+            }
+
+            Text {
+                id: centeredEmptyTitle
+                visible: root.isEmpty
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.verticalCenter: parent.verticalCenter
+                text: "No recent notifications"
+                font.family: Root.Theme.fontFamilyDisplay
+                font.pixelSize: 19
+                font.weight: Font.Medium
+                font.letterSpacing: -0.76
+                color: "#ffffff"
+                renderType: Text.NativeRendering
+            }
+
+            DropShadow {
+                visible: centeredEmptyTitle.visible
+                anchors.fill: centeredEmptyTitle
+                source: centeredEmptyTitle
                 horizontalOffset: 0
                 verticalOffset: 0
                 radius: 6
@@ -594,6 +624,7 @@ FocusScope {
 
             Row {
                 id: headerControls
+                visible: root.hasHistory
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 8
@@ -686,21 +717,25 @@ FocusScope {
             width: parent.width
             height: parent.height - header.height - parent.spacing
 
-            Text {
-                anchors.centerIn: parent
-                visible: !root.hasHistory
-                text: "No Notifications"
-                font.family: Root.Theme.fontFamilyDisplay
-                font.pixelSize: 14
-                color: Root.Theme.textSecondary
-                opacity: 0.80
-                renderType: Text.NativeRendering
+            MouseArea {
+                id: bodyCloseMouseArea
+                anchors.fill: parent
+                enabled: root.open
+                acceptedButtons: Qt.LeftButton
+                preventStealing: true
+
+                onClicked: function (mouse) {
+                    mouse.accepted = true;
+                    if (root.isEmpty || mouse.y >= historyListView.contentHeight) {
+                        root.requestClose();
+                    }
+                }
             }
 
             ListView {
                 id: historyListView
                 anchors.fill: parent
-                visible: root.hasHistory
+                visible: !root.isEmpty
                 clip: true
                 spacing: root.listSpacing
                 model: root.notificationService.historyList
@@ -729,6 +764,23 @@ FocusScope {
                             return null;
                         }
                         return root.notificationService.getNotification(rowNotificationId);
+                    }
+                    readonly property string resolvedRightSideImageSource: {
+                        var snapshot = notificationSnapshot;
+                        var rowModel = model;
+                        if (snapshot && snapshot.rightSideImageSource !== undefined && String(snapshot.rightSideImageSource).length > 0) {
+                            return String(snapshot.rightSideImageSource);
+                        }
+                        if (snapshot && snapshot.rightImageSource !== undefined && String(snapshot.rightImageSource).length > 0) {
+                            return String(snapshot.rightImageSource);
+                        }
+                        if (rowModel && rowModel.rightSideImageSource !== undefined && String(rowModel.rightSideImageSource).length > 0) {
+                            return String(rowModel.rightSideImageSource);
+                        }
+                        if (rowModel && rowModel.rightImageSource !== undefined && String(rowModel.rightImageSource).length > 0) {
+                            return String(rowModel.rightImageSource);
+                        }
+                        return "";
                     }
 
                     width: historyListView.width
@@ -799,7 +851,7 @@ FocusScope {
                         body: rowWrapper.notificationSnapshot && rowWrapper.notificationSnapshot.body !== undefined ? String(rowWrapper.notificationSnapshot.body) : (rowWrapper.model.body ? String(rowWrapper.model.body) : "")
                         image: rowWrapper.notificationSnapshot ? rowWrapper.notificationSnapshot.image : (rowWrapper.model.imageHint ? String(rowWrapper.model.imageHint) : "")
                         imageHint: rowWrapper.notificationSnapshot && rowWrapper.notificationSnapshot.imageHint !== undefined ? String(rowWrapper.notificationSnapshot.imageHint) : (rowWrapper.model.imageHint ? String(rowWrapper.model.imageHint) : "")
-                        rightSideImageSource: rowWrapper.notificationSnapshot && rowWrapper.notificationSnapshot.rightSideImageSource !== undefined ? String(rowWrapper.notificationSnapshot.rightSideImageSource) : (rowWrapper.model.rightSideImageSource ? String(rowWrapper.model.rightSideImageSource) : "")
+                        rightSideImageSource: rowWrapper.resolvedRightSideImageSource
                         contentPreviewImageSource: rowWrapper.notificationSnapshot && rowWrapper.notificationSnapshot.contentPreviewImageSource !== undefined ? String(rowWrapper.notificationSnapshot.contentPreviewImageSource) : (rowWrapper.model.contentPreviewImageSource ? String(rowWrapper.model.contentPreviewImageSource) : "")
                         hints: rowWrapper.notificationSnapshot && rowWrapper.notificationSnapshot.hints !== undefined ? rowWrapper.notificationSnapshot.hints : ({})
                         timeLabel: rowWrapper.notificationSnapshot && rowWrapper.notificationSnapshot.timeLabel !== undefined ? String(rowWrapper.notificationSnapshot.timeLabel) : (rowWrapper.model.timeLabel ? String(rowWrapper.model.timeLabel) : "")

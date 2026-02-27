@@ -845,7 +845,9 @@ ShellRoot {
             readonly property bool hasValidGeometry: notificationId >= 0 && overlayWidth > 0 && overlayHeight > 0
             readonly property bool hasRenderableActions: actionsCount > 0 && resolvedActionsData.length > 0
             readonly property real effectiveOverlayOpacity: centerActive && hasValidGeometry && hasRenderableActions ? Math.max(0.0, Math.min(1.0, Number(overlayOpacity))) : 0.0
+            readonly property bool effectiveOverlayInputEnabled: hasValidGeometry && hasRenderableActions && (effectiveOverlayOpacity > 0.01 || _actionPressInProgress)
             property int _trackedNotificationId: -1
+            property bool _actionPressInProgress: false
 
             function _clearTrackedActionHover(notificationIdToClear) {
                 if (notificationIdToClear >= 0) {
@@ -865,7 +867,7 @@ ShellRoot {
                 }
             }
 
-            visible: shell.notificationCenterEnabled && shell.notificationCenterOpen && shell.notificationsExternalPopupActionsEnabled && centerActive && hasValidGeometry && hasRenderableActions
+            visible: shell.notificationCenterEnabled && shell.notificationCenterOpen && shell.notificationsExternalPopupActionsEnabled && hasValidGeometry && hasRenderableActions
             exclusionMode: ExclusionMode.Ignore
             anchors.top: true
             anchors.right: true
@@ -885,6 +887,7 @@ ShellRoot {
 
             onVisibleChanged: {
                 if (!visible) {
+                    _actionPressInProgress = false;
                     _clearTrackedActionHover(_trackedNotificationId);
                 }
             }
@@ -987,7 +990,8 @@ ShellRoot {
                                 MouseArea {
                                     id: centerActionMouseArea
                                     anchors.fill: parent
-                                    enabled: centerActionWindow.effectiveOverlayOpacity > 0.01
+                                    propagateComposedEvents: false
+                                    enabled: centerActionWindow.effectiveOverlayInputEnabled
                                     hoverEnabled: true
                                     acceptedButtons: Qt.LeftButton
                                     preventStealing: true
@@ -995,15 +999,26 @@ ShellRoot {
 
                                     onPressed: function (mouse) {
                                         mouse.accepted = true;
+                                        centerActionWindow._actionPressInProgress = true;
                                     }
+
+                                    onReleased: function (mouse) {
+                                        mouse.accepted = true;
+                                    }
+
+                                    onCanceled: centerActionWindow._actionPressInProgress = false
 
                                     onClicked: function (mouse) {
                                         mouse.accepted = true;
-                                        if (centerActionWindow.centerActive && centerActionWindow.notificationId >= 0 && centerActionButton.actionId.length > 0) {
-                                            var targetNotificationId = centerActionWindow.notificationId;
-                                            var targetActionId = centerActionButton.actionId;
+                                        var targetNotificationId = centerActionWindow.notificationId;
+                                        var targetActionId = centerActionButton.actionId;
+                                        console.log("[NotificationCenter][DEBUG] center action clicked notificationId=" + targetNotificationId + " actionId=" + targetActionId);
+                                        centerActionWindow._actionPressInProgress = false;
+                                        if (targetNotificationId >= 0 && targetActionId.length > 0) {
                                             var notificationService = Root.NotificationService;
                                             notificationService.invokeAction(targetNotificationId, targetActionId);
+                                            notificationService.removeFromHistory(targetNotificationId);
+                                            console.log("[NotificationCenter][DEBUG] removed from history id=" + targetNotificationId + " after action " + targetActionId);
                                         }
                                     }
                                 }
@@ -1037,20 +1052,30 @@ ShellRoot {
             anchors.fill: parent
             acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
             preventStealing: true
+            function _insideNotificationCenterInteraction(mouseX, mouseY) {
+                var panelPos = notificationCenter.mapToItem(notificationCenterBackdropMouseArea, 0, 0);
+                var interactionBleed = Math.max(
+                    shell.notificationsActionWindowBleed + Math.max(0, shell.notificationsActionHoverOverlapPx),
+                    shell.notificationsDismissWindowBleed + Math.max(0, shell.notificationsDismissHoverOverlapPx)
+                );
+                return mouseX >= (panelPos.x - interactionBleed) && mouseX <= (panelPos.x + notificationCenter.width + interactionBleed) && mouseY >= (panelPos.y - interactionBleed) && mouseY <= (panelPos.y + notificationCenter.height + interactionBleed);
+            }
 
             onPressed: function (mouse) {
+                if (_insideNotificationCenterInteraction(mouse.x, mouse.y)) {
+                    mouse.accepted = false;
+                    return;
+                }
                 mouse.accepted = true;
             }
 
             onClicked: function (mouse) {
-                mouse.accepted = true;
-
-                var panelPos = notificationCenter.mapToItem(notificationCenterBackdropMouseArea, 0, 0);
-                var insidePanel = mouse.x >= panelPos.x && mouse.x <= panelPos.x + notificationCenter.width && mouse.y >= panelPos.y && mouse.y <= panelPos.y + notificationCenter.height;
-
-                if (!insidePanel) {
-                    shell.notificationCenterOpen = false;
+                if (_insideNotificationCenterInteraction(mouse.x, mouse.y)) {
+                    mouse.accepted = false;
+                    return;
                 }
+                mouse.accepted = true;
+                shell.notificationCenterOpen = false;
             }
         }
 
