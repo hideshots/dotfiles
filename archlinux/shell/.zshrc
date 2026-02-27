@@ -85,3 +85,4 @@ setopt PUSHD_SILENT
 
 export PATH="$HOME/.local/bin:$PATH"
 export PATH=$PATH:/home/drama/.spicetify
+export PATH="$HOME/.local/share/npm-global/bin:$HOME/.local/bin:$PATH"
