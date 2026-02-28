@@ -4,7 +4,16 @@ set $down j
 set $up k
 set $right l
 set $term kitty
-set $menu sh -c '. "$HOME/.cache/wal/colors.sh"; bemenu-run --fn "Terminus 8" --nb "#000000" --nf "$color7" --tb "#000000" --tf "$color7" --hb "$color4" --hf "#000000"'
+set $menu sh -c '. "$HOME/.cache/wal/colors.sh"; \
+bemenu-run \
+  --fn "Terminus 9" \
+  --nb "#000000" \
+  --nf "$color7" \
+  --tb "#000000" \
+  --tf "$color7" \
+  --hb "$color4" \
+  --hf "#000000" \
+  --fb "#000000"'
 
 seat seat0 xcursor_theme macOS 24
 
@@ -26,21 +35,29 @@ blur_passes 2
 blur_radius 6
 blur_saturation 1.6
 
+corner_radius 5
+
+shadows enable
+shadow_blur_radius 2
+shadow_offset 0 0
+shadow_color #000000ff
+shadow_inactive_color #000000ff
+
 floating_modifier $mod normal
 titlebar_border_thickness 0
 mouse_warping container
 font pango:monospace 10
-default_border pixel 0
 focus_follows_mouse no
 titlebar_padding 1 1
 title_align center
 smart_gaps on
 
+default_border pixel 1
 client.background #ffffff
-client.focused #4c7899 #285577 #ffffff #2e9ef4 #340000
-client.focused_inactive #333333 #5f676a #ffffff #484e50 #000000
+client.focused          #808080 #000000 #ffffff #000000 #59595B
+client.focused_inactive #808080 #000000 #ffffff #000000 #59595B
+client.unfocused        #404040 #000000 #888888 #000000 #404040
 client.focused_tab_title #333333 #5f676a #ffffff
-client.unfocused #333333 #222222 #888888 #292d2e #000000
 client.urgent #2f343a #900000 #ffffff #900000 #900000
 client.placeholder #000000 #1c0c0c #ffffff #000000 #0c0c0c
 
