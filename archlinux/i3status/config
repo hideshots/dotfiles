@@ -4,7 +4,7 @@ general {
     color_bad = "#DC322F"
     color_degraded = "#586E75"
     color_separator = "#FFFFFF"
-    interval = 5
+    interval = 1
     separator = ""
 }
 
@@ -63,5 +63,5 @@ read_file music {
 }
 
 tztime local {
-        format = "  %a %b %-d %-I:%M %p"
+        format = "  %a %b %-d %-I:%M:%S %p"
 }
