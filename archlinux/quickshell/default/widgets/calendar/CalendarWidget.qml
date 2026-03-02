@@ -10,7 +10,7 @@ Rectangle {
     id: root
 
     implicitWidth: 164
-    implicitHeight: 164
+    implicitHeight: root.contentTopMargin + root.contentHeight + root.contentBottomMargin
     radius: 22
     clip: true
 
@@ -64,9 +64,18 @@ Rectangle {
     property bool glassDebug: false
     property int glassDebugView: 2
 
-    readonly property int cellSize: 18
-    readonly property int rowGap: 6
+    readonly property int contentTopMargin: 16
+    readonly property int contentBottomMargin: 14
+    readonly property int monthHeaderHeight: 14
+    readonly property int monthHeaderTopInset: 1
+    readonly property int weekdayTopGap: 3
+    readonly property int gridTopGap: 3
+    readonly property int cellSize: 17
+    readonly property int rowGap: 4
     readonly property int gridWidth: 134
+    readonly property int weekdayHeight: cellSize
+    readonly property int dateGridHeight: (root.rowsUsed * root.cellSize) + ((root.rowsUsed - 1) * root.rowGap)
+    readonly property int contentHeight: root.monthHeaderHeight + root.weekdayTopGap + root.weekdayHeight + root.gridTopGap + root.dateGridHeight
 
     // Model
     property var cells: []
@@ -599,21 +608,21 @@ Rectangle {
         id: content
         z: 1
         anchors.fill: parent
-        anchors.topMargin: 17
+        anchors.topMargin: root.contentTopMargin
         anchors.leftMargin: 12
         anchors.rightMargin: 12
-        anchors.bottomMargin: 16
+        anchors.bottomMargin: root.contentBottomMargin
 
         Item {
             id: monthHeader
             anchors.top: parent.top
             anchors.left: parent.left
             anchors.right: parent.right
-            height: 15
+            height: root.monthHeaderHeight
 
             Text {
                 anchors.top: parent.top
-                anchors.topMargin: 2
+                anchors.topMargin: root.monthHeaderTopInset
                 anchors.left: parent.left
                 anchors.leftMargin: 4
                 text: root.monthLabel(root.shownYear, root.shownMonth)
@@ -628,10 +637,10 @@ Rectangle {
         Item {
             id: weekdayRow
             anchors.top: monthHeader.bottom
-            anchors.topMargin: 3
+            anchors.topMargin: root.weekdayTopGap
             anchors.horizontalCenter: parent.horizontalCenter
             width: root.gridWidth
-            height: root.cellSize
+            height: root.weekdayHeight
 
             readonly property real xStride: (width - (7 * root.cellSize)) / 6
 
@@ -661,10 +670,10 @@ Rectangle {
         Item {
             id: dateGrid
             anchors.top: weekdayRow.bottom
-            anchors.topMargin: 2
+            anchors.topMargin: root.gridTopGap
             anchors.horizontalCenter: parent.horizontalCenter
             width: root.gridWidth
-            height: (root.rowsUsed * root.cellSize) + ((root.rowsUsed - 1) * root.rowGap)
+            height: root.dateGridHeight
 
             readonly property real xStride: (width - (7 * root.cellSize)) / 6
 

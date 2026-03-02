@@ -577,7 +577,7 @@ FocusScope {
                 font.family: Root.Theme.fontFamilyDisplay
                 font.pixelSize: 19
                 font.weight: Font.Medium
-                font.letterSpacing: -0.76
+                font.letterSpacing: 0
                 color: "#ffffff"
                 renderType: Text.NativeRendering
             }
@@ -604,7 +604,7 @@ FocusScope {
                 font.family: Root.Theme.fontFamilyDisplay
                 font.pixelSize: 19
                 font.weight: Font.Medium
-                font.letterSpacing: -0.76
+                font.letterSpacing: 0
                 color: "#ffffff"
                 renderType: Text.NativeRendering
             }
