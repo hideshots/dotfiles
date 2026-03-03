@@ -10,6 +10,7 @@ import Qt5Compat.GraphicalEffects
 import "." as Root
 import "menu" as Menu
 import "modules/notifications" as Notifications
+import "controlcenter" as ControlCenter
 import "widgets" as Widgets
 
 ShellRoot {
@@ -40,9 +41,21 @@ ShellRoot {
     property bool notificationCenterEnabled: true
     property int notificationCenterTopMargin: 44
     property int notificationCenterRightMargin: 16
+    property bool controlCenterEnabled: true
+    property bool controlCenterOpen: false
+    property var controlCenterTriggerItem: null
+    property var controlCenterTargetScreen: null
+    property int controlCenterTopMargin: 44
+    property int controlCenterRightMargin: 16
     onNotificationCenterOpenChanged: {
         if (!shell.notificationCenterOpen) {
             shell.notificationCenterTriggerItem = null;
+        }
+    }
+    onControlCenterOpenChanged: {
+        if (!shell.controlCenterOpen) {
+            shell.controlCenterTriggerItem = null;
+            shell.controlCenterTargetScreen = null;
         }
     }
     function toggleNotificationCenter(triggerItem) {
@@ -60,11 +73,35 @@ ShellRoot {
         shell.notificationCenterTriggerItem = hasTrigger ? triggerItem : null;
         shell.notificationCenterOpen = true;
     }
+    function toggleControlCenter(triggerItem, screen) {
+        var hasTrigger = triggerItem !== undefined && triggerItem !== null;
+
+        if (shell.controlCenterOpen) {
+            if (hasTrigger && shell.controlCenterTargetScreen !== screen) {
+                shell.controlCenterOpen = true;
+                shell.controlCenterTriggerItem = triggerItem;
+                shell.controlCenterTargetScreen = screen;
+                return;
+            }
+            shell.controlCenterOpen = false;
+            return;
+        }
+
+        shell.controlCenterTriggerItem = hasTrigger ? triggerItem : null;
+        shell.controlCenterTargetScreen = screen ?? null;
+        shell.controlCenterOpen = true;
+    }
     Shortcut {
         sequence: "Escape"
         context: Qt.ApplicationShortcut
         enabled: shell.notificationCenterOpen
         onActivated: shell.notificationCenterOpen = false
+    }
+    Shortcut {
+        sequence: "Escape"
+        context: Qt.ApplicationShortcut
+        enabled: shell.controlCenterOpen
+        onActivated: shell.controlCenterOpen = false
     }
     property int weatherPanelTopMargin: 50
     property int weatherPanelLeftMargin: 10
@@ -78,7 +115,7 @@ ShellRoot {
     property real widgetGlassBodyRefractionWidthPx: 32.0
     property real widgetGlassDepth: 0.2
     property real widgetGlassDispersion: 1.0
-    property real widgetGlassFrost: 0.7
+    property real widgetGlassFrost: 0.2
     property real widgetGlassSplay: 2.5
     property real widgetGlassSplayDepth: 30.0
     property real widgetGlassRimWidth: 15.0
@@ -98,7 +135,7 @@ ShellRoot {
     property real widgetGlassDispersionWidthPx: 9.0
     property real widgetGlassDispersionCurve: 0.9
     property real widgetGlassOpacity: 1.0
-    property color widgetGlassTint: Qt.rgba(1.0, 1.0, 1.0, 0.08)
+    property color widgetGlassTint: Qt.rgba(0.0, 0.0, 0.0, 0.20)
     property real widgetGlassBlurSize: 0.7
     property real widgetGlassBlurPasses: 2
     property bool widgetGlassLiveCapture: false
@@ -1099,6 +1136,16 @@ ShellRoot {
     Variants {
         model: Quickshell.screens
 
+        delegate: ControlCenter.ControlCenterOverlay {
+            required property var modelData
+            screen: modelData
+            shellRoot: shell
+        }
+    }
+
+    Variants {
+        model: Quickshell.screens
+
         PanelWindow {
             id: barPanelWindow
             WlrLayershell.namespace: "qsbar"
@@ -1106,8 +1153,14 @@ ShellRoot {
             screen: barPanelWindow.modelData
             property bool notificationCenterOpenProxy: shell.notificationCenterOpen
             property var notificationCenterTriggerItemProxy: shell.notificationCenterTriggerItem
+            property bool controlCenterOpenProxy: shell.controlCenterOpen
+            property var controlCenterTriggerItemProxy: shell.controlCenterTriggerItem
+            property var controlCenterTargetScreenProxy: shell.controlCenterTargetScreen
             function toggleNotificationCenterForBar(triggerItem) {
                 shell.toggleNotificationCenter(triggerItem);
+            }
+            function toggleControlCenterForBar(triggerItem) {
+                shell.toggleControlCenter(triggerItem, barPanelWindow.screen);
             }
 
             anchors {
@@ -1389,17 +1442,23 @@ ShellRoot {
                             id: rightSection
                             height: parent.height
                             width: rightRow.implicitWidth
-                            function syncNotificationCenterHighlight() {
-                                var shouldHighlight = barPanelWindow.notificationCenterOpenProxy && barPanelWindow.notificationCenterTriggerItemProxy === timeDisplay;
-                                if (shouldHighlight) {
+                            function syncRightHighlight() {
+                                var notificationCenterShouldHighlight = barPanelWindow.notificationCenterOpenProxy && barPanelWindow.notificationCenterTriggerItemProxy === timeDisplay;
+                                var controlCenterShouldHighlight = barPanelWindow.controlCenterOpenProxy
+                                    && barPanelWindow.controlCenterTargetScreenProxy === barPanelWindow.screen
+                                    && barPanelWindow.controlCenterTriggerItemProxy === controlCenterButton;
+
+                                if (notificationCenterShouldHighlight) {
                                     rightHi.activeTarget = timeDisplay;
-                                } else if (rightHi.activeTarget === timeDisplay) {
+                                } else if (controlCenterShouldHighlight) {
+                                    rightHi.activeTarget = controlCenterButton;
+                                } else if (rightHi.activeTarget === timeDisplay || rightHi.activeTarget === controlCenterButton) {
                                     rightHi.activeTarget = null;
                                 }
                             }
-                            Component.onCompleted: syncNotificationCenterHighlight()
+                            Component.onCompleted: syncRightHighlight()
                             Component.onDestruction: {
-                                if (rightHi.activeTarget === timeDisplay) {
+                                if (rightHi.activeTarget === timeDisplay || rightHi.activeTarget === controlCenterButton) {
                                     rightHi.activeTarget = null;
                                 }
                             }
@@ -1413,10 +1472,19 @@ ShellRoot {
                             Connections {
                                 target: barPanelWindow
                                 function onNotificationCenterOpenProxyChanged() {
-                                    rightSection.syncNotificationCenterHighlight();
+                                    rightSection.syncRightHighlight();
                                 }
                                 function onNotificationCenterTriggerItemProxyChanged() {
-                                    rightSection.syncNotificationCenterHighlight();
+                                    rightSection.syncRightHighlight();
+                                }
+                                function onControlCenterOpenProxyChanged() {
+                                    rightSection.syncRightHighlight();
+                                }
+                                function onControlCenterTriggerItemProxyChanged() {
+                                    rightSection.syncRightHighlight();
+                                }
+                                function onControlCenterTargetScreenProxyChanged() {
+                                    rightSection.syncRightHighlight();
                                 }
                             }
 
@@ -1452,9 +1520,10 @@ ShellRoot {
                                 // IconButton { icon: "􀙇"; highlightState: rightHi; onClicked: {} }
                                 // IconButton { icon: "􀊫"; highlightState: rightHi; onClicked: {} }
                                 IconButton {
+                                    id: controlCenterButton
                                     icon: "􀜊"
                                     highlightState: rightHi
-                                    onClicked: {}
+                                    onClicked: barPanelWindow.toggleControlCenterForBar(controlCenterButton)
                                 }
 
                                 TimeDisplay {

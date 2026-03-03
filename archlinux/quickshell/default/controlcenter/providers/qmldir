@@ -1,0 +1,2 @@
+module controlcenter.providers
+NowPlayingProvider 1.0 NowPlayingProvider.qml
