@@ -7,8 +7,11 @@ import "../.." as Root
 Item {
     id: root
 
-    property var provider: null
-    property color accentColor: Qt.rgba(0.08, 0.44, 1.0, 1.0)
+    property string sizeMode: "2x2"
+    property var tileData: ({})
+
+    readonly property var provider: _rawDataValue("provider", null)
+    readonly property color accentColor: _colorData("accentColor", Qt.rgba(0.08, 0.44, 1.0, 1.0))
 
     readonly property bool available: !!provider && provider.available
     readonly property bool playing: !!provider && provider.playing
@@ -25,6 +28,20 @@ Item {
     implicitHeight: 140
     width: implicitWidth
     height: implicitHeight
+
+    function _rawDataValue(key, fallback) {
+        var data = root.tileData;
+        if (!data || typeof data !== "object") {
+            return fallback;
+        }
+
+        var value = data[key];
+        return value === undefined ? fallback : value;
+    }
+
+    function _colorData(key, fallback) {
+        return _rawDataValue(key, fallback);
+    }
 
     function _toImageSource(source) {
         var text = source === undefined || source === null ? "" : String(source).trim();
@@ -70,10 +87,11 @@ Item {
             id: artFrame
             x: 14
             y: 14
-            width: 50
-            height: 50
-            radius: 14
+            width: 40
+            height: width
+            radius: 10
             color: "transparent"
+            readonly property bool artReady: root.artSource.length > 0 && artImageSource.status === Image.Ready
 
             Image {
                 id: artImageSource
@@ -88,51 +106,35 @@ Item {
             Rectangle {
                 id: artMask
                 anchors.fill: parent
-                radius: 14
-                color: "black"
+                radius: artFrame.radius
+                color: "white"
                 visible: false
             }
 
             OpacityMask {
-                id: maskedArt
                 anchors.fill: parent
                 source: artImageSource
                 maskSource: artMask
-                cached: true
-                visible: root.artSource.length > 0 && artImageSource.status === Image.Ready
+                visible: artFrame.artReady
             }
 
             Rectangle {
                 anchors.fill: parent
-                visible: !maskedArt.visible
-                radius: 14
-                gradient: Gradient {
-                    GradientStop { position: 0.0; color: Qt.rgba(0.24, 0.28, 0.34, 0.80) }
-                    GradientStop { position: 1.0; color: Qt.rgba(0.10, 0.12, 0.15, 0.86) }
-                }
-            }
-
-            Text {
-                anchors.centerIn: parent
-                visible: !maskedArt.visible
-                text: "􀑪"
-                color: Qt.rgba(1, 1, 1, 0.88)
-                font.family: Root.Theme.fontFamilySymbol
-                font.pixelSize: 17
-                font.weight: Font.Bold
-                renderType: Text.NativeRendering
+                visible: !artFrame.artReady
+                radius: artFrame.radius
+                color: Qt.rgba(1, 1, 1, 0.10)
             }
         }
 
         Text {
             visible: root.available
             x: 16
-            y: 66
+            y: 64
             width: 110
             text: root.trackTitle
-            color: Qt.rgba(1, 1, 1, 0.98)
+            color: Qt.rgba(1, 1, 1, 0.85)
             font.family: Root.Theme.fontFamily
-            font.pixelSize: 14
+            font.pixelSize: 12
             font.weight: Font.Medium
             elide: Text.ElideRight
             renderType: Text.NativeRendering
@@ -141,12 +143,12 @@ Item {
         Text {
             visible: root.available
             x: 16
-            y: 84
+            y: 80
             width: 110
             text: root.artistName
             color: Qt.rgba(1, 1, 1, 84 / 255)
             font.family: Root.Theme.fontFamily
-            font.pixelSize: 14
+            font.pixelSize: 12
             font.weight: Font.Medium
             elide: Text.ElideRight
             renderType: Text.NativeRendering
@@ -160,7 +162,7 @@ Item {
             text: "Not Playing"
             color: Qt.rgba(1, 1, 1, 191 / 255)
             font.family: Root.Theme.fontFamily
-            font.pixelSize: 14
+            font.pixelSize: 12
             font.weight: Font.Medium
             renderType: Text.NativeRendering
         }

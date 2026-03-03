@@ -6,17 +6,54 @@ import "../.." as Root
 Item {
     id: root
 
-    property string title: "Display"
-    property real value: 0.66
-    property string minusSymbol: "􀆬"
-    property string plusSymbol: "􀆮"
+    property string sizeMode: "4x1"
+    property var tileData: ({})
+
+    readonly property string resolvedSizeMode: _resolveSizeMode(root.sizeMode)
+    readonly property bool compactMode: root.resolvedSizeMode === "2x1"
+    readonly property string title: _stringData("title", "Display")
+    readonly property string minusSymbol: _stringData("minusSymbol", "􀆬")
+    readonly property string plusSymbol: _stringData("plusSymbol", "􀆮")
+    readonly property real value: _clamp(_numberData("value", 0.66))
 
     signal valueChangedByUser(real value)
 
-    implicitWidth: 292
+    implicitWidth: root.compactMode ? 140 : 292
     implicitHeight: 64
     width: implicitWidth
     height: implicitHeight
+
+    function _resolveSizeMode(mode) {
+        if (mode === "2x1" || mode === "4x1") {
+            return mode;
+        }
+
+        return "4x1";
+    }
+
+    function _rawDataValue(key, fallback) {
+        var data = root.tileData;
+        if (!data || typeof data !== "object") {
+            return fallback;
+        }
+
+        var value = data[key];
+        return value === undefined ? fallback : value;
+    }
+
+    function _stringData(key, fallback) {
+        var value = _rawDataValue(key, fallback);
+        return value === undefined || value === null ? String(fallback) : String(value);
+    }
+
+    function _numberData(key, fallback) {
+        var number = Number(_rawDataValue(key, fallback));
+        if (!isFinite(number)) {
+            return Number(fallback);
+        }
+
+        return number;
+    }
 
     function _clamp(nextValue) {
         return Math.max(0, Math.min(1, Number(nextValue)));
@@ -27,7 +64,7 @@ Item {
         if (Math.abs(clamped - root.value) < 0.0001) {
             return;
         }
-        root.value = clamped;
+
         root.valueChangedByUser(clamped);
     }
 
@@ -35,14 +72,8 @@ Item {
         if (trackWidth <= 0) {
             return;
         }
-        _setUserValue(trackX / trackWidth);
-    }
 
-    onValueChanged: {
-        var clamped = _clamp(root.value);
-        if (clamped !== root.value) {
-            root.value = clamped;
-        }
+        _setUserValue(trackX / trackWidth);
     }
 
     HoverHandler {
@@ -51,7 +82,7 @@ Item {
 
     Tiles.TileSurface {
         anchors.fill: parent
-        radius: 25
+        radius: root.compactMode ? (height / 2) : 25
         hovered: hoverHandler.hovered
         pressed: minusTap.pressed || plusTap.pressed || sliderTrackMouseArea.pressed
         tintColor: Qt.rgba(0, 0, 0, 0.20)
@@ -62,13 +93,13 @@ Item {
 
         Text {
             anchors.left: parent.left
-            anchors.leftMargin: 16
+            anchors.leftMargin: root.compactMode ? 12 : 16
             anchors.top: parent.top
-            anchors.topMargin: 12
+            anchors.topMargin: root.compactMode ? 11 : 12
             text: root.title
             color: Qt.rgba(1, 1, 1, 217 / 255)
             font.family: Root.Theme.fontFamily
-            font.pixelSize: 12
+            font.pixelSize: root.compactMode ? 11 : 12
             font.weight: Font.DemiBold
             renderType: Text.NativeRendering
         }
@@ -76,11 +107,11 @@ Item {
         Item {
             id: controlsRow
             anchors.left: parent.left
-            anchors.leftMargin: 16
+            anchors.leftMargin: root.compactMode ? 10 : 16
             anchors.right: parent.right
-            anchors.rightMargin: 20
+            anchors.rightMargin: root.compactMode ? 10 : 20
             anchors.bottom: parent.bottom
-            anchors.bottomMargin: 8
+            anchors.bottomMargin: root.compactMode ? 7 : 8
             height: 28
 
             Item {
@@ -105,7 +136,7 @@ Item {
                     anchors.centerIn: parent
                     text: root.minusSymbol
                     color: Qt.rgba(1, 1, 1, 0.95)
-                    opacity: minusTap.pressed ? 0.62 : (minusHover.hovered ? 0.92 : 1)
+                    opacity: minusTap.pressed ? 0.62 : (minusHover.hovered ? 0.92 : 1.0)
                     font.family: Root.Theme.fontFamilySymbol
                     font.pixelSize: 15
                     font.weight: Font.Bold
@@ -116,9 +147,10 @@ Item {
             Item {
                 id: sliderTrackInput
                 anchors.left: minusButton.right
-                anchors.leftMargin: 4
+                anchors.leftMargin: 8
+                anchors.right: plusButton.left
+                anchors.rightMargin: 12
                 anchors.verticalCenter: parent.verticalCenter
-                width: 218
                 height: 20
 
                 MouseArea {
@@ -173,8 +205,7 @@ Item {
 
             Item {
                 id: plusButton
-                anchors.left: sliderTrackInput.right
-                anchors.leftMargin: 4
+                anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 width: 14
                 height: 20
@@ -194,7 +225,7 @@ Item {
                     anchors.centerIn: parent
                     text: root.plusSymbol
                     color: Qt.rgba(1, 1, 1, 0.95)
-                    opacity: plusTap.pressed ? 0.62 : (plusHover.hovered ? 0.92 : 1)
+                    opacity: plusTap.pressed ? 0.62 : (plusHover.hovered ? 0.92 : 1.0)
                     font.family: Root.Theme.fontFamilySymbol
                     font.pixelSize: 15
                     font.weight: Font.Bold

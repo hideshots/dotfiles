@@ -1,8 +1,7 @@
 module controlcenter.tiles
 TileSurface 1.0 TileSurface.qml
 SymbolCircle 1.0 SymbolCircle.qml
-ToggleTile140 1.0 ToggleTile140.qml
-ToggleTile140x64 1.0 ToggleTile140x64.qml
-RoundAction64 1.0 RoundAction64.qml
-SliderTile292x64 1.0 SliderTile292x64.qml
-NowPlayingTile140 1.0 NowPlayingTile140.qml
+ToggleTile 1.0 ToggleTile.qml
+ActionTile 1.0 ActionTile.qml
+SliderTile 1.0 SliderTile.qml
+NowPlayingTile 1.0 NowPlayingTile.qml
