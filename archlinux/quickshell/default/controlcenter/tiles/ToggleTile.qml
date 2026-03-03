@@ -80,11 +80,7 @@ Item {
             ? (root.checked ? Qt.rgba(1, 1, 1, 1.0) : Qt.rgba(0, 0, 0, 0.20))
             : Qt.rgba(0, 0, 0, 0.20)
         contrastColor: Qt.rgba(1, 1, 1, 0.0)
-        borderColor: root.iconOnlyMode ? Qt.rgba(1, 1, 1, 0.0) : Qt.rgba(1, 1, 1, 0.12)
-        edgeOpacity: root.iconOnlyMode ? (root.checked ? 0.56 : 0.78) : 0.78
-        edgeTint: root.iconOnlyMode
-            ? (root.checked ? Qt.rgba(0.85, 0.90, 1.0, 0.96) : Qt.rgba(1, 1, 1, 0.96))
-            : Qt.rgba(1, 1, 1, 0.96)
+        borderColor: Qt.rgba(1, 1, 1, 0.0)
 
         Tiles.SymbolCircle {
             visible: root.resolvedSizeMode === "2x2"

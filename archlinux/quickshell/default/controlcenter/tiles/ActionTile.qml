@@ -75,9 +75,6 @@ Item {
         tintColor: root.checked ? Qt.rgba(1, 1, 1, 1.0) : Qt.rgba(0, 0, 0, 0.20)
         contrastColor: Qt.rgba(1, 1, 1, 0.0)
         borderColor: Qt.rgba(1, 1, 1, 0.0)
-        edgeLightEnabled: true
-        edgeOpacity: root.checked ? 0.56 : 0.78
-        edgeTint: root.checked ? Qt.rgba(0.85, 0.90, 1.0, 0.96) : Qt.rgba(1, 1, 1, 0.96)
 
         Text {
             anchors.centerIn: parent

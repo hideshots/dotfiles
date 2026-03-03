@@ -9,14 +9,17 @@ QtObject {
     property string artist: ""
     property string title: ""
     property string artUrl: ""
+    property string currentPlayer: ""
     property bool monitorEnabled: true
 
     readonly property var metadataCommand: [
         "playerctl",
+        "--player",
+        "spotify,mpd,%any",
         "metadata",
         "--follow",
         "--format",
-        "{{status}}\t{{artist}}\t{{title}}\t{{mpris:artUrl}}"
+        "{{status}}\t{{artist}}\t{{title}}\t{{mpris:artUrl}}\t{{playerName}}"
     ]
 
     function _clearState() {
@@ -25,6 +28,7 @@ QtObject {
         root.artist = "";
         root.title = "";
         root.artUrl = "";
+        root.currentPlayer = "";
     }
 
     function _field(parts, index) {
@@ -57,6 +61,7 @@ QtObject {
         root.artist = _field(parts, 1);
         root.title = _field(parts, 2);
         root.artUrl = _field(parts, 3);
+        root.currentPlayer = _field(parts, 4);
     }
 
     function _startMonitor() {
@@ -73,16 +78,24 @@ QtObject {
         actionProcess.exec(command);
     }
 
+    function _actionCommand(action) {
+        var player = root.currentPlayer ? String(root.currentPlayer).trim() : "";
+        if (player.length > 0) {
+            return ["playerctl", "--player", player, action];
+        }
+        return ["playerctl", "--player", "spotify,mpd,%any", action];
+    }
+
     function playPause() {
-        _runAction(["playerctl", "play-pause"]);
+        _runAction(_actionCommand("play-pause"));
     }
 
     function next() {
-        _runAction(["playerctl", "next"]);
+        _runAction(_actionCommand("next"));
     }
 
     function previous() {
-        _runAction(["playerctl", "previous"]);
+        _runAction(_actionCommand("previous"));
     }
 
     onMonitorEnabledChanged: {

@@ -79,9 +79,7 @@ Item {
         radius: 34
         tintColor: Qt.rgba(0, 0, 0, 0.20)
         contrastColor: Qt.rgba(1, 1, 1, 0.0)
-        borderColor: Qt.rgba(1, 1, 1, 0.12)
-        edgeOpacity: 0.78
-        edgeTint: Qt.rgba(1, 1, 1, 0.96)
+        borderColor: Qt.rgba(1, 1, 1, 0.0)
 
         Rectangle {
             id: artFrame

@@ -12,13 +12,13 @@ Item {
     property real borderWidth: 1
 
     property bool edgeLightEnabled: true
-    property real edgeOpacity: 0.70
+    property real edgeOpacity: 0.8
     property color edgeTint: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.95) : Qt.rgba(1, 1, 1, 0.90)
     property real lightAngleDeg: 330
     property real lightStrength: 5.0
     property real lightWidthPx: 4.0
-    property real lightSharpness: 0.28
-    property real cornerBoost: 0.45
+    property real lightSharpness: 0.1
+    property real cornerBoost: 0.0
 
     property bool hovered: false
     property bool pressed: false

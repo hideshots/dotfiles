@@ -87,9 +87,7 @@ Item {
         pressed: minusTap.pressed || plusTap.pressed || sliderTrackMouseArea.pressed
         tintColor: Qt.rgba(0, 0, 0, 0.20)
         contrastColor: Qt.rgba(1, 1, 1, 0.0)
-        borderColor: Qt.rgba(1, 1, 1, 0.12)
-        edgeOpacity: 0.78
-        edgeTint: Qt.rgba(1, 1, 1, 0.96)
+        borderColor: Qt.rgba(1, 1, 1, 0.0)
 
         Text {
             anchors.left: parent.left
@@ -147,9 +145,9 @@ Item {
             Item {
                 id: sliderTrackInput
                 anchors.left: minusButton.right
-                anchors.leftMargin: 8
+                anchors.leftMargin: 15
                 anchors.right: plusButton.left
-                anchors.rightMargin: 12
+                anchors.rightMargin: 20
                 anchors.verticalCenter: parent.verticalCenter
                 height: 20
 
