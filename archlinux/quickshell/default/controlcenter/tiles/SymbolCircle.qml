@@ -11,7 +11,7 @@ Item {
     property int symbolSize: 17
     property color symbolColor: filled ? Qt.rgba(0.08, 0.44, 1.0, 1.0) : Qt.rgba(1, 1, 1, 0.97)
     property color filledColor: Qt.rgba(1, 1, 1, 1.0)
-    property color unfilledColor: Qt.rgba(34 / 255, 34 / 255, 34 / 255, 0.1)
+    property color unfilledColor: Qt.rgba(1, 1, 1, 0.2)
     property color borderColor: Qt.rgba(1, 1, 1, 0.0)
 
     implicitWidth: diameter

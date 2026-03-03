@@ -47,7 +47,7 @@ QtObject {
     readonly property int itemPadding: 10
     readonly property int itemVerticalPadding: 4
     readonly property int borderRadius: 99
-    readonly property int privacyIndicatorDotSize: 6
+    readonly property int privacyIndicatorDotSize: 5
     readonly property int privacyIndicatorArrowSize: 11
     readonly property int privacyIndicatorOffsetX: 6
     readonly property int privacyIndicatorSpacing: 3
