@@ -477,7 +477,7 @@ function getLargestWindow(workspace) {
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontSize
                 renderType: Text.NativeRendering
-                font.weight: root.macosMode ? Font.Normal : (modelData.active ? Font.Bold : Font.Medium)
+                font.weight: root.macosMode ? Font.Light : (modelData.active ? Font.Bold : Font.Medium)
                 color: Theme.textPrimary
             }
 

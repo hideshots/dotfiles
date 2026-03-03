@@ -5,6 +5,7 @@ Rectangle {
     id: root
 
     property string icon: ""
+    property real iconOffsetX: 0
     property var highlightState: null
     signal clicked()
 
@@ -16,6 +17,7 @@ Rectangle {
     Text {
         id: iconText
         anchors.centerIn: parent
+        anchors.horizontalCenterOffset: root.iconOffsetX
         text: root.icon
         font.family: Theme.fontFamily
         font.pixelSize: Theme.fontSize

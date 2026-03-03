@@ -705,9 +705,9 @@ ShellRoot {
                                     }
                                 }
                             }
+
                         }
                     }
-
                 }
             }
         }
@@ -1442,6 +1442,14 @@ ShellRoot {
                             id: rightSection
                             height: parent.height
                             width: rightRow.implicitWidth
+                            readonly property var privacyState: Root.PrivacyIndicatorService.state
+                            readonly property string privacyDotKind: Root.PrivacyIndicatorService.activeDotKind
+                            readonly property bool privacyDotVisible: privacyDotKind !== "none"
+                            readonly property bool privacyArrowVisible: privacyState.locationActive && !privacyDotVisible
+                            readonly property bool privacyIndicatorVisible: privacyDotVisible || privacyArrowVisible
+                            readonly property real controlCenterIndicatorCompensationX: privacyIndicatorVisible ? Theme.privacyIndicatorControlCenterCompensationX : 0
+                            readonly property color privacyDotColor: privacyDotKind === "camera" ? Theme.privacyCameraIndicator : (privacyDotKind === "mic" ? Theme.privacyMicrophoneIndicator : (privacyDotKind === "systemAudio" ? Theme.privacySystemAudioIndicator : "transparent"))
+                            readonly property real privacyIndicatorAnchorX: controlCenterButton.x - controlCenterIndicatorCompensationX + (controlCenterButton.width / 2) + (Theme.iconSize / 2) + Theme.privacyIndicatorOffsetX
                             function syncRightHighlight() {
                                 var notificationCenterShouldHighlight = barPanelWindow.notificationCenterOpenProxy && barPanelWindow.notificationCenterTriggerItemProxy === timeDisplay;
                                 var controlCenterShouldHighlight = barPanelWindow.controlCenterOpenProxy
@@ -1522,6 +1530,7 @@ ShellRoot {
                                 IconButton {
                                     id: controlCenterButton
                                     icon: "􀜊"
+                                    iconOffsetX: -rightSection.controlCenterIndicatorCompensationX
                                     highlightState: rightHi
                                     onClicked: barPanelWindow.toggleControlCenterForBar(controlCenterButton)
                                 }
@@ -1531,6 +1540,34 @@ ShellRoot {
                                     height: parent.height
                                     highlightState: rightHi
                                     onClicked: barPanelWindow.toggleNotificationCenterForBar(timeDisplay)
+                                }
+                            }
+
+                            Row {
+                                id: controlCenterPrivacyIndicators
+                                z: 2
+                                visible: rightSection.privacyIndicatorVisible
+                                x: rightSection.privacyIndicatorAnchorX - (width / 2)
+                                anchors.verticalCenter: rightRow.verticalCenter
+                                spacing: Theme.privacyIndicatorSpacing
+
+                                Rectangle {
+                                    visible: rightSection.privacyDotVisible
+                                    width: Theme.privacyIndicatorDotSize
+                                    height: width
+                                    radius: width / 2
+                                    color: rightSection.privacyDotColor
+                                }
+
+                                Text {
+                                    visible: rightSection.privacyArrowVisible
+                                    text: Theme.privacyIndicatorArrowGlyph
+                                    color: Theme.privacyLocationIndicator
+                                    font.family: Theme.fontFamilySymbol
+                                    font.pixelSize: Theme.privacyIndicatorArrowSize
+                                    font.weight: Font.DemiBold
+                                    renderType: Text.NativeRendering
+                                    verticalAlignment: Text.AlignVCenter
                                 }
                             }
                         }

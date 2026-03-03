@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 
+import ".." as Root
 import "layout/GridPacker.js" as GridPacker
 import "layout/TileRegistry.js" as TileRegistry
 import "providers" as Providers
@@ -19,6 +20,16 @@ Item {
     property int gridUnit: 64
     property int gridGap: 12
     property int gridColumns: 4
+    property int privacyRowHeight: 28
+    property int privacyRowGap: 10
+    property int footerButtonHeight: 28
+    property int footerButtonGap: 10
+
+    readonly property var privacyState: Root.PrivacyIndicatorService.state
+    readonly property bool anyPrivacyActive: Root.PrivacyIndicatorService.anyActive
+    readonly property var privacyIconDescriptors: _privacyIconDescriptors()
+    readonly property string privacyPrimaryApp: _privacyPrimaryApp()
+    readonly property string privacyAppLabelText: root.privacyPrimaryApp.length > 0 ? root.privacyPrimaryApp : "Unknown App"
 
     readonly property var tileDescriptors: [
         {
@@ -104,11 +115,58 @@ Item {
     readonly property var placements: packedLayout.placements ? packedLayout.placements : []
     readonly property int panelPixelWidth: packedLayout.widthPx ? packedLayout.widthPx : 0
     readonly property int panelPixelHeight: packedLayout.heightPx ? packedLayout.heightPx : 0
+    readonly property int contentTopInset: root.anyPrivacyActive ? (root.privacyRowHeight + root.privacyRowGap) : 0
+    readonly property int footerInset: root.footerButtonGap + root.footerButtonHeight
 
     implicitWidth: root.panelPixelWidth
-    implicitHeight: root.panelPixelHeight
+    implicitHeight: root.panelPixelHeight + root.contentTopInset + root.footerInset
     width: implicitWidth
     height: implicitHeight
+
+    function _privacyPrimaryApp() {
+        var apps = root.privacyState.activeApps;
+        if (!Array.isArray(apps) || apps.length === 0) {
+            return "";
+        }
+
+        var first = apps[0];
+        if (first === undefined || first === null) {
+            return "";
+        }
+
+        return String(first).trim();
+    }
+
+    function _privacyIconDescriptors() {
+        var descriptors = [];
+
+        if (root.privacyState.micActive) {
+            descriptors.push({
+                glyph: "􀊱",
+                color: Root.Theme.privacyMicrophoneIndicator
+            });
+        }
+        if (root.privacyState.systemAudioRecordingActive || root.privacyState.screenShareActive) {
+            descriptors.push({
+                glyph: "􁅀",
+                color: Root.Theme.privacySystemAudioIndicator
+            });
+        }
+        if (root.privacyState.cameraActive) {
+            descriptors.push({
+                glyph: "􀌟",
+                color: Root.Theme.privacyCameraIndicator
+            });
+        }
+        if (root.privacyState.locationActive) {
+            descriptors.push({
+                glyph: Root.Theme.privacyIndicatorArrowGlyph,
+                color: Root.Theme.privacyLocationIndicator
+            });
+        }
+
+        return descriptors;
+    }
 
     function descriptorForId(tileId) {
         for (var i = 0; i < root.resolvedTileDescriptors.length; i++) {
@@ -278,50 +336,152 @@ Item {
         }
     }
 
-    Repeater {
-        model: root.placements
+    Tiles.TileSurface {
+        id: privacyRow
+        visible: root.anyPrivacyActive
+        width: Math.min(root.panelPixelWidth, privacyContent.implicitWidth + 20)
+        height: root.privacyRowHeight
+        anchors.horizontalCenter: parent.horizontalCenter
+        radius: Math.round(height / 2)
+        tintColor: Qt.rgba(0, 0, 0, 0.20)
+        contrastColor: Qt.rgba(1, 1, 1, 0.0)
+        borderColor: Qt.rgba(1, 1, 1, 0.0)
 
-        Loader {
-            id: tileLoader
-            required property var modelData
-            readonly property var placement: modelData
-            readonly property string placementSizeMode: root.sizeModeForPlacement(placement)
-            readonly property var descriptorData: root.tileDataForPlacement(placement)
+        Row {
+            id: privacyContent
+            anchors.left: parent.left
+            anchors.leftMargin: 10
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 6
 
-            x: placement.x
-            y: placement.y
-            width: placement.width
-            height: placement.height
-            sourceComponent: root.sourceComponentForKind(placement.kind)
+            Row {
+                id: privacyIconsRow
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 2
 
-            function syncLoadedItem() {
-                if (!item) {
-                    return;
+                Repeater {
+                    model: root.privacyIconDescriptors
+
+                    Rectangle {
+                        id: privacyIconChip
+                        required property var modelData
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 15
+                        height: 15
+                        radius: 7.5
+                        color: modelData.color
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: privacyIconChip.modelData.glyph
+                            color: "#ffffff"
+                            font.family: Root.Theme.fontFamilySymbol
+                            font.pixelSize: 8
+                            font.weight: Font.Medium
+                            renderType: Text.NativeRendering
+                        }
+                    }
                 }
-
-                item.width = width;
-                item.height = height;
-                item.sizeMode = placementSizeMode;
-                item.tileData = descriptorData;
             }
 
-            onLoaded: syncLoadedItem()
-            onWidthChanged: syncLoadedItem()
-            onHeightChanged: syncLoadedItem()
-            onPlacementSizeModeChanged: syncLoadedItem()
-            onDescriptorDataChanged: syncLoadedItem()
+            Text {
+                id: privacyAppLabel
+                anchors.verticalCenter: parent.verticalCenter
+                readonly property real maxWidth: Math.max(0, root.panelPixelWidth - privacyIconsRow.implicitWidth - 32)
+                width: Math.min(implicitWidth, maxWidth)
+                text: root.privacyAppLabelText
+                color: Qt.rgba(1, 1, 1, 0.88)
+                font.family: Root.Theme.fontFamily
+                font.pixelSize: 12
+                font.weight: Font.Medium
+                elide: Text.ElideRight
+                renderType: Text.NativeRendering
+            }
+        }
+    }
 
-            Connections {
-                target: tileLoader.item
-                ignoreUnknownSignals: true
+    Item {
+        id: gridLayer
+        y: root.contentTopInset
+        width: root.panelPixelWidth
+        height: root.panelPixelHeight
 
-                function onToggled(nextChecked) {
-                    root.handleToggleForTile(tileLoader.placement.id, nextChecked);
+        Repeater {
+            model: root.placements
+
+            Loader {
+                id: tileLoader
+                required property var modelData
+                readonly property var placement: modelData
+                readonly property string placementSizeMode: root.sizeModeForPlacement(placement)
+                readonly property var descriptorData: root.tileDataForPlacement(placement)
+
+                x: placement.x
+                y: placement.y
+                width: placement.width
+                height: placement.height
+                sourceComponent: root.sourceComponentForKind(placement.kind)
+
+                function syncLoadedItem() {
+                    if (!item) {
+                        return;
+                    }
+
+                    item.width = width;
+                    item.height = height;
+                    item.sizeMode = placementSizeMode;
+                    item.tileData = descriptorData;
                 }
 
-                function onValueChangedByUser(nextValue) {
-                    root.handleValueChangedForTile(tileLoader.placement.id, nextValue);
+                onLoaded: syncLoadedItem()
+                onWidthChanged: syncLoadedItem()
+                onHeightChanged: syncLoadedItem()
+                onPlacementSizeModeChanged: syncLoadedItem()
+                onDescriptorDataChanged: syncLoadedItem()
+
+                Connections {
+                    target: tileLoader.item
+                    ignoreUnknownSignals: true
+
+                    function onToggled(nextChecked) {
+                        root.handleToggleForTile(tileLoader.placement.id, nextChecked);
+                    }
+
+                    function onValueChangedByUser(nextValue) {
+                        root.handleValueChangedForTile(tileLoader.placement.id, nextValue);
+                    }
                 }
+            }
+        }
+    }
+
+    Tiles.TileSurface {
+        id: editControlsButton
+        width: Math.min(root.panelPixelWidth, editControlsContent.implicitWidth + 20)
+        height: root.footerButtonHeight
+        anchors.horizontalCenter: parent.horizontalCenter
+        y: root.contentTopInset + root.panelPixelHeight + root.footerButtonGap
+        radius: Math.round(height / 2)
+        tintColor: Qt.rgba(0, 0, 0, 0.20)
+        contrastColor: Qt.rgba(1, 1, 1, 0.0)
+        borderColor: Qt.rgba(1, 1, 1, 0.0)
+
+        Row {
+            id: editControlsContent
+            anchors.left: parent.left
+            anchors.leftMargin: 10
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 6
+
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: "Edit Controls"
+                color: Qt.rgba(1, 1, 1, 0.88)
+                font.family: Root.Theme.fontFamily
+                font.pixelSize: 12
+                font.weight: Font.Medium
+                elide: Text.ElideNone
+                renderType: Text.NativeRendering
             }
         }
     }

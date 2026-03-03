@@ -47,6 +47,16 @@ QtObject {
     readonly property int itemPadding: 10
     readonly property int itemVerticalPadding: 4
     readonly property int borderRadius: 99
+    readonly property int privacyIndicatorDotSize: 6
+    readonly property int privacyIndicatorArrowSize: 11
+    readonly property int privacyIndicatorOffsetX: 6
+    readonly property int privacyIndicatorSpacing: 3
+    readonly property int privacyIndicatorControlCenterCompensationX: 5
+    readonly property string privacyIndicatorArrowGlyph: "􀋒"
+    readonly property color privacyCameraIndicator: "#30D158"
+    readonly property color privacyMicrophoneIndicator: "#fe872a"
+    readonly property color privacySystemAudioIndicator: "#5c59fa"
+    readonly property color privacyLocationIndicator: "#0A84FF"
 
     // Material background effects (from CSS variables)
     readonly property color materialUltraThick: isDark
