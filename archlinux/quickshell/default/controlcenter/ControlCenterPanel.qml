@@ -76,12 +76,12 @@ Item {
                 order: 10,
                 data: {
                     symbol: "􀙈",
+                    symbolOn: "􀙇",
+                    symbolOff: "􀙈",
                     title: "Wi-Fi",
                     detailOn: "On",
                     detailOff: "Off",
-                    detail: root.wifiChecked
-                        ? (root.wifiConnected && root.wifiConnectedName.length > 0 ? root.wifiConnectedName : "On")
-                        : "Off",
+                    detail: root.wifiChecked ? (root.wifiConnected && root.wifiConnectedName.length > 0 ? root.wifiConnectedName : "On") : "Off",
                     checked: root.wifiChecked
                 }
             },
@@ -102,8 +102,7 @@ Item {
                 h: 1,
                 order: 30,
                 data: {
-                    symbolOn: "􀖀",
-                    symbolOff: "􁅒",
+                    symbol: "􀖀",
                     title: "Bluetooth",
                     detailOn: "On",
                     detailOff: "Off",
@@ -416,29 +415,25 @@ Item {
     Component {
         id: toggleTileComponent
 
-        Tiles.ToggleTile {
-        }
+        Tiles.ToggleTile {}
     }
 
     Component {
         id: actionTileComponent
 
-        Tiles.ActionTile {
-        }
+        Tiles.ActionTile {}
     }
 
     Component {
         id: sliderTileComponent
 
-        Tiles.SliderTile {
-        }
+        Tiles.SliderTile {}
     }
 
     Component {
         id: nowPlayingTileComponent
 
-        Tiles.NowPlayingTile {
-        }
+        Tiles.NowPlayingTile {}
     }
 
     Component {
@@ -486,6 +481,7 @@ Item {
                         color: modelData.color
 
                         Root.SymbolIcon {
+                            svgScale: 1.18
                             anchors.centerIn: parent
                             width: 8
                             height: 8

@@ -22,7 +22,6 @@ QtObject {
             "􀉩": { sfName: "", usage: "menu log out" },
             "􀊫": { sfName: "", usage: "unused commented menubar icon" },
             "􀎥": { sfName: "", usage: "menu sleep" },
-            "􀙇": { sfName: "", usage: "unused commented menubar icon" },
             "􀙗": { sfName: "", usage: "menu about this mac" },
             "􀙧": { sfName: "", usage: "menu lock screen" },
             "􀜊": { sfName: "switch.2", usage: "menubar control center" },
@@ -31,25 +30,24 @@ QtObject {
             "􁣡": { sfName: "", usage: "menu app store" },
 
             // Control center
-            "􀖀": { sfName: "", usage: "bluetooth on" },
-            "􀆬": { sfName: "", usage: "slider minus / weather clear-day currently shares glyph" },
-            "􀆮": { sfName: "", usage: "slider plus / weather clear-day currently shares glyph" },
-            "􀆺": { sfName: "", usage: "focus / weather clear-night currently shares glyph" },
-            "􀙈": { sfName: "", usage: "wireless / wifi" },
-            "􀯇": { sfName: "", usage: "reduce transparency" },
-            "􀊄": { sfName: "", usage: "now playing play" },
-            "􀊆": { sfName: "", usage: "now playing pause" },
-            "􀊊": { sfName: "", usage: "now playing previous" },
-            "􀊌": { sfName: "", usage: "now playing next" },
-            "􀊡": { sfName: "", usage: "volume slider minus" },
-            "􀊩": { sfName: "", usage: "volume slider plus" },
+            "􀖀": { sfName: "bluetooth", usage: "bluetooth on" },
+            "􀆬": { sfName: "sun.min.fill", usage: "slider minus / weather clear-day currently shares glyph" },
+            "􀆮": { sfName: "sun.max.fill", usage: "slider plus / weather clear-day currently shares glyph" },
+            "􀆺": { sfName: "moon.fill", usage: "focus / weather clear-night currently shares glyph" },
+            "􀙈": { sfName: "wifi.slash", usage: "wireless off" },
+            "􀙇": { sfName: "wifi", usage: "wireless on" },
+            "􀯇": { sfName: "square.on.square.intersection.dashed", usage: "reduce transparency" },
+            "􀊄": { sfName: "play", usage: "now playing play" },
+            "􀊆": { sfName: "pause", usage: "now playing pause" },
+            "􀊊": { sfName: "backward", usage: "now playing previous" },
+            "􀊌": { sfName: "forward", usage: "now playing next" },
+            "􀊡": { sfName: "speaker.fill", usage: "volume slider minus", scale: 0.7 },
+            "􀊩": { sfName: "speaker.wave.3.fill", usage: "volume slider plus", scale: 1.0 },
             "􀊱": { sfName: "", usage: "privacy mic active" },
-            "􀌟": { sfName: "", usage: "camera" },
-            "􀛮": { sfName: "", usage: "floor lamp tile" },
             "􁅀": { sfName: "", usage: "privacy system audio / screen share" },
             "􁅒": { sfName: "", usage: "bluetooth off" },
-            "􁊕": { sfName: "", usage: "reduce motion" },
-            "􂱣": { sfName: "", usage: "night shift toggle" },
+            "􁊕": { sfName: "circle.dotted.and.circle", usage: "reduce motion" },
+            "􂱣": { sfName: "sun.righthalf.filled", usage: "night shift toggle" },
 
             // Weather
             "􀆶": { sfName: "", usage: "weather dust_day" },
@@ -77,6 +75,14 @@ QtObject {
         }
 
         return String(value);
+    }
+
+    function _safeNumber(value, fallbackValue) {
+        var numeric = Number(value);
+        if (!isFinite(numeric)) {
+            return fallbackValue;
+        }
+        return numeric;
     }
 
     function _entryForGlyph(glyph) {
@@ -112,6 +118,15 @@ QtObject {
         }
 
         return Qt.resolvedUrl(root.svgDir + "/" + sfName + ".svg");
+    }
+
+    function scaleForGlyph(glyph) {
+        var entry = _entryForGlyph(glyph);
+        if (!entry) {
+            return 1.0;
+        }
+
+        return Math.max(0.1, _safeNumber(entry.scale, 1.0));
     }
 
     function warnMissingOnce(glyph, reason) {

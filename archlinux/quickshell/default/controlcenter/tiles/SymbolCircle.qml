@@ -32,6 +32,7 @@ Item {
         anchors.centerIn: parent
         width: root.symbolSize
         height: root.symbolSize
+        svgScale: 1.18
         glyph: root.symbol
         fallbackColor: root.symbolColor
         fallbackFontFamily: Root.Theme.fontFamilySymbol

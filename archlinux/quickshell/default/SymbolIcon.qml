@@ -1,4 +1,5 @@
 import QtQuick
+import Qt5Compat.GraphicalEffects
 
 import "." as Root
 
@@ -11,13 +12,19 @@ Item {
     property int pixelSize: 16
     property int fontWeight: Font.Normal
     property bool svgEnabled: Root.Symbols.svgEnabled
+    property bool svgTintEnabled: true
+    property color svgTintColor: fallbackColor
+    property real svgScale: 1.0
 
     readonly property string _trimmedGlyph: glyph === undefined || glyph === null ? "" : String(glyph)
     readonly property bool _glyphKnown: Root.Symbols.hasGlyphEntry(_trimmedGlyph)
     readonly property string _sfName: svgEnabled ? Root.Symbols.sfNameForGlyph(_trimmedGlyph) : ""
     readonly property string _svgSource: svgEnabled ? Root.Symbols.svgUrlForGlyph(_trimmedGlyph) : ""
+    readonly property real _glyphSvgScale: svgEnabled ? Root.Symbols.scaleForGlyph(_trimmedGlyph) : 1.0
+    readonly property real _effectiveSvgScale: Math.max(0.1, root.svgScale) * Math.max(0.1, _glyphSvgScale)
     readonly property bool _hasSvgCandidate: svgEnabled && _trimmedGlyph.length > 0 && _sfName.length > 0 && _svgSource.length > 0
     readonly property bool svgReady: _hasSvgCandidate && svgImage.status === Image.Ready
+    readonly property bool svgTintActive: svgReady && svgTintEnabled
 
     implicitWidth: svgReady ? pixelSize : fallbackText.implicitWidth
     implicitHeight: svgReady ? pixelSize : fallbackText.implicitHeight
@@ -42,8 +49,11 @@ Item {
 
     Image {
         id: svgImage
-        anchors.fill: parent
+        anchors.centerIn: parent
+        width: root.width * root._effectiveSvgScale
+        height: root.height * root._effectiveSvgScale
         visible: root.svgReady
+        opacity: root.svgTintActive ? 0 : 1
         source: root._hasSvgCandidate ? root._svgSource : ""
         fillMode: Image.PreserveAspectFit
         asynchronous: true
@@ -58,6 +68,14 @@ Item {
 
             Root.Symbols.warnMissingOnce(root._trimmedGlyph, "load failed");
         }
+    }
+
+    ColorOverlay {
+        anchors.fill: svgImage
+        visible: root.svgTintActive
+        source: svgImage
+        color: root.svgTintColor
+        cached: true
     }
 
     Text {

@@ -15,7 +15,7 @@ Item {
     readonly property color accentColor: _colorData("accentColor", Qt.rgba(0.08, 0.44, 1.0, 1.0))
 
     signal toggled(bool checked)
-    signal activated()
+    signal activated
 
     implicitWidth: root.resolvedSizeMode === "2x2" ? 140 : (root.resolvedSizeMode === "2x1" ? 140 : 64)
     implicitHeight: root.resolvedSizeMode === "2x2" ? 140 : 64
@@ -77,6 +77,7 @@ Item {
         borderColor: Qt.rgba(1, 1, 1, 0.0)
 
         Root.SymbolIcon {
+            svgScale: 1.18
             anchors.centerIn: parent
             width: root.resolvedSizeMode === "2x2" ? 24 : 19
             height: width

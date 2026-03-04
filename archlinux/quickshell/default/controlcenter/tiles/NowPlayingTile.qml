@@ -15,12 +15,8 @@ Item {
 
     readonly property bool available: !!provider && provider.available
     readonly property bool playing: !!provider && provider.playing
-    readonly property string trackTitle: available
-        ? ((provider.title && String(provider.title).trim().length > 0) ? provider.title : "Track")
-        : ""
-    readonly property string artistName: available
-        ? ((provider.artist && String(provider.artist).trim().length > 0) ? provider.artist : "Artist")
-        : ""
+    readonly property string trackTitle: available ? ((provider.title && String(provider.title).trim().length > 0) ? provider.title : "Track") : ""
+    readonly property string artistName: available ? ((provider.artist && String(provider.artist).trim().length > 0) ? provider.artist : "Artist") : ""
     readonly property string artSource: _toImageSource(available && provider ? provider.artUrl : "")
     readonly property string playPauseSymbol: playing ? "􀊆" : "􀊄"
 
@@ -185,6 +181,7 @@ Item {
             }
 
             Root.SymbolIcon {
+                svgScale: 1.18
                 anchors.centerIn: parent
                 width: 12
                 height: 12
@@ -217,6 +214,7 @@ Item {
             }
 
             Root.SymbolIcon {
+                svgScale: 1.18
                 anchors.centerIn: parent
                 width: 25
                 height: 25
@@ -249,6 +247,7 @@ Item {
             }
 
             Root.SymbolIcon {
+                svgScale: 1.18
                 anchors.centerIn: parent
                 width: 12
                 height: 12

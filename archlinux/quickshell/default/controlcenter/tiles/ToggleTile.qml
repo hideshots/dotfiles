@@ -17,9 +17,7 @@ Item {
     readonly property string symbol: _stringData("symbol", "")
     readonly property string symbolOn: _stringData("symbolOn", "")
     readonly property string symbolOff: _stringData("symbolOff", "")
-    readonly property string resolvedSymbol: root.checked
-        ? (root.symbolOn.length > 0 ? root.symbolOn : root.symbol)
-        : (root.symbolOff.length > 0 ? root.symbolOff : root.symbol)
+    readonly property string resolvedSymbol: root.checked ? (root.symbolOn.length > 0 ? root.symbolOn : root.symbol) : (root.symbolOff.length > 0 ? root.symbolOff : root.symbol)
     readonly property string title: _stringData("title", "")
     readonly property string detailOn: _stringData("detailOn", "On")
     readonly property string detailOff: _stringData("detailOff", "Off")
@@ -81,9 +79,7 @@ Item {
         radius: root.resolvedSizeMode === "2x2" ? 34 : (height / 2)
         hovered: hoverHandler.hovered
         pressed: tapHandler.pressed
-        tintColor: root.iconOnlyMode
-            ? (root.checked ? Qt.rgba(1, 1, 1, 1.0) : Qt.rgba(0, 0, 0, 0.20))
-            : Qt.rgba(0, 0, 0, 0.20)
+        tintColor: root.iconOnlyMode ? (root.checked ? Qt.rgba(1, 1, 1, 1.0) : Qt.rgba(0, 0, 0, 0.20)) : Qt.rgba(0, 0, 0, 0.20)
         contrastColor: Qt.rgba(1, 1, 1, 0.0)
         borderColor: Qt.rgba(1, 1, 1, 0.0)
 
@@ -188,6 +184,7 @@ Item {
             anchors.centerIn: parent
             width: 19
             height: 19
+            svgScale: 1.40
             glyph: root.resolvedSymbol
             fallbackColor: root.checked ? root.accentColor : Qt.rgba(1, 1, 1, 1.0)
             fallbackFontFamily: Root.Theme.fontFamilySymbol

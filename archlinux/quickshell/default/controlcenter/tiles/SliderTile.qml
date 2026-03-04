@@ -131,6 +131,7 @@ Item {
                 }
 
                 Root.SymbolIcon {
+                    svgScale: 1.18
                     anchors.centerIn: parent
                     width: 15
                     height: 15
@@ -221,6 +222,7 @@ Item {
                 }
 
                 Root.SymbolIcon {
+                    svgScale: 1.18
                     anchors.centerIn: parent
                     width: 15
                     height: 15
