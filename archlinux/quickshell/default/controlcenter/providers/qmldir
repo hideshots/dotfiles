@@ -1,3 +1,6 @@
 module controlcenter.providers
+BluetoothProvider 1.0 BluetoothProvider.qml
+HyprAccessibilityProvider 1.0 HyprAccessibilityProvider.qml
+NetworkProvider 1.0 NetworkProvider.qml
 NowPlayingProvider 1.0 NowPlayingProvider.qml
 VolumeProvider 1.0 VolumeProvider.qml

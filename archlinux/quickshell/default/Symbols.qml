@@ -4,15 +4,12 @@ import QtQuick
 QtObject {
     id: root
 
-    // Manual opt-in. Keep false by default because bundled SVG distribution is not allowed.
     property bool svgEnabled: true
     readonly property string svgDir: "assets/svg"
 
     readonly property var glyphMap: ({
             // Theme / privacy
             "􀋒": { sfName: "", usage: "privacy location arrow" },
-
-            // Shell / menubar / menu model
             "􀅾": { sfName: "", usage: "clear / dismiss buttons" },
             "􀆅": { sfName: "", usage: "menu checkmark" },
             "􀆊": { sfName: "", usage: "menu submenu chevron" },
@@ -20,7 +17,7 @@ QtObject {
             "􀆕": { sfName: "", usage: "menu shortcut shift modifier (text-only by convention)" },
             "􀆝": { sfName: "", usage: "menu shortcut option modifier (text-only by convention)" },
             "􀆨": { sfName: "", usage: "menu restart" },
-            "􀆿": { sfName: "", usage: "menubar apple logo" },
+            "􀆿": { sfName: "sparkles", usage: "menubar apple logo" },
             "􀈎": { sfName: "", usage: "menu system settings" },
             "􀉩": { sfName: "", usage: "menu log out" },
             "􀊫": { sfName: "", usage: "unused commented menubar icon" },

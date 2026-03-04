@@ -15,6 +15,11 @@ Item {
 
     readonly property bool checked: _boolData("checked", false)
     readonly property string symbol: _stringData("symbol", "")
+    readonly property string symbolOn: _stringData("symbolOn", "")
+    readonly property string symbolOff: _stringData("symbolOff", "")
+    readonly property string resolvedSymbol: root.checked
+        ? (root.symbolOn.length > 0 ? root.symbolOn : root.symbol)
+        : (root.symbolOff.length > 0 ? root.symbolOff : root.symbol)
     readonly property string title: _stringData("title", "")
     readonly property string detailOn: _stringData("detailOn", "On")
     readonly property string detailOff: _stringData("detailOff", "Off")
@@ -90,7 +95,7 @@ Item {
             anchors.topMargin: 14
             diameter: 35
             filled: root.checked
-            symbol: root.symbol
+            symbol: root.resolvedSymbol
             symbolSize: 15
             symbolColor: root.checked ? root.accentColor : Qt.rgba(1, 1, 1, 0.98)
         }
@@ -143,7 +148,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 diameter: 35
                 filled: root.checked
-                symbol: root.symbol
+                symbol: root.resolvedSymbol
                 symbolSize: 15
                 symbolColor: root.checked ? root.accentColor : Qt.rgba(1, 1, 1, 0.98)
             }
@@ -183,7 +188,7 @@ Item {
             anchors.centerIn: parent
             width: 19
             height: 19
-            glyph: root.symbol
+            glyph: root.resolvedSymbol
             fallbackColor: root.checked ? root.accentColor : Qt.rgba(1, 1, 1, 1.0)
             fallbackFontFamily: Root.Theme.fontFamilySymbol
             pixelSize: 19

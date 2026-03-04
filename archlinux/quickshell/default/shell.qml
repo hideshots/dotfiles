@@ -1219,7 +1219,7 @@ ShellRoot {
 
                     Row {
                         anchors.fill: parent
-                        anchors.leftMargin: 6
+                        anchors.leftMargin: 7
                         anchors.rightMargin: 6
                         anchors.topMargin: 5
                         anchors.bottomMargin: 5
@@ -1271,8 +1271,8 @@ ShellRoot {
                                     Root.SymbolIcon {
                                         id: logoText
                                         anchors.centerIn: parent
-                                        width: Theme.iconSize
-                                        height: Theme.iconSize
+                                        anchors.horizontalCenterOffset: 1
+                                        height: 24
                                         glyph: "􀆿"
                                         fallbackFontFamily: Theme.fontFamily
                                         pixelSize: Theme.iconSize

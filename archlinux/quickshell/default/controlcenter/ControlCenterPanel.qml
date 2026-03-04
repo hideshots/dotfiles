@@ -11,9 +11,15 @@ import "tiles" as Tiles
 Item {
     id: root
 
-    property bool floorLampChecked: false
+    readonly property bool wifiChecked: networkProvider.enabled
+    readonly property bool wifiConnected: networkProvider.connected
+    readonly property string wifiConnectedName: networkProvider.ssid
+    readonly property bool bluetoothChecked: bluetoothProvider.enabled
+    readonly property bool reduceTransparencyChecked: hyprAccessibilityProvider.reduceTransparencyEnabled
     property bool focusChecked: false
-    property bool cameraChecked: false
+    property bool nightShiftChecked: false
+    readonly property bool reduceMotionChecked: hyprAccessibilityProvider.reduceMotionEnabled
+    property real nightShiftValue: 0.5
     property real displayValue: 0.68
     property real volumeValue: 0.0
 
@@ -33,27 +39,60 @@ Item {
 
     readonly property var tileDescriptors: [
         {
+            id: "wireless",
+            kind: "toggle",
+            w: 2,
+            h: 1,
+            order: 10,
+            data: {
+                symbol: "􀙈",
+                title: "Wi-Fi",
+                detailOn: "On",
+                detailOff: "Off",
+                detail: root.wifiChecked
+                    ? (root.wifiConnected && root.wifiConnectedName.length > 0 ? root.wifiConnectedName : "On")
+                    : "Off",
+                checked: root.wifiChecked
+            }
+        },
+        {
             id: "nowPlaying",
             kind: "nowPlaying",
             w: 2,
             h: 2,
-            order: 10,
+            order: 20,
             data: {
                 provider: nowPlayingProvider
             }
         },
         {
-            id: "floorLamp",
+            id: "bluetooth",
             kind: "toggle",
             w: 1,
             h: 1,
-            order: 20,
+            order: 30,
             data: {
-                symbol: "􀛮",
-                title: "Floor Lamp",
+                symbolOn: "􀖀",
+                symbolOff: "􁅒",
+                title: "Bluetooth",
                 detailOn: "On",
                 detailOff: "Off",
-                checked: root.floorLampChecked
+                checked: root.bluetoothChecked
+            }
+        },
+        {
+            id: "transparency",
+            kind: "toggle",
+            w: 1,
+            h: 1,
+            order: 30,
+            data: {
+                symbol: "􀯇",
+                title: "Reduce Transparency",
+                detailOn: "On",
+                detailOff: "Off",
+                detail: root.reduceTransparencyChecked ? "On" : "Off",
+                checked: root.reduceTransparencyChecked
             }
         },
         {
@@ -61,25 +100,55 @@ Item {
             kind: "toggle",
             w: 2,
             h: 1,
-            order: 30,
+            order: 40,
             data: {
                 symbol: "􀆺",
-                title: "Do Not Disturb",
-                compactTitleWrap: true,
+                title: "Focus",
                 detailOn: "On",
                 detailOff: "Off",
                 checked: root.focusChecked
             }
         },
         {
-            id: "camera",
-            kind: "action",
+            id: "nightshifttoggle",
+            kind: "toggle",
             w: 1,
             h: 1,
-            order: 40,
+            order: 50,
             data: {
-                symbol: "􀌟",
-                checked: root.cameraChecked
+                symbol: "􂱣",
+                title: "Night Shift",
+                detailOn: "On",
+                detailOff: "Off",
+                checked: root.nightShiftChecked
+            }
+        },
+        {
+            id: "motion",
+            kind: "toggle",
+            w: 1,
+            h: 1,
+            order: 60,
+            data: {
+                symbol: "􁊕",
+                title: "Reduce Motion",
+                detailOn: "On",
+                detailOff: "Off",
+                detail: root.reduceMotionChecked ? "On" : "Off",
+                checked: root.reduceMotionChecked
+            }
+        },
+        {
+            id: "nightshift",
+            kind: "slider",
+            w: 4,
+            h: 1,
+            order: 70,
+            data: {
+                title: "Night Shift",
+                minusSymbol: "􀛮",
+                plusSymbol: "􁷙",
+                value: root.nightShiftValue
             }
         },
         {
@@ -87,7 +156,7 @@ Item {
             kind: "slider",
             w: 4,
             h: 1,
-            order: 50,
+            order: 80,
             data: {
                 title: "Display",
                 minusSymbol: "􀆬",
@@ -100,14 +169,14 @@ Item {
             kind: "slider",
             w: 4,
             h: 1,
-            order: 60,
+            order: 90,
             data: {
                 title: "Volume",
                 minusSymbol: "􀊡",
                 plusSymbol: "􀊩",
                 value: root.volumeValue
             }
-        }
+        },
     ]
 
     readonly property var resolvedTileDescriptors: root.resolveTileDescriptors(root.tileDescriptors)
@@ -253,8 +322,18 @@ Item {
     }
 
     function handleToggleForTile(tileId, nextChecked) {
-        if (tileId === "floorLamp") {
-            root.floorLampChecked = !!nextChecked;
+        if (tileId === "wireless") {
+            networkProvider.setEnabled(!!nextChecked);
+            return;
+        }
+
+        if (tileId === "bluetooth") {
+            bluetoothProvider.setEnabled(!!nextChecked);
+            return;
+        }
+
+        if (tileId === "transparency") {
+            hyprAccessibilityProvider.setReduceTransparencyEnabled(!!nextChecked);
             return;
         }
 
@@ -263,8 +342,13 @@ Item {
             return;
         }
 
-        if (tileId === "camera") {
-            root.cameraChecked = !!nextChecked;
+        if (tileId === "nightshifttoggle") {
+            root.nightShiftChecked = !!nextChecked;
+            return;
+        }
+
+        if (tileId === "motion") {
+            hyprAccessibilityProvider.setReduceMotionEnabled(!!nextChecked);
         }
     }
 
@@ -279,6 +363,11 @@ Item {
             return;
         }
 
+        if (tileId === "nightshift") {
+            root.nightShiftValue = clamped;
+            return;
+        }
+
         if (tileId === "volume") {
             root.volumeValue = clamped;
             volumeProvider.setVolume(clamped);
@@ -287,6 +376,18 @@ Item {
 
     Providers.NowPlayingProvider {
         id: nowPlayingProvider
+    }
+
+    Providers.NetworkProvider {
+        id: networkProvider
+    }
+
+    Providers.BluetoothProvider {
+        id: bluetoothProvider
+    }
+
+    Providers.HyprAccessibilityProvider {
+        id: hyprAccessibilityProvider
     }
 
     Providers.VolumeProvider {
