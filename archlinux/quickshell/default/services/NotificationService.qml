@@ -12,6 +12,7 @@ Singleton {
     property int maxHistory: 100
     property int defaultPopupTimeoutMs: 5000
     property bool keepTransientInHistory: false
+    property bool focusModeEnabled: false
     property bool resetTimestampOnReplace: true
     property bool debugLogging: true
     property bool debugActiveRowUpdates: false
@@ -175,6 +176,18 @@ Singleton {
         // Clear semantics: dismiss visible popups, then clear the in-memory history list.
         clearAllPopups();
         clearHistory();
+    }
+
+    function setFocusModeEnabled(nextEnabled) {
+        var normalized = _safeBool(nextEnabled, false);
+        if (focusModeEnabled === normalized) {
+            return;
+        }
+
+        focusModeEnabled = normalized;
+        if (focusModeEnabled) {
+            _moveActivePopupsToHistory();
+        }
     }
 
     function setPopupTimeoutPaused(id, paused) {
@@ -366,18 +379,19 @@ Singleton {
 
         var record = _normalizeNotification(notification, receivedAt, recordId);
         var metadata = _metadataById[idKey] || ({});
+        var routeToHistory = focusModeEnabled;
 
         metadata.receivedAt = receivedAt;
-        metadata.expiresAt = _computeExpiresAt(record.expireTimeout, receivedAt, record.resident);
+        metadata.expiresAt = routeToHistory ? -1 : _computeExpiresAt(record.expireTimeout, receivedAt, record.resident);
         metadata.timeoutPaused = false;
         metadata.pausedRemainingMs = 0;
-        metadata.popupVisible = true;
+        metadata.popupVisible = !routeToHistory;
         metadata.dismissed = false;
         metadata.expired = false;
         metadata.closeReason = "";
         metadata.sourceAlive = true;
         metadata.revision = _safeNumber(metadata.revision, 0) + 1;
-        metadata.inHistory = false;
+        metadata.inHistory = routeToHistory;
 
         _byId[idKey] = record;
         _metadataById[idKey] = metadata;
@@ -483,18 +497,19 @@ Singleton {
         var receivedAt = resetTimestampOnReplace ? now : _safeNumber(metadata.receivedAt, now);
         var recordId = _safeNumber(_byId[idKey].id, _safeNumber(source.id, 0));
         var record = _normalizeNotification(source, receivedAt, recordId);
+        var routeToHistory = focusModeEnabled;
 
         metadata.receivedAt = receivedAt;
-        metadata.expiresAt = _computeExpiresAt(record.expireTimeout, receivedAt, record.resident);
+        metadata.expiresAt = routeToHistory ? -1 : _computeExpiresAt(record.expireTimeout, receivedAt, record.resident);
         metadata.timeoutPaused = false;
         metadata.pausedRemainingMs = 0;
-        metadata.popupVisible = true;
+        metadata.popupVisible = !routeToHistory;
         metadata.dismissed = false;
         metadata.expired = false;
         metadata.closeReason = "";
         metadata.sourceAlive = true;
         metadata.revision = _safeNumber(metadata.revision, 0) + 1;
-        metadata.inHistory = false;
+        metadata.inHistory = routeToHistory;
 
         _byId[idKey] = record;
         _metadataById[idKey] = metadata;
@@ -631,6 +646,39 @@ Singleton {
                 expireNotification(ids[i]);
             }
         }
+    }
+
+    function _moveActivePopupsToHistory() {
+        var ids = [];
+        var i = 0;
+
+        for (i = 0; i < activeListModel.count; i++) {
+            ids.push(_modelRowId(activeListModel.get(i)));
+        }
+
+        for (i = 0; i < ids.length; i++) {
+            var idKey = _idKey(ids[i]);
+            if (!_hasOwn(_byId, idKey) || !_hasOwn(_metadataById, idKey)) {
+                continue;
+            }
+
+            var record = _byId[idKey];
+            var metadata = _metadataById[idKey];
+            metadata.popupVisible = false;
+            metadata.inHistory = true;
+            metadata.expiresAt = -1;
+            metadata.timeoutPaused = false;
+            metadata.pausedRemainingMs = 0;
+            metadata.closeReason = "FocusMode";
+            metadata.revision = _safeNumber(metadata.revision, 0) + 1;
+            _metadataById[idKey] = metadata;
+
+            _removeModelRowById(activeListModel, record.id);
+            _upsertHistoryRow(idKey);
+        }
+
+        _enforceLimits();
+        _debug("focus mode enabled; moved active popups to history count=" + ids.length);
     }
 
     function _shouldAddToHistory(record) {

@@ -16,10 +16,10 @@ Item {
     readonly property string wifiConnectedName: networkProvider.ssid
     readonly property bool bluetoothChecked: bluetoothProvider.enabled
     readonly property bool reduceTransparencyChecked: hyprAccessibilityProvider.reduceTransparencyEnabled
-    property bool focusChecked: false
-    property bool nightShiftChecked: false
+    readonly property bool focusChecked: Root.NotificationService.focusModeEnabled
+    readonly property bool nightShiftChecked: nightShiftProvider.enabled
     readonly property bool reduceMotionChecked: hyprAccessibilityProvider.reduceMotionEnabled
-    property real nightShiftValue: 0.5
+    readonly property real nightShiftValue: nightShiftProvider.normalizedValue
     property real displayValue: 0.68
     property real volumeValue: 0.0
 
@@ -37,147 +37,7 @@ Item {
     readonly property string privacyPrimaryApp: _privacyPrimaryApp()
     readonly property string privacyAppLabelText: root.privacyPrimaryApp.length > 0 ? root.privacyPrimaryApp : "Unknown App"
 
-    readonly property var tileDescriptors: [
-        {
-            id: "wireless",
-            kind: "toggle",
-            w: 2,
-            h: 1,
-            order: 10,
-            data: {
-                symbol: "􀙈",
-                title: "Wi-Fi",
-                detailOn: "On",
-                detailOff: "Off",
-                detail: root.wifiChecked
-                    ? (root.wifiConnected && root.wifiConnectedName.length > 0 ? root.wifiConnectedName : "On")
-                    : "Off",
-                checked: root.wifiChecked
-            }
-        },
-        {
-            id: "nowPlaying",
-            kind: "nowPlaying",
-            w: 2,
-            h: 2,
-            order: 20,
-            data: {
-                provider: nowPlayingProvider
-            }
-        },
-        {
-            id: "bluetooth",
-            kind: "toggle",
-            w: 1,
-            h: 1,
-            order: 30,
-            data: {
-                symbolOn: "􀖀",
-                symbolOff: "􁅒",
-                title: "Bluetooth",
-                detailOn: "On",
-                detailOff: "Off",
-                checked: root.bluetoothChecked
-            }
-        },
-        {
-            id: "transparency",
-            kind: "toggle",
-            w: 1,
-            h: 1,
-            order: 30,
-            data: {
-                symbol: "􀯇",
-                title: "Reduce Transparency",
-                detailOn: "On",
-                detailOff: "Off",
-                detail: root.reduceTransparencyChecked ? "On" : "Off",
-                checked: root.reduceTransparencyChecked
-            }
-        },
-        {
-            id: "focus",
-            kind: "toggle",
-            w: 2,
-            h: 1,
-            order: 40,
-            data: {
-                symbol: "􀆺",
-                title: "Focus",
-                detailOn: "On",
-                detailOff: "Off",
-                checked: root.focusChecked
-            }
-        },
-        {
-            id: "nightshifttoggle",
-            kind: "toggle",
-            w: 1,
-            h: 1,
-            order: 50,
-            data: {
-                symbol: "􂱣",
-                title: "Night Shift",
-                detailOn: "On",
-                detailOff: "Off",
-                checked: root.nightShiftChecked
-            }
-        },
-        {
-            id: "motion",
-            kind: "toggle",
-            w: 1,
-            h: 1,
-            order: 60,
-            data: {
-                symbol: "􁊕",
-                title: "Reduce Motion",
-                detailOn: "On",
-                detailOff: "Off",
-                detail: root.reduceMotionChecked ? "On" : "Off",
-                checked: root.reduceMotionChecked
-            }
-        },
-        {
-            id: "nightshift",
-            kind: "slider",
-            w: 4,
-            h: 1,
-            order: 70,
-            data: {
-                title: "Night Shift",
-                minusSymbol: "􀛮",
-                plusSymbol: "􁷙",
-                value: root.nightShiftValue
-            }
-        },
-        {
-            id: "display",
-            kind: "slider",
-            w: 4,
-            h: 1,
-            order: 80,
-            data: {
-                title: "Display",
-                minusSymbol: "􀆬",
-                plusSymbol: "􀆮",
-                value: root.displayValue
-            }
-        },
-        {
-            id: "volume",
-            kind: "slider",
-            w: 4,
-            h: 1,
-            order: 90,
-            data: {
-                title: "Volume",
-                minusSymbol: "􀊡",
-                plusSymbol: "􀊩",
-                value: root.volumeValue
-            }
-        },
-    ]
+    readonly property var tileDescriptors: root.buildTileDescriptors()
 
     readonly property var resolvedTileDescriptors: root.resolveTileDescriptors(root.tileDescriptors)
     readonly property var packedLayout: GridPacker.pack(root.resolvedTileDescriptors, root.gridColumns, root.gridUnit, root.gridGap)
@@ -204,6 +64,155 @@ Item {
         }
 
         return String(first).trim();
+    }
+
+    function buildTileDescriptors() {
+        var descriptors = [
+            {
+                id: "wireless",
+                kind: "toggle",
+                w: 2,
+                h: 1,
+                order: 10,
+                data: {
+                    symbol: "􀙈",
+                    title: "Wi-Fi",
+                    detailOn: "On",
+                    detailOff: "Off",
+                    detail: root.wifiChecked
+                        ? (root.wifiConnected && root.wifiConnectedName.length > 0 ? root.wifiConnectedName : "On")
+                        : "Off",
+                    checked: root.wifiChecked
+                }
+            },
+            {
+                id: "nowPlaying",
+                kind: "nowPlaying",
+                w: 2,
+                h: 2,
+                order: 20,
+                data: {
+                    provider: nowPlayingProvider
+                }
+            },
+            {
+                id: "bluetooth",
+                kind: "toggle",
+                w: 1,
+                h: 1,
+                order: 30,
+                data: {
+                    symbolOn: "􀖀",
+                    symbolOff: "􁅒",
+                    title: "Bluetooth",
+                    detailOn: "On",
+                    detailOff: "Off",
+                    checked: root.bluetoothChecked
+                }
+            },
+            {
+                id: "transparency",
+                kind: "toggle",
+                w: 1,
+                h: 1,
+                order: 30,
+                data: {
+                    symbol: "􀯇",
+                    title: "Reduce Transparency",
+                    detailOn: "On",
+                    detailOff: "Off",
+                    detail: root.reduceTransparencyChecked ? "On" : "Off",
+                    checked: root.reduceTransparencyChecked
+                }
+            },
+            {
+                id: "focus",
+                kind: "toggle",
+                w: 2,
+                h: 1,
+                order: 40,
+                data: {
+                    symbol: "􀆺",
+                    title: "Focus",
+                    detailOn: "On",
+                    detailOff: "Off",
+                    checked: root.focusChecked
+                }
+            },
+            {
+                id: "nightshifttoggle",
+                kind: "toggle",
+                w: 1,
+                h: 1,
+                order: 50,
+                data: {
+                    symbol: "􂱣",
+                    title: "Night Shift",
+                    detailOn: "On",
+                    detailOff: "Off",
+                    checked: root.nightShiftChecked
+                }
+            },
+            {
+                id: "motion",
+                kind: "toggle",
+                w: 1,
+                h: 1,
+                order: 60,
+                data: {
+                    symbol: "􁊕",
+                    title: "Reduce Motion",
+                    detailOn: "On",
+                    detailOff: "Off",
+                    detail: root.reduceMotionChecked ? "On" : "Off",
+                    checked: root.reduceMotionChecked
+                }
+            },
+            {
+                id: "display",
+                kind: "slider",
+                w: 4,
+                h: 1,
+                order: 80,
+                data: {
+                    title: "Display",
+                    minusSymbol: "􀆬",
+                    plusSymbol: "􀆮",
+                    value: root.displayValue
+                }
+            },
+            {
+                id: "volume",
+                kind: "slider",
+                w: 4,
+                h: 1,
+                order: 90,
+                data: {
+                    title: "Volume",
+                    minusSymbol: "􀊡",
+                    plusSymbol: "􀊩",
+                    value: root.volumeValue
+                }
+            },
+        ];
+
+        if (root.nightShiftChecked) {
+            descriptors.push({
+                id: "nightshift",
+                kind: "slider",
+                w: 4,
+                h: 1,
+                order: 70,
+                data: {
+                    title: "Night Shift",
+                    minusSymbol: "􀛮",
+                    plusSymbol: "􁷙",
+                    value: root.nightShiftValue
+                }
+            });
+        }
+
+        return descriptors;
     }
 
     function _privacyIconDescriptors() {
@@ -338,12 +347,12 @@ Item {
         }
 
         if (tileId === "focus") {
-            root.focusChecked = !!nextChecked;
+            Root.NotificationService.setFocusModeEnabled(!!nextChecked);
             return;
         }
 
         if (tileId === "nightshifttoggle") {
-            root.nightShiftChecked = !!nextChecked;
+            nightShiftProvider.setEnabled(!!nextChecked);
             return;
         }
 
@@ -364,7 +373,7 @@ Item {
         }
 
         if (tileId === "nightshift") {
-            root.nightShiftValue = clamped;
+            nightShiftProvider.setNormalizedValue(clamped);
             return;
         }
 
@@ -388,6 +397,10 @@ Item {
 
     Providers.HyprAccessibilityProvider {
         id: hyprAccessibilityProvider
+    }
+
+    Providers.NightShiftProvider {
+        id: nightShiftProvider
     }
 
     Providers.VolumeProvider {

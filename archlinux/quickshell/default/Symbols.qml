@@ -31,9 +31,12 @@ QtObject {
             "􁣡": { sfName: "", usage: "menu app store" },
 
             // Control center
+            "􀖀": { sfName: "", usage: "bluetooth on" },
             "􀆬": { sfName: "", usage: "slider minus / weather clear-day currently shares glyph" },
             "􀆮": { sfName: "", usage: "slider plus / weather clear-day currently shares glyph" },
             "􀆺": { sfName: "", usage: "focus / weather clear-night currently shares glyph" },
+            "􀙈": { sfName: "", usage: "wireless / wifi" },
+            "􀯇": { sfName: "", usage: "reduce transparency" },
             "􀊄": { sfName: "", usage: "now playing play" },
             "􀊆": { sfName: "", usage: "now playing pause" },
             "􀊊": { sfName: "", usage: "now playing previous" },
@@ -44,6 +47,9 @@ QtObject {
             "􀌟": { sfName: "", usage: "camera" },
             "􀛮": { sfName: "", usage: "floor lamp tile" },
             "􁅀": { sfName: "", usage: "privacy system audio / screen share" },
+            "􁅒": { sfName: "", usage: "bluetooth off" },
+            "􁊕": { sfName: "", usage: "reduce motion" },
+            "􂱣": { sfName: "", usage: "night shift toggle" },
 
             // Weather
             "􀆶": { sfName: "", usage: "weather dust_day" },

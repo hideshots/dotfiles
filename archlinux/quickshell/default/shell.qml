@@ -343,7 +343,9 @@ ShellRoot {
 
     PanelWindow {
         id: notificationsPopupPanel
-        visible: shell.notificationsPopupEnabled && shell.notificationService.activeCount > 0
+        visible: shell.notificationsPopupEnabled
+            && !shell.notificationService.focusModeEnabled
+            && shell.notificationService.activeCount > 0
 
         anchors.top: true
         anchors.right: true
