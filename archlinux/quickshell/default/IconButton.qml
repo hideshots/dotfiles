@@ -10,24 +10,23 @@ Rectangle {
     signal clicked()
 
     height: parent.height
-    width: iconText.width + (Theme.itemPadding * 2)
+    width: iconVisual.implicitWidth + (Theme.itemPadding * 2)
     color: "transparent"
     radius: Theme.borderRadius
 
-    Text {
-        id: iconText
+    SymbolIcon {
+        id: iconVisual
         anchors.centerIn: parent
         anchors.horizontalCenterOffset: root.iconOffsetX
-        text: root.icon
-        font.family: Theme.fontFamily
-        font.pixelSize: Theme.fontSize
-        color: Theme.textSecondary
-        renderType: Text.NativeRendering
+        glyph: root.icon
+        fallbackFontFamily: Theme.fontFamily
+        pixelSize: Theme.fontSize
+        fallbackColor: Theme.textSecondary
     }
 
     DropShadow {
-        anchors.fill: iconText
-        source: iconText
+        anchors.fill: iconVisual
+        source: iconVisual
         visible: Theme.isDark
         horizontalOffset: Theme.shadowHorizontalOffset
         verticalOffset: Theme.shadowVerticalOffset

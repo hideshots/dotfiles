@@ -678,12 +678,25 @@ FocusScope {
                     Text {
                         id: clearButtonLabel
                         anchors.centerIn: parent
-                        text: clearButton.hovered ? "Clear All" : "􀅾"
+                        visible: clearButton.hovered
+                        text: "Clear All"
                         color: Root.Theme.textSecondary
-                        font.family: clearButton.hovered ? Root.Theme.fontFamily : Root.Theme.fontFamilyDisplay
-                        font.pixelSize: clearButton.hovered ? 11 : 12
-                        font.weight: clearButton.hovered ? Font.Medium : Font.DemiBold
+                        font.family: Root.Theme.fontFamily
+                        font.pixelSize: 11
+                        font.weight: Font.Medium
                         renderType: Text.NativeRendering
+                    }
+
+                    Root.SymbolIcon {
+                        anchors.centerIn: parent
+                        visible: !clearButton.hovered
+                        width: 12
+                        height: 12
+                        glyph: "􀅾"
+                        fallbackColor: Root.Theme.textSecondary
+                        fallbackFontFamily: Root.Theme.fontFamilyDisplay
+                        pixelSize: 12
+                        fontWeight: Font.DemiBold
                     }
 
                     HoverHandler {

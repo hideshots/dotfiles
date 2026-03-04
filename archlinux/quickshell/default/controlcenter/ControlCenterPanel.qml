@@ -371,14 +371,15 @@ Item {
                         radius: 7.5
                         color: modelData.color
 
-                        Text {
+                        Root.SymbolIcon {
                             anchors.centerIn: parent
-                            text: privacyIconChip.modelData.glyph
-                            color: "#ffffff"
-                            font.family: Root.Theme.fontFamilySymbol
-                            font.pixelSize: 8
-                            font.weight: Font.Medium
-                            renderType: Text.NativeRendering
+                            width: 8
+                            height: 8
+                            glyph: privacyIconChip.modelData.glyph
+                            fallbackColor: "#ffffff"
+                            fallbackFontFamily: Root.Theme.fontFamilySymbol
+                            pixelSize: 8
+                            fontWeight: Font.Medium
                         }
                     }
                 }

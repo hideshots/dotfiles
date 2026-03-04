@@ -130,15 +130,16 @@ Item {
                     onTapped: root._setUserValue(root.value - 0.05)
                 }
 
-                Text {
+                Root.SymbolIcon {
                     anchors.centerIn: parent
-                    text: root.minusSymbol
-                    color: Qt.rgba(1, 1, 1, 0.95)
+                    width: 15
+                    height: 15
+                    glyph: root.minusSymbol
+                    fallbackColor: Qt.rgba(1, 1, 1, 0.95)
                     opacity: minusTap.pressed ? 0.62 : (minusHover.hovered ? 0.92 : 1.0)
-                    font.family: Root.Theme.fontFamilySymbol
-                    font.pixelSize: 15
-                    font.weight: Font.Bold
-                    renderType: Text.NativeRendering
+                    fallbackFontFamily: Root.Theme.fontFamilySymbol
+                    pixelSize: 15
+                    fontWeight: Font.Bold
                 }
             }
 
@@ -219,15 +220,16 @@ Item {
                     onTapped: root._setUserValue(root.value + 0.05)
                 }
 
-                Text {
+                Root.SymbolIcon {
                     anchors.centerIn: parent
-                    text: root.plusSymbol
-                    color: Qt.rgba(1, 1, 1, 0.95)
+                    width: 15
+                    height: 15
+                    glyph: root.plusSymbol
+                    fallbackColor: Qt.rgba(1, 1, 1, 0.95)
                     opacity: plusTap.pressed ? 0.62 : (plusHover.hovered ? 0.92 : 1.0)
-                    font.family: Root.Theme.fontFamilySymbol
-                    font.pixelSize: 15
-                    font.weight: Font.Bold
-                    renderType: Text.NativeRendering
+                    fallbackFontFamily: Root.Theme.fontFamilySymbol
+                    pixelSize: 15
+                    fontWeight: Font.Bold
                 }
             }
         }

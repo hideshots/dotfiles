@@ -1248,14 +1248,15 @@ FocusScope {
                 fragmentShader: "../../shaders/notification_edge_light.frag.qsb"
             }
 
-            Text {
+            Root.SymbolIcon {
                 anchors.centerIn: parent
-                text: "􀅾"
-                color: Root.Theme.textSecondary
-                font.family: Root.Theme.fontFamilyDisplay
-                font.pixelSize: 12
-                font.weight: Font.DemiBold
-                renderType: Text.NativeRendering
+                width: 12
+                height: 12
+                glyph: "􀅾"
+                fallbackColor: Root.Theme.textSecondary
+                fallbackFontFamily: Root.Theme.fontFamilyDisplay
+                pixelSize: 12
+                fontWeight: Font.DemiBold
             }
 
             HoverHandler {

@@ -178,15 +178,16 @@ Item {
             }
         }
 
-        Text {
+        Root.SymbolIcon {
             visible: root.iconOnlyMode
             anchors.centerIn: parent
-            text: root.symbol
-            color: root.checked ? root.accentColor : Qt.rgba(1, 1, 1, 1.0)
-            font.family: Root.Theme.fontFamilySymbol
-            font.pixelSize: 19
-            font.weight: Font.Bold
-            renderType: Text.NativeRendering
+            width: 19
+            height: 19
+            glyph: root.symbol
+            fallbackColor: root.checked ? root.accentColor : Qt.rgba(1, 1, 1, 1.0)
+            fallbackFontFamily: Root.Theme.fontFamilySymbol
+            pixelSize: 19
+            fontWeight: Font.Bold
         }
     }
 }

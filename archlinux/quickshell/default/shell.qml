@@ -824,14 +824,15 @@ ShellRoot {
                         fragmentShader: "shaders/notification_edge_light.frag.qsb"
                     }
 
-                    Text {
+                    Root.SymbolIcon {
                         anchors.centerIn: parent
-                        text: "􀅾"
-                        color: Root.Theme.textSecondary
-                        font.family: Root.Theme.fontFamilyDisplay
-                        font.pixelSize: 12
-                        font.weight: Font.DemiBold
-                        renderType: Text.NativeRendering
+                        width: 12
+                        height: 12
+                        glyph: "􀅾"
+                        fallbackColor: Root.Theme.textSecondary
+                        fallbackFontFamily: Root.Theme.fontFamilyDisplay
+                        pixelSize: 12
+                        fontWeight: Font.DemiBold
                     }
 
                     MouseArea {
@@ -1218,8 +1219,8 @@ ShellRoot {
 
                     Row {
                         anchors.fill: parent
-                        anchors.leftMargin: 10
-                        anchors.rightMargin: 10
+                        anchors.leftMargin: 6
+                        anchors.rightMargin: 6
                         anchors.topMargin: 5
                         anchors.bottomMargin: 5
                         spacing: 0
@@ -1267,14 +1268,15 @@ ShellRoot {
                                     color: "transparent"
                                     radius: Theme.borderRadius
 
-                                    Text {
+                                    Root.SymbolIcon {
                                         id: logoText
                                         anchors.centerIn: parent
-                                        text: "􀆿"
-                                        font.family: Theme.fontFamily
-                                        font.pixelSize: Theme.iconSize
-                                        renderType: Text.NativeRendering
-                                        color: Theme.textPrimary
+                                        width: Theme.iconSize
+                                        height: Theme.iconSize
+                                        glyph: "􀆿"
+                                        fallbackFontFamily: Theme.fontFamily
+                                        pixelSize: Theme.iconSize
+                                        fallbackColor: Theme.textPrimary
                                     }
 
                                     DropShadow {
@@ -1559,15 +1561,15 @@ ShellRoot {
                                     color: rightSection.privacyDotColor
                                 }
 
-                                Text {
+                                Root.SymbolIcon {
                                     visible: rightSection.privacyArrowVisible
-                                    text: Theme.privacyIndicatorArrowGlyph
-                                    color: Theme.privacyLocationIndicator
-                                    font.family: Theme.fontFamilySymbol
-                                    font.pixelSize: Theme.privacyIndicatorArrowSize
-                                    font.weight: Font.DemiBold
-                                    renderType: Text.NativeRendering
-                                    verticalAlignment: Text.AlignVCenter
+                                    width: Theme.privacyIndicatorArrowSize
+                                    height: Theme.privacyIndicatorArrowSize
+                                    glyph: Theme.privacyIndicatorArrowGlyph
+                                    fallbackColor: Theme.privacyLocationIndicator
+                                    fallbackFontFamily: Theme.fontFamilySymbol
+                                    pixelSize: Theme.privacyIndicatorArrowSize
+                                    fontWeight: Font.DemiBold
                                 }
                             }
                         }

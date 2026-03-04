@@ -76,14 +76,15 @@ Item {
         contrastColor: Qt.rgba(1, 1, 1, 0.0)
         borderColor: Qt.rgba(1, 1, 1, 0.0)
 
-        Text {
+        Root.SymbolIcon {
             anchors.centerIn: parent
-            text: root.symbol
-            color: root.checked ? root.accentColor : Qt.rgba(1, 1, 1, 1.0)
-            font.family: Root.Theme.fontFamilySymbol
-            font.pixelSize: root.resolvedSizeMode === "2x2" ? 24 : 19
-            font.weight: Font.Bold
-            renderType: Text.NativeRendering
+            width: root.resolvedSizeMode === "2x2" ? 24 : 19
+            height: width
+            glyph: root.symbol
+            fallbackColor: root.checked ? root.accentColor : Qt.rgba(1, 1, 1, 1.0)
+            fallbackFontFamily: Root.Theme.fontFamilySymbol
+            pixelSize: width
+            fontWeight: Font.Bold
         }
     }
 }

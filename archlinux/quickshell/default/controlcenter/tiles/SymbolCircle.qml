@@ -28,13 +28,14 @@ Item {
         antialiasing: true
     }
 
-    Text {
+    Root.SymbolIcon {
         anchors.centerIn: parent
-        text: root.symbol
-        color: root.symbolColor
-        font.family: Root.Theme.fontFamilySymbol
-        font.pixelSize: root.symbolSize
-        font.weight: Font.Bold
-        renderType: Text.NativeRendering
+        width: root.symbolSize
+        height: root.symbolSize
+        glyph: root.symbol
+        fallbackColor: root.symbolColor
+        fallbackFontFamily: Root.Theme.fontFamilySymbol
+        pixelSize: root.symbolSize
+        fontWeight: Font.Bold
     }
 }

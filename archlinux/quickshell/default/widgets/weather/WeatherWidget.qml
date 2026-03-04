@@ -553,17 +553,15 @@ Rectangle {
         Column {
             spacing: 0
 
-            Text {
+            Root.SymbolIcon {
                 width: 19
                 height: 19
-                text: weatherService.data.symbol
-                color: Root.Theme.textPrimary
+                glyph: weatherService.data.symbol
+                fallbackColor: Root.Theme.textPrimary
                 opacity: 0.75
-                horizontalAlignment: Text.AlignHCenter
-                verticalAlignment: Text.AlignVCenter
-                font.family: Root.Theme.fontFamilySymbol
-                font.pixelSize: 16
-                font.weight: Font.Normal
+                fallbackFontFamily: Root.Theme.fontFamilySymbol
+                pixelSize: 16
+                fontWeight: Font.Normal
             }
 
             Text {
@@ -648,15 +646,15 @@ Rectangle {
                 width: parent.width - 168
                 spacing: 0
 
-                Text {
-                    text: weatherService.data.symbol
-                    color: Root.Theme.textPrimary
-                    opacity: 0.75
-                    horizontalAlignment: Text.AlignRight
+                Root.SymbolIcon {
                     width: parent.width
-                    font.family: Root.Theme.fontFamilySymbol
-                    font.pixelSize: 16
-                    font.weight: Font.Normal
+                    height: 16
+                    glyph: weatherService.data.symbol
+                    fallbackColor: Root.Theme.textPrimary
+                    opacity: 0.75
+                    fallbackFontFamily: Root.Theme.fontFamilySymbol
+                    pixelSize: 16
+                    fontWeight: Font.Normal
                 }
 
                 Item {
@@ -727,14 +725,14 @@ Rectangle {
                         width: parent.width
                     }
 
-                    Text {
-                        text: parent.hourlyEntry.symbol || "—"
-                        color: Root.Theme.textPrimary
-                        opacity: 0.75
-                        font.family: Root.Theme.fontFamilySymbol
-                        font.pixelSize: 18
-                        horizontalAlignment: Text.AlignHCenter
+                    Root.SymbolIcon {
                         width: parent.width
+                        height: 18
+                        glyph: parent.hourlyEntry.symbol || "—"
+                        fallbackColor: Root.Theme.textPrimary
+                        opacity: 0.75
+                        fallbackFontFamily: Root.Theme.fontFamilySymbol
+                        pixelSize: 18
                     }
 
                     Text {

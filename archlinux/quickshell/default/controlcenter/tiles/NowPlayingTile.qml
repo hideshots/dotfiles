@@ -184,15 +184,16 @@ Item {
                 onTapped: root._runAction("previous")
             }
 
-            Text {
+            Root.SymbolIcon {
                 anchors.centerIn: parent
-                text: "􀊊"
-                color: root.available ? Qt.rgba(1, 1, 1, 0.97) : Qt.rgba(1, 1, 1, 64 / 255)
+                width: 12
+                height: 12
+                glyph: "􀊊"
+                fallbackColor: root.available ? Qt.rgba(1, 1, 1, 0.97) : Qt.rgba(1, 1, 1, 64 / 255)
                 opacity: root.available ? (previousTap.pressed ? 0.60 : (previousHover.hovered ? 0.80 : 1.0)) : 1.0
-                font.family: Root.Theme.fontFamilySymbol
-                font.pixelSize: 12
-                font.weight: Font.Bold
-                renderType: Text.NativeRendering
+                fallbackFontFamily: Root.Theme.fontFamilySymbol
+                pixelSize: 12
+                fontWeight: Font.Bold
             }
         }
 
@@ -215,15 +216,16 @@ Item {
                 onTapped: root._runAction("playPause")
             }
 
-            Text {
+            Root.SymbolIcon {
                 anchors.centerIn: parent
-                text: root.playPauseSymbol
-                color: root.available ? Qt.rgba(1, 1, 1, 0.97) : Qt.rgba(1, 1, 1, 64 / 255)
+                width: 25
+                height: 25
+                glyph: root.playPauseSymbol
+                fallbackColor: root.available ? Qt.rgba(1, 1, 1, 0.97) : Qt.rgba(1, 1, 1, 64 / 255)
                 opacity: root.available ? (playPauseTap.pressed ? 0.60 : (playPauseHover.hovered ? 0.80 : 1.0)) : 1.0
-                font.family: Root.Theme.fontFamilySymbol
-                font.pixelSize: 25
-                font.weight: Font.Bold
-                renderType: Text.NativeRendering
+                fallbackFontFamily: Root.Theme.fontFamilySymbol
+                pixelSize: 25
+                fontWeight: Font.Bold
             }
         }
 
@@ -246,15 +248,16 @@ Item {
                 onTapped: root._runAction("next")
             }
 
-            Text {
+            Root.SymbolIcon {
                 anchors.centerIn: parent
-                text: "􀊌"
-                color: root.available ? Qt.rgba(1, 1, 1, 0.97) : Qt.rgba(1, 1, 1, 64 / 255)
+                width: 12
+                height: 12
+                glyph: "􀊌"
+                fallbackColor: root.available ? Qt.rgba(1, 1, 1, 0.97) : Qt.rgba(1, 1, 1, 64 / 255)
                 opacity: root.available ? (nextTap.pressed ? 0.60 : (nextHover.hovered ? 0.80 : 1.0)) : 1.0
-                font.family: Root.Theme.fontFamilySymbol
-                font.pixelSize: 12
-                font.weight: Font.Bold
-                renderType: Text.NativeRendering
+                fallbackFontFamily: Root.Theme.fontFamilySymbol
+                pixelSize: 12
+                fontWeight: Font.Bold
             }
         }
     }

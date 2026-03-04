@@ -377,6 +377,7 @@ function getLargestWindow(workspace) {
             visible: false
             text: currentFocusedWindowRoot.currentFocusedLabel
             font.family: Theme.fontFamily
+            font.hintingPreference: Font.PreferFullHinting
             font.pixelSize: Theme.fontSize
             font.weight: Font.Bold
         }
@@ -386,6 +387,7 @@ function getLargestWindow(workspace) {
             anchors.centerIn: parent
             text: currentFocusedWindowRoot.currentFocusedLabel
             font.family: Theme.fontFamily
+            font.hintingPreference: Font.PreferFullHinting
             font.pixelSize: Theme.fontSize
             renderType: Text.NativeRendering
             font.weight: Font.Bold
@@ -466,6 +468,7 @@ function getLargestWindow(workspace) {
                 visible: false
                 text: root.displayText(largestWindow)
                 font.family: Theme.fontFamily
+                font.hintingPreference: Font.PreferFullHinting
                 font.pixelSize: Theme.fontSize
                 font.weight: Font.Bold
             }
@@ -475,9 +478,10 @@ function getLargestWindow(workspace) {
                 anchors.centerIn: parent
                 text: root.displayText(largestWindow)
                 font.family: Theme.fontFamily
+                font.hintingPreference: Font.PreferFullHinting
                 font.pixelSize: Theme.fontSize
                 renderType: Text.NativeRendering
-                font.weight: root.macosMode ? Font.Light : (modelData.active ? Font.Bold : Font.Medium)
+                font.weight: root.macosMode ? Font.Normal : (modelData.active ? Font.Bold : Font.Medium)
                 color: Theme.textPrimary
             }
 

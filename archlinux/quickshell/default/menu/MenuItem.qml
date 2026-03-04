@@ -62,15 +62,14 @@ Rectangle {
             width: root.showCheckColumn ? 1 : 0
             height: parent.height
 
-            Text {
+            SymbolIcon {
                 anchors.centerIn: parent
-                text: "􀆅"
-                font.family: Theme.fontFamily
-                font.pixelSize: 10
-                color: root.showActiveText
+                glyph: "􀆅"
+                fallbackFontFamily: Theme.fontFamily
+                pixelSize: 10
+                fallbackColor: root.showActiveText
                     ? "#ffffff"
                     : (root.isDisabled ? Theme.menuTextDisabled : Theme.menuText)
-                renderType: Text.NativeRendering
                 visible: root.isChecked
             }
         }
@@ -80,15 +79,14 @@ Rectangle {
             width: 12
             height: parent.height
 
-            Text {
+            SymbolIcon {
                 anchors.centerIn: parent
-                text: root.icon
-                font.family: Theme.fontFamily
-                font.pixelSize: 10
-                color: root.showActiveText
+                glyph: root.icon
+                fallbackFontFamily: Theme.fontFamily
+                pixelSize: 10
+                fallbackColor: root.showActiveText
                     ? "#ffffff"
                     : (root.isDisabled ? Theme.menuTextDisabled : Theme.menuText)
-                renderType: Text.NativeRendering
                 visible: root.icon !== ""
             }
         }
@@ -152,20 +150,17 @@ Rectangle {
         }
 
         // Submenu chevron
-        Text {
+        SymbolIcon {
             height: parent.height
             width: 12
-            verticalAlignment: Text.AlignVCenter
-            horizontalAlignment: Text.AlignHCenter
-            text: "􀆊"
-            font.family: Theme.fontFamily
-            font.pixelSize: 13
-            font.weight: Font.DemiBold
-            color: root.showActiveText
+            glyph: "􀆊"
+            pixelSize: 13
+            fontWeight: Font.DemiBold
+            fallbackFontFamily: Theme.fontFamily
+            fallbackColor: root.showActiveText
                 ? "#ffffff"
                 : (root.isDisabled ? Theme.menuTextDisabled : Theme.menuText)
             visible: root.hasSubmenu
-            renderType: Text.NativeRendering
         }
     }
 }

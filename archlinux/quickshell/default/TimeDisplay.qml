@@ -22,9 +22,10 @@ Rectangle {
         anchors.centerIn: parent
         text: Qt.formatDateTime(clock.date, "ddd MMM d  h:mm AP")
         font.family: Theme.fontFamily
-        font.pixelSize: Theme.fontSize
+        font.hintingPreference: Font.PreferFullHinting
         renderType: Text.NativeRendering
-        font.weight: Font.Light
+        font.pixelSize: Theme.fontSize
+        font.weight: Font.Normal
         color: Theme.textPrimary
     }
 
