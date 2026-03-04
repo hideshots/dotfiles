@@ -10,6 +10,7 @@ Item {
     property color contrastColor: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.030) : Qt.rgba(1, 1, 1, 0.15)
     property color borderColor: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.09) : Qt.rgba(1, 1, 1, 0.52)
     property real borderWidth: 1
+    property real flashOverlayOpacity: 0.0
 
     property bool edgeLightEnabled: true
     property real edgeOpacity: 0.8
@@ -65,6 +66,15 @@ Item {
         color: "transparent"
         border.width: root.borderWidth
         border.color: root.borderColor
+        antialiasing: true
+    }
+
+    Rectangle {
+        anchors.fill: parent
+        visible: root.flashOverlayOpacity > 0.0001
+        radius: root.radius
+        color: "#ffffff"
+        opacity: Math.max(0, Math.min(1, root.flashOverlayOpacity))
         antialiasing: true
     }
 

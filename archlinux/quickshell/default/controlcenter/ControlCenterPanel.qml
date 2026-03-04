@@ -10,6 +10,7 @@ import "tiles" as Tiles
 
 Item {
     id: root
+    property real openFlashOpacity: 0.0
 
     readonly property bool wifiChecked: networkProvider.enabled
     readonly property bool wifiConnected: networkProvider.connected
@@ -448,6 +449,7 @@ Item {
     Tiles.TileSurface {
         id: privacyRow
         visible: root.anyPrivacyActive
+        flashOverlayOpacity: root.openFlashOpacity
         width: Math.min(root.panelPixelWidth, privacyContent.implicitWidth + 20)
         height: root.privacyRowHeight
         anchors.horizontalCenter: parent.horizontalCenter
@@ -542,6 +544,9 @@ Item {
                     item.height = height;
                     item.sizeMode = placementSizeMode;
                     item.tileData = descriptorData;
+                    item["openFlashOpacity"] = Qt.binding(function () {
+                        return root.openFlashOpacity;
+                    });
                 }
 
                 onLoaded: syncLoadedItem()
@@ -568,6 +573,7 @@ Item {
 
     Tiles.TileSurface {
         id: editControlsButton
+        flashOverlayOpacity: root.openFlashOpacity
         width: Math.min(root.panelPixelWidth, editControlsContent.implicitWidth + 20)
         height: root.footerButtonHeight
         anchors.horizontalCenter: parent.horizontalCenter

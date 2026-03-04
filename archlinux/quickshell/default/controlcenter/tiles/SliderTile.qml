@@ -8,6 +8,7 @@ Item {
 
     property string sizeMode: "4x1"
     property var tileData: ({})
+    property real openFlashOpacity: 0.0
 
     readonly property string resolvedSizeMode: _resolveSizeMode(root.sizeMode)
     readonly property bool compactMode: root.resolvedSizeMode === "2x1"
@@ -82,6 +83,7 @@ Item {
 
     Tiles.TileSurface {
         anchors.fill: parent
+        flashOverlayOpacity: root.openFlashOpacity
         radius: root.compactMode ? (height / 2) : 25
         hovered: hoverHandler.hovered
         pressed: minusTap.pressed || plusTap.pressed || sliderTrackMouseArea.pressed

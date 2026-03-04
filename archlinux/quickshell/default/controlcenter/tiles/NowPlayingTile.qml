@@ -9,6 +9,7 @@ Item {
 
     property string sizeMode: "2x2"
     property var tileData: ({})
+    property real openFlashOpacity: 0.0
 
     readonly property var provider: _rawDataValue("provider", null)
     readonly property color accentColor: _colorData("accentColor", Qt.rgba(0.08, 0.44, 1.0, 1.0))
@@ -72,6 +73,7 @@ Item {
 
     Tiles.TileSurface {
         anchors.fill: parent
+        flashOverlayOpacity: root.openFlashOpacity
         radius: 34
         tintColor: Qt.rgba(0, 0, 0, 0.20)
         contrastColor: Qt.rgba(1, 1, 1, 0.0)

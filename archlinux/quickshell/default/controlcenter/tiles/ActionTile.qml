@@ -8,6 +8,7 @@ Item {
 
     property string sizeMode: "1x1"
     property var tileData: ({})
+    property real openFlashOpacity: 0.0
 
     readonly property string resolvedSizeMode: _resolveSizeMode(root.sizeMode)
     readonly property bool checked: _boolData("checked", false)
@@ -69,6 +70,7 @@ Item {
 
     Tiles.TileSurface {
         anchors.fill: parent
+        flashOverlayOpacity: root.openFlashOpacity
         radius: root.resolvedSizeMode === "1x1" ? (width / 2) : 25
         hovered: hoverHandler.hovered
         pressed: tapHandler.pressed
