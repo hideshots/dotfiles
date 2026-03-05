@@ -11,6 +11,13 @@ Rectangle {
 
     property var highlightState: null
     readonly property var audio: Root.AudioService
+    readonly property var _audioSvgWarmupNames: [
+        "speaker.slash.fill",
+        "speaker.wave.3.fill.0",
+        "speaker.wave.3.fill.1",
+        "speaker.wave.3.fill.2",
+        "speaker.wave.3.fill.3"
+    ]
 
     visible: audio.visible
     height: parent.height
@@ -39,11 +46,30 @@ Rectangle {
         }
     }
 
+    Item {
+        id: audioSvgWarmup
+        visible: false
+
+        Repeater {
+            model: root._audioSvgWarmupNames
+
+            Image {
+                required property string modelData
+                source: Qt.resolvedUrl("../" + Root.Symbols.svgDir + "/" + modelData + ".svg")
+                asynchronous: true
+                cache: true
+                sourceSize.width: Root.Theme.iconSize
+                sourceSize.height: Root.Theme.iconSize
+            }
+        }
+    }
+
     Root.SymbolIcon {
         id: audioIcon
         anchors.centerIn: parent
         width: Root.Theme.iconSize
         height: Root.Theme.iconSize
+        fallbackWhileSvgLoading: false
         glyph: root.audio.iconGlyph
         svgNameOverride: root.audio.iconSvgName
         fallbackFontFamily: Root.Theme.fontFamily

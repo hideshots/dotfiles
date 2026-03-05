@@ -11,6 +11,14 @@ Rectangle {
 
     property var highlightState: null
     readonly property var wifi: Root.WifiService
+    readonly property var _wifiSvgWarmupNames: [
+        "wifi.slash",
+        "wifi.exclamationmark",
+        "wifi.0",
+        "wifi.1",
+        "wifi.2",
+        "wifi.3"
+    ]
 
     visible: wifi.visible
     height: parent.height
@@ -39,11 +47,30 @@ Rectangle {
         }
     }
 
+    Item {
+        id: wifiSvgWarmup
+        visible: false
+
+        Repeater {
+            model: root._wifiSvgWarmupNames
+
+            Image {
+                required property string modelData
+                source: Qt.resolvedUrl("../" + Root.Symbols.svgDir + "/" + modelData + ".svg")
+                asynchronous: true
+                cache: true
+                sourceSize.width: Root.Theme.iconSize
+                sourceSize.height: Root.Theme.iconSize
+            }
+        }
+    }
+
     Root.SymbolIcon {
         id: wifiIcon
         anchors.centerIn: parent
         width: Root.Theme.iconSize
         height: Root.Theme.iconSize
+        fallbackWhileSvgLoading: false
         glyph: root.wifi.iconGlyph
         svgNameOverride: root.wifi.iconSvgName
         fallbackFontFamily: Root.Theme.fontFamily

@@ -12,6 +12,14 @@ Rectangle {
     property var highlightState: null
 
     readonly property var battery: Root.BatteryService
+    readonly property var _batterySvgWarmupNames: [
+        "battery.100percent.bolt",
+        "battery.100percent",
+        "battery.75percent",
+        "battery.50percent",
+        "battery.25percent",
+        "battery.0percent"
+    ]
 
     visible: battery.visible
     height: parent.height
@@ -40,6 +48,24 @@ Rectangle {
         }
     }
 
+    Item {
+        id: batterySvgWarmup
+        visible: false
+
+        Repeater {
+            model: root._batterySvgWarmupNames
+
+            Image {
+                required property string modelData
+                source: Qt.resolvedUrl("../" + Root.Symbols.svgDir + "/" + modelData + ".svg")
+                asynchronous: true
+                cache: true
+                sourceSize.width: Root.Theme.iconSize
+                sourceSize.height: Root.Theme.iconSize
+            }
+        }
+    }
+
     Row {
         id: contentRow
         anchors.centerIn: parent
@@ -63,6 +89,7 @@ Rectangle {
             anchors.verticalCenter: parent.verticalCenter
             width: Root.Theme.iconSize
             height: Root.Theme.iconSize
+            fallbackWhileSvgLoading: false
             glyph: root.battery.iconGlyph
             fallbackFontFamily: Root.Theme.fontFamily
             pixelSize: Root.Theme.iconSize

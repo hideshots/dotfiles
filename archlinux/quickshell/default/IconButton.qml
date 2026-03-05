@@ -5,6 +5,7 @@ Rectangle {
     id: root
 
     property string icon: ""
+    property string iconSvgName: ""
     property real iconOffsetX: 0
     property var highlightState: null
     signal clicked()
@@ -19,6 +20,7 @@ Rectangle {
         anchors.centerIn: parent
         anchors.horizontalCenterOffset: root.iconOffsetX
         glyph: root.icon
+        svgNameOverride: root.iconSvgName
         fallbackFontFamily: Theme.fontFamily
         pixelSize: Theme.fontSize
         fallbackColor: Theme.textSecondary

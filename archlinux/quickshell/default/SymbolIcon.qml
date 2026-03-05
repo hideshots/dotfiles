@@ -16,6 +16,7 @@ Item {
     property bool svgTintEnabled: true
     property color svgTintColor: fallbackColor
     property real svgScale: 1.0
+    property bool fallbackWhileSvgLoading: true
 
     readonly property string _trimmedGlyph: glyph === undefined || glyph === null ? "" : String(glyph)
     readonly property string _trimmedSvgOverride: svgNameOverride === undefined || svgNameOverride === null ? "" : String(svgNameOverride).trim()
@@ -46,10 +47,12 @@ Item {
         return _trimmedGlyph.length > 0 && _sfName.length > 0;
     }
     readonly property bool svgReady: _hasSvgCandidate && svgImage.status === Image.Ready
-    readonly property bool svgTintActive: svgReady && svgTintEnabled
+    readonly property bool _showSvg: svgReady || (_hasSvgCandidate && !fallbackWhileSvgLoading && svgImage.status !== Image.Error)
+    readonly property bool _showFallbackText: !svgReady && (!_hasSvgCandidate || fallbackWhileSvgLoading || svgImage.status === Image.Error)
+    readonly property bool svgTintActive: _showSvg && svgTintEnabled
 
-    implicitWidth: svgReady ? pixelSize : fallbackText.implicitWidth
-    implicitHeight: svgReady ? pixelSize : fallbackText.implicitHeight
+    implicitWidth: _showSvg ? pixelSize : fallbackText.implicitWidth
+    implicitHeight: _showSvg ? pixelSize : fallbackText.implicitHeight
 
     onSvgEnabledChanged: {
         if (!svgEnabled || _trimmedGlyph.length === 0) {
@@ -74,7 +77,7 @@ Item {
         anchors.centerIn: parent
         width: root.width * root._effectiveSvgScale
         height: root.height * root._effectiveSvgScale
-        visible: root.svgReady
+        visible: root._showSvg
         opacity: root.svgTintActive ? 0 : 1
         source: root._hasSvgCandidate ? root._svgSource : ""
         fillMode: Image.PreserveAspectFit
@@ -103,7 +106,7 @@ Item {
     Text {
         id: fallbackText
         anchors.centerIn: parent
-        visible: !root.svgReady
+        visible: root._showFallbackText
         text: root._trimmedGlyph
         color: root.fallbackColor
         font.family: root.fallbackFontFamily

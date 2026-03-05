@@ -1488,6 +1488,20 @@ ShellRoot {
                             readonly property real controlCenterIndicatorCompensationX: privacyIndicatorVisible ? Theme.privacyIndicatorControlCenterCompensationX : 0
                             readonly property color privacyDotColor: privacyDotKind === "camera" ? Theme.privacyCameraIndicator : (privacyDotKind === "mic" ? Theme.privacyMicrophoneIndicator : (privacyDotKind === "systemAudio" ? Theme.privacySystemAudioIndicator : "transparent"))
                             readonly property real privacyIndicatorAnchorX: controlCenterButton.x - controlCenterIndicatorCompensationX + (controlCenterButton.width / 2) + (Theme.iconSize / 2) + Theme.privacyIndicatorOffsetX
+                            function showSpotlightHighlight(target) {
+                                if (!target) {
+                                    return;
+                                }
+
+                                rightHi.activeTarget = target;
+                                spotlightHighlightTimer.restart();
+                            }
+                            function toggleVicinaeForBar(triggerItem) {
+                                showSpotlightHighlight(triggerItem);
+                                if (!vicinaeToggleProcess.running) {
+                                    vicinaeToggleProcess.exec(["vicinae", "toggle"]);
+                                }
+                            }
                             function syncRightHighlight() {
                                 var notificationTriggeredFromKeyboard = barPanelWindow.notificationCenterTriggerItemProxy == null;
                                 var controlTriggeredFromKeyboard = barPanelWindow.controlCenterTriggerItemProxy == null;
@@ -1516,6 +1530,22 @@ ShellRoot {
                                 id: rightHi
                                 property Item activeTarget: null
                                 property Item pulseTarget: null
+                            }
+
+                            Process {
+                                id: vicinaeToggleProcess
+                            }
+
+                            Timer {
+                                id: spotlightHighlightTimer
+                                interval: 100
+                                repeat: false
+                                onTriggered: {
+                                    if (rightHi.activeTarget === spotlightButton) {
+                                        rightHi.activeTarget = null;
+                                        rightSection.syncRightHighlight();
+                                    }
+                                }
                             }
 
                             Connections {
@@ -1584,8 +1614,15 @@ ShellRoot {
                                     highlightState: rightHi
                                 }
 
+                                IconButton {
+                                    id: spotlightButton
+                                    icon: "􀊫"
+                                    iconSvgName: "magnifyingglass"
+                                    highlightState: rightHi
+                                    onClicked: rightSection.toggleVicinaeForBar(spotlightButton)
+                                }
+
                                 // IconButton { icon: "􀙇"; highlightState: rightHi; onClicked: {} }
-                                // IconButton { icon: "􀊫"; highlightState: rightHi; onClicked: {} }
                                 IconButton {
                                     id: controlCenterButton
                                     icon: "􀜊"
