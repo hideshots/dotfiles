@@ -36,6 +36,8 @@ QtObject {
             "􀆺": { sfName: "moon.fill", usage: "focus / weather clear-night currently shares glyph" },
             "􀙈": { sfName: "wifi.slash", usage: "wireless off" },
             "􀙇": { sfName: "wifi", usage: "wireless on" },
+            "􀛮": { sfName: "lightbulb.fill", usage: "nightshift min", scale: 1.0  },
+            "􁷙": { sfName: "lightbulb.max.fill", usage: "nightshift max", scale: 1.4  },
             "􀯇": { sfName: "square.on.square.intersection.dashed", usage: "reduce transparency" },
             "􀊄": { sfName: "play", usage: "now playing play" },
             "􀊆": { sfName: "pause", usage: "now playing pause" },

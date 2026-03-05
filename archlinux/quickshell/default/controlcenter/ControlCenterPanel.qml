@@ -205,9 +205,9 @@ Item {
                 order: 70,
                 data: {
                     title: "Night Shift",
-                    minusSymbol: "􀛮",
+                    minusSymbol: "  􀛮",
                     plusSymbol: "􁷙",
-                    value: root.nightShiftValue
+                    value: 1 - root.nightShiftValue
                 }
             });
         }
@@ -373,7 +373,7 @@ Item {
         }
 
         if (tileId === "nightshift") {
-            nightShiftProvider.setNormalizedValue(clamped);
+            nightShiftProvider.setNormalizedValue(1 - clamped);
             return;
         }
 
@@ -544,9 +544,11 @@ Item {
                     item.height = height;
                     item.sizeMode = placementSizeMode;
                     item.tileData = descriptorData;
-                    item["openFlashOpacity"] = Qt.binding(function () {
-                        return root.openFlashOpacity;
-                    });
+                    if (item.hasOwnProperty("openFlashOpacity")) {
+                        item["openFlashOpacity"] = Qt.binding(function () {
+                            return root.openFlashOpacity;
+                        });
+                    }
                 }
 
                 onLoaded: syncLoadedItem()

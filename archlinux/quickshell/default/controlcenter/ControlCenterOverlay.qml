@@ -13,15 +13,15 @@ PanelWindow {
     property real panelRevealProgress: 0.0
     property real flashOpacity: 0.0
 
-    property real popinStartScale: 0.98
-    property int openDuration: 150
+    property real popinStartScale: 0.97
+    property int openDuration: 350
     property int closeDuration: 100
-    property int openEasing: Easing.OutCubic
-    property int closeEasing: Easing.InCubic
-    property real flashPeakOpacity: 0.24
-    property int flashRiseDuration: 35
-    property int flashFallDuration: 440
-    property int flashEasing: Easing.OutCubic
+    property int openEasing: Easing.OutBack
+    property int closeEasing: Easing.OutCirc
+    property real flashPeakOpacity: 0.54
+    property int flashRiseDuration: 0
+    property int flashFallDuration: 350
+    property int flashEasing: Easing.OutCirc
 
     visible: root.overlayVisible
 
@@ -154,7 +154,7 @@ PanelWindow {
         z: 1
         openFlashOpacity: root.flashOpacity
         opacity: root.panelRevealProgress
-        scale: root.popinStartScale + ((1.0 - root.popinStartScale) * root.panelRevealProgress)
+        scale: closeAnimation.running ? 1.0 : (root.popinStartScale + ((1.0 - root.popinStartScale) * root.panelRevealProgress))
         transformOrigin: Item.Center
         anchors.top: parent.top
         anchors.right: parent.right

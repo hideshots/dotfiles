@@ -91,6 +91,31 @@ ShellRoot {
         shell.controlCenterTargetScreen = screen ?? null;
         shell.controlCenterOpen = true;
     }
+    function keyboardControlCenterScreen() {
+        if (shell.controlCenterTargetScreen !== undefined && shell.controlCenterTargetScreen !== null) {
+            return shell.controlCenterTargetScreen;
+        }
+
+        var screens = Quickshell.screens;
+        if (screens && screens.length > 0) {
+            return screens[0];
+        }
+
+        return null;
+    }
+
+    IpcHandler {
+        target: "shell"
+
+        function toggleControlCenter() {
+            shell.toggleControlCenter(null, shell.keyboardControlCenterScreen());
+        }
+
+        function toggleNotificationCenter() {
+            shell.toggleNotificationCenter(null);
+        }
+    }
+
     Shortcut {
         sequence: "Escape"
         context: Qt.ApplicationShortcut
