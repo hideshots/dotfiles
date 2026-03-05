@@ -12,17 +12,39 @@ Item {
     property int pixelSize: 16
     property int fontWeight: Font.Normal
     property bool svgEnabled: Root.Symbols.svgEnabled
+    property string svgNameOverride: ""
     property bool svgTintEnabled: true
     property color svgTintColor: fallbackColor
     property real svgScale: 1.0
 
     readonly property string _trimmedGlyph: glyph === undefined || glyph === null ? "" : String(glyph)
+    readonly property string _trimmedSvgOverride: svgNameOverride === undefined || svgNameOverride === null ? "" : String(svgNameOverride).trim()
     readonly property bool _glyphKnown: Root.Symbols.hasGlyphEntry(_trimmedGlyph)
     readonly property string _sfName: svgEnabled ? Root.Symbols.sfNameForGlyph(_trimmedGlyph) : ""
-    readonly property string _svgSource: svgEnabled ? Root.Symbols.svgUrlForGlyph(_trimmedGlyph) : ""
+    readonly property string _svgSource: {
+        if (!svgEnabled) {
+            return "";
+        }
+
+        if (_trimmedSvgOverride.length > 0) {
+            return Qt.resolvedUrl(Root.Symbols.svgDir + "/" + _trimmedSvgOverride + ".svg");
+        }
+
+        return Root.Symbols.svgUrlForGlyph(_trimmedGlyph);
+    }
     readonly property real _glyphSvgScale: svgEnabled ? Root.Symbols.scaleForGlyph(_trimmedGlyph) : 1.0
     readonly property real _effectiveSvgScale: Math.max(0.1, root.svgScale) * Math.max(0.1, _glyphSvgScale)
-    readonly property bool _hasSvgCandidate: svgEnabled && _trimmedGlyph.length > 0 && _sfName.length > 0 && _svgSource.length > 0
+    readonly property bool _hasSvgCandidate: {
+        if (!svgEnabled || _svgSource.length === 0) {
+            return false;
+        }
+
+        if (_trimmedSvgOverride.length > 0) {
+            return true;
+        }
+
+        return _trimmedGlyph.length > 0 && _sfName.length > 0;
+    }
     readonly property bool svgReady: _hasSvgCandidate && svgImage.status === Image.Ready
     readonly property bool svgTintActive: svgReady && svgTintEnabled
 

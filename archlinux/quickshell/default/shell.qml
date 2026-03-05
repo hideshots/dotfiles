@@ -17,7 +17,12 @@ ShellRoot {
     id: shell
     // Force-load notifications backend so NotificationServer is active without UI components.
     readonly property var notificationService: Root.NotificationService
-    Component.onCompleted: notificationService.refreshTimeLabels()
+    readonly property var batteryService: Root.BatteryService
+    Component.onCompleted: {
+        notificationService.refreshTimeLabels();
+        batteryService.previewMode = shell.batteryPreviewMode;
+        batteryService.previewStepMs = shell.batteryPreviewStepMs;
+    }
     // Notifications { }
     property bool weatherEnabled: true
     property bool calendarEnabled: true
@@ -47,6 +52,10 @@ ShellRoot {
     property var controlCenterTargetScreen: null
     property int controlCenterTopMargin: 44
     property int controlCenterRightMargin: 16
+    property bool batteryPreviewMode: false
+    property int batteryPreviewStepMs: 9200
+    onBatteryPreviewModeChanged: batteryService.previewMode = batteryPreviewMode
+    onBatteryPreviewStepMsChanged: batteryService.previewStepMs = batteryPreviewStepMs
     onNotificationCenterOpenChanged: {
         if (!shell.notificationCenterOpen) {
             shell.notificationCenterTriggerItem = null;
@@ -1480,10 +1489,13 @@ ShellRoot {
                             readonly property color privacyDotColor: privacyDotKind === "camera" ? Theme.privacyCameraIndicator : (privacyDotKind === "mic" ? Theme.privacyMicrophoneIndicator : (privacyDotKind === "systemAudio" ? Theme.privacySystemAudioIndicator : "transparent"))
                             readonly property real privacyIndicatorAnchorX: controlCenterButton.x - controlCenterIndicatorCompensationX + (controlCenterButton.width / 2) + (Theme.iconSize / 2) + Theme.privacyIndicatorOffsetX
                             function syncRightHighlight() {
-                                var notificationCenterShouldHighlight = barPanelWindow.notificationCenterOpenProxy && barPanelWindow.notificationCenterTriggerItemProxy === timeDisplay;
+                                var notificationTriggeredFromKeyboard = barPanelWindow.notificationCenterTriggerItemProxy == null;
+                                var controlTriggeredFromKeyboard = barPanelWindow.controlCenterTriggerItemProxy == null;
+                                var notificationCenterShouldHighlight = barPanelWindow.notificationCenterOpenProxy
+                                    && (barPanelWindow.notificationCenterTriggerItemProxy === timeDisplay || notificationTriggeredFromKeyboard);
                                 var controlCenterShouldHighlight = barPanelWindow.controlCenterOpenProxy
                                     && barPanelWindow.controlCenterTargetScreenProxy === barPanelWindow.screen
-                                    && barPanelWindow.controlCenterTriggerItemProxy === controlCenterButton;
+                                    && (barPanelWindow.controlCenterTriggerItemProxy === controlCenterButton || controlTriggeredFromKeyboard);
 
                                 if (notificationCenterShouldHighlight) {
                                     rightHi.activeTarget = timeDisplay;
@@ -1495,7 +1507,7 @@ ShellRoot {
                             }
                             Component.onCompleted: syncRightHighlight()
                             Component.onDestruction: {
-                                if (rightHi.activeTarget === timeDisplay || rightHi.activeTarget === controlCenterButton) {
+                                if (rightHi.activeTarget === timeDisplay || rightHi.activeTarget === controlCenterButton || rightHi.activeTarget === batteryStatusArea || rightHi.activeTarget === wifiStatusArea || rightHi.activeTarget === audioStatusArea) {
                                     rightHi.activeTarget = null;
                                 }
                             }
@@ -1552,6 +1564,24 @@ ShellRoot {
                                     height: parent.height
                                     highlightState: rightHi
                                     iconSize: Theme.iconSize
+                                }
+
+                                Widgets.AudioStatusArea {
+                                    id: audioStatusArea
+                                    height: parent.height
+                                    highlightState: rightHi
+                                }
+
+                                Widgets.WifiStatusArea {
+                                    id: wifiStatusArea
+                                    height: parent.height
+                                    highlightState: rightHi
+                                }
+
+                                Widgets.BatteryStatusArea {
+                                    id: batteryStatusArea
+                                    height: parent.height
+                                    highlightState: rightHi
                                 }
 
                                 // IconButton { icon: "􀙇"; highlightState: rightHi; onClicked: {} }

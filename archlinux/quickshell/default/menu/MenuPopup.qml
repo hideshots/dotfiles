@@ -226,6 +226,7 @@ PopupWindow {
                     sourceComponent: {
                         if (itemData.type === "separator") return separatorComponent
                         if (itemData.type === "header") return headerComponent
+                        if (itemData.type === "custom") return customComponent
                         return menuItemComponent
                     }
                 }
@@ -514,7 +515,7 @@ PopupWindow {
         var newIndex = hoveredIndex - 1
         while (newIndex >= 0) {
             var item = model[newIndex]
-            if (item.type !== "separator" && item.type !== "header" && !isItemDisabled(item)) {
+            if (isItemSelectable(item)) {
                 hoveredIndex = newIndex
                 return
             }
@@ -526,7 +527,7 @@ PopupWindow {
         var newIndex = hoveredIndex + 1
         while (newIndex < model.length) {
             var item = model[newIndex]
-            if (item.type !== "separator" && item.type !== "header" && !isItemDisabled(item)) {
+            if (isItemSelectable(item)) {
                 hoveredIndex = newIndex
                 return
             }
@@ -537,7 +538,7 @@ PopupWindow {
     function findFirstSelectableIndex() {
         for (var i = 0; i < model.length; i++) {
             var item = model[i]
-            if (item.type !== "separator" && item.type !== "header" && !isItemDisabled(item)) {
+            if (isItemSelectable(item)) {
                 return i
             }
         }
@@ -546,12 +547,16 @@ PopupWindow {
 
     function activateItem(index) {
         var item = model[index]
-        if (item && !isItemDisabled(item)) {
+        if (isItemSelectable(item)) {
             selectedIndex = index
             itemClicked(item, index)
             if (item.action) item.action()
             root.closeTopMenu()
         }
+    }
+
+    function isItemSelectable(item) {
+        return item && item.type !== "separator" && item.type !== "header" && item.type !== "custom" && !isItemDisabled(item)
     }
 
     function isItemDisabled(item) {
@@ -616,6 +621,14 @@ PopupWindow {
         id: headerComponent
         MenuHeader {
             text: parent.itemData.label || ""
+        }
+    }
+
+    Component {
+        id: customComponent
+        Loader {
+            width: item && item.implicitWidth > 0 ? item.implicitWidth : parent.width
+            sourceComponent: parent.itemData && parent.itemData.component ? parent.itemData.component : null
         }
     }
 }

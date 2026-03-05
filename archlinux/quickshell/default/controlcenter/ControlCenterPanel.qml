@@ -12,9 +12,9 @@ Item {
     id: root
     property real openFlashOpacity: 0.0
 
-    readonly property bool wifiChecked: networkProvider.enabled
-    readonly property bool wifiConnected: networkProvider.connected
-    readonly property string wifiConnectedName: networkProvider.ssid
+    readonly property bool wifiChecked: Root.WifiService.enabled
+    readonly property bool wifiConnected: Root.WifiService.connected
+    readonly property string wifiConnectedName: Root.WifiService.ssid
     readonly property bool bluetoothChecked: bluetoothProvider.enabled
     readonly property bool reduceTransparencyChecked: hyprAccessibilityProvider.reduceTransparencyEnabled
     readonly property bool focusChecked: Root.NotificationService.focusModeEnabled
@@ -22,7 +22,7 @@ Item {
     readonly property bool reduceMotionChecked: hyprAccessibilityProvider.reduceMotionEnabled
     readonly property real nightShiftValue: nightShiftProvider.normalizedValue
     property real displayValue: 0.68
-    property real volumeValue: 0.0
+    readonly property real volumeValue: Root.AudioService.value
 
     property int gridUnit: 64
     property int gridGap: 12
@@ -188,7 +188,7 @@ Item {
                 h: 1,
                 order: 90,
                 data: {
-                    title: "Volume",
+                    title: "Sound",
                     minusSymbol: "􀊡",
                     plusSymbol: "􀊩",
                     value: root.volumeValue
@@ -332,7 +332,7 @@ Item {
 
     function handleToggleForTile(tileId, nextChecked) {
         if (tileId === "wireless") {
-            networkProvider.setEnabled(!!nextChecked);
+            Root.WifiService.setEnabled(!!nextChecked);
             return;
         }
 
@@ -378,17 +378,12 @@ Item {
         }
 
         if (tileId === "volume") {
-            root.volumeValue = clamped;
-            volumeProvider.setVolume(clamped);
+            Root.AudioService.setVolume(clamped);
         }
     }
 
     Providers.NowPlayingProvider {
         id: nowPlayingProvider
-    }
-
-    Providers.NetworkProvider {
-        id: networkProvider
     }
 
     Providers.BluetoothProvider {
@@ -401,16 +396,6 @@ Item {
 
     Providers.NightShiftProvider {
         id: nightShiftProvider
-    }
-
-    Providers.VolumeProvider {
-        id: volumeProvider
-        onValueChanged: {
-            if (Math.abs(value - root.volumeValue) < 0.0001) {
-                return;
-            }
-            root.volumeValue = value;
-        }
     }
 
     Component {
