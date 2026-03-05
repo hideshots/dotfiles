@@ -4,5 +4,6 @@ CalendarWidget 1.0 calendar/CalendarWidget.qml
 SystemTrayArea 1.0 SystemTrayArea.qml
 AudioStatusArea 1.0 AudioStatusArea.qml
 NetworkStatsArea 1.0 NetworkStatsArea.qml
+HardwareStatsArea 1.0 HardwareStatsArea.qml
 BatteryStatusArea 1.0 BatteryStatusArea.qml
 WifiStatusArea 1.0 WifiStatusArea.qml

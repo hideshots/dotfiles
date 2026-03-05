@@ -57,7 +57,7 @@ Item {
                 text: "􀄨"
                 font.family: Root.Theme.fontFamilySymbol
                 font.pixelSize: 7
-                font.weight: Font.Normal
+                font.weight: Font.Bold
                 color: "#ffffff"
                 renderType: Text.NativeRendering
             }
@@ -85,7 +85,7 @@ Item {
                 text: "􀄩"
                 font.family: Root.Theme.fontFamilySymbol
                 font.pixelSize: 7
-                font.weight: Font.Normal
+                font.weight: Font.Bold
                 color: "#ffffff"
                 renderType: Text.NativeRendering
             }

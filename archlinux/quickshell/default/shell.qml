@@ -18,10 +18,14 @@ ShellRoot {
     // Force-load notifications backend so NotificationServer is active without UI components.
     readonly property var notificationService: Root.NotificationService
     readonly property var batteryService: Root.BatteryService
+    readonly property var hardwareStatsService: Root.HardwareStatsService
     Component.onCompleted: {
         notificationService.refreshTimeLabels();
         batteryService.previewMode = shell.batteryPreviewMode;
         batteryService.previewStepMs = shell.batteryPreviewStepMs;
+        hardwareStatsService.memMode = shell.hardwareStatsMemMode;
+        hardwareStatsService.refreshIntervalMs = shell.hardwareStatsRefreshMs;
+        hardwareStatsService.gpuPollingEnabled = shell.hardwareStatsShowGpu;
     }
     // Notifications { }
     property bool weatherEnabled: true
@@ -54,8 +58,17 @@ ShellRoot {
     property int controlCenterRightMargin: 16
     property bool batteryPreviewMode: false
     property int batteryPreviewStepMs: 9200
+    property bool hardwareStatsShowCpu: true
+    property bool hardwareStatsShowGpu: true
+    property bool hardwareStatsShowMem: true
+    property string hardwareStatsMemMode: "available"
+    property int hardwareStatsRefreshMs: 3000
+    property int hardwareStatsColumnSpacing: 4
     onBatteryPreviewModeChanged: batteryService.previewMode = batteryPreviewMode
     onBatteryPreviewStepMsChanged: batteryService.previewStepMs = batteryPreviewStepMs
+    onHardwareStatsMemModeChanged: hardwareStatsService.memMode = hardwareStatsMemMode
+    onHardwareStatsRefreshMsChanged: hardwareStatsService.refreshIntervalMs = hardwareStatsRefreshMs
+    onHardwareStatsShowGpuChanged: hardwareStatsService.gpuPollingEnabled = hardwareStatsShowGpu
     onNotificationCenterOpenChanged: {
         if (!shell.notificationCenterOpen) {
             shell.notificationCenterTriggerItem = null;
@@ -1594,6 +1607,15 @@ ShellRoot {
                                     height: parent.height
                                     highlightState: rightHi
                                     iconSize: Theme.iconSize
+                                }
+
+                                Widgets.HardwareStatsArea {
+                                    id: hardwareStatsArea
+                                    height: parent.height
+                                    showCpu: shell.hardwareStatsShowCpu
+                                    showGpu: shell.hardwareStatsShowGpu
+                                    showMem: shell.hardwareStatsShowMem
+                                    columnSpacing: shell.hardwareStatsColumnSpacing
                                 }
 
                                 Widgets.NetworkStatsArea {
