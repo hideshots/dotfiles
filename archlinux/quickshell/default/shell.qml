@@ -19,6 +19,7 @@ ShellRoot {
     readonly property var notificationService: Root.NotificationService
     readonly property var batteryService: Root.BatteryService
     readonly property var hardwareStatsService: Root.HardwareStatsService
+    readonly property var storageStatsService: Root.StorageStatsService
     Component.onCompleted: {
         notificationService.refreshTimeLabels();
         batteryService.previewMode = shell.batteryPreviewMode;
@@ -26,6 +27,9 @@ ShellRoot {
         hardwareStatsService.memMode = shell.hardwareStatsMemMode;
         hardwareStatsService.refreshIntervalMs = shell.hardwareStatsRefreshMs;
         hardwareStatsService.gpuPollingEnabled = shell.hardwareStatsShowGpu;
+        storageStatsService.enabled = shell.storageStatsEnabled;
+        storageStatsService.refreshIntervalMs = shell.storageStatsRefreshMs;
+        storageStatsService.configuredEntries = shell.storageStatsEntries;
     }
     // Notifications { }
     property bool weatherEnabled: true
@@ -58,17 +62,40 @@ ShellRoot {
     property int controlCenterRightMargin: 16
     property bool batteryPreviewMode: false
     property int batteryPreviewStepMs: 9200
-    property bool hardwareStatsShowCpu: true
-    property bool hardwareStatsShowGpu: true
+    property bool hardwareStatsShowCpu: false
+    property bool hardwareStatsShowGpu: false
     property bool hardwareStatsShowMem: true
     property string hardwareStatsMemMode: "available"
     property int hardwareStatsRefreshMs: 3000
-    property int hardwareStatsColumnSpacing: 4
+    property int hardwareStatsColumnSpacing: 6
+    property bool storageStatsEnabled: true
+    property int storageStatsRefreshMs: 30000
+    property int storageStatsColumnSpacing: 5
+    property var storageStatsEntries: [
+        {
+            label: "MAC",
+            mountPoint: "/"
+        },
+        // {
+        //     label: "HDD",
+        //     mountPoint: "/mnt/hdd"
+        // },
+        // {
+        //     label: "DEV",
+        //     mountPoint: "/mnt/dev"
+        // }
+    ]
+    property int networkStatsCompactGap: -8
+    property int networkStatsWideGap: -6
+    property int networkStatsWideHoldMs: 60000
     onBatteryPreviewModeChanged: batteryService.previewMode = batteryPreviewMode
     onBatteryPreviewStepMsChanged: batteryService.previewStepMs = batteryPreviewStepMs
     onHardwareStatsMemModeChanged: hardwareStatsService.memMode = hardwareStatsMemMode
     onHardwareStatsRefreshMsChanged: hardwareStatsService.refreshIntervalMs = hardwareStatsRefreshMs
     onHardwareStatsShowGpuChanged: hardwareStatsService.gpuPollingEnabled = hardwareStatsShowGpu
+    onStorageStatsEnabledChanged: storageStatsService.enabled = storageStatsEnabled
+    onStorageStatsRefreshMsChanged: storageStatsService.refreshIntervalMs = storageStatsRefreshMs
+    onStorageStatsEntriesChanged: storageStatsService.configuredEntries = storageStatsEntries
     onNotificationCenterOpenChanged: {
         if (!shell.notificationCenterOpen) {
             shell.notificationCenterTriggerItem = null;
@@ -1609,6 +1636,12 @@ ShellRoot {
                                     iconSize: Theme.iconSize
                                 }
 
+                                Widgets.StorageStatsArea {
+                                    id: storageStatsArea
+                                    height: parent.height
+                                    columnSpacing: shell.storageStatsColumnSpacing
+                                }
+
                                 Widgets.HardwareStatsArea {
                                     id: hardwareStatsArea
                                     height: parent.height
@@ -1621,6 +1654,9 @@ ShellRoot {
                                 Widgets.NetworkStatsArea {
                                     id: networkStatsArea
                                     height: parent.height
+                                    compactGap: shell.networkStatsCompactGap
+                                    wideGap: shell.networkStatsWideGap
+                                    wideHoldMs: shell.networkStatsWideHoldMs
                                 }
 
                                 Widgets.AudioStatusArea {
