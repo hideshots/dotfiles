@@ -39,7 +39,7 @@ Item {
 
             Column {
                 anchors.fill: parent
-                spacing: 0
+                spacing: -2
 
                 Text {
                     width: root.labelWidth
@@ -72,7 +72,7 @@ Item {
 
             Column {
                 anchors.fill: parent
-                spacing: 0
+                spacing: -2
 
                 Text {
                     width: root.labelWidth
@@ -105,7 +105,7 @@ Item {
 
             Column {
                 anchors.fill: parent
-                spacing: 0
+                spacing: -2
 
                 Text {
                     width: root.labelWidth

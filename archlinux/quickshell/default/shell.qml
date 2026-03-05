@@ -183,7 +183,7 @@ ShellRoot {
     property string weatherLocation: "Krasnodar"
     property string weatherDisplayLocation: "Richmond"
     property string weatherUnits: "u"
-    property string weatherVariant: "medium"
+    property string weatherVariant: "small"
     property bool widgetGlassDebug: false
     property real widgetGlassRefraction: 8.2
     property real widgetGlassBodyRefractionWidthPx: 32.0

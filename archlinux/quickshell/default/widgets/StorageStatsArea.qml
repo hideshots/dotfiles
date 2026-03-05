@@ -16,8 +16,8 @@ Item {
     property int labelHeight: 11
     property int pillWidth: 22
     property int pillHeight: 8
-    property int pillTop: 13
-    property int fillTop: 15
+    property int pillTop: 12
+    property int fillTop: 14
     property int fillInset: 2
     property int fillHeight: 4
 
