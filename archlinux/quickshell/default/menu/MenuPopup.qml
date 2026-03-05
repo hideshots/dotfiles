@@ -14,6 +14,14 @@ PopupWindow {
     property int yOffset: 6
     property string placement: "bottom" // bottom or right
     property bool adaptiveWidth: false
+    property bool openEffectEnabled: false
+    property real openEffectStartScale: 0.97
+    property int openEffectDuration: 350
+    property int openEffectEasing: Easing.OutBack
+    property real openEffectFlashPeakOpacity: 0.54
+    property int openEffectFlashRiseDuration: 0
+    property int openEffectFlashFallDuration: 350
+    property int openEffectFlashEasing: Easing.OutCirc
 
     // Signals
     signal itemClicked(var item, int index)
@@ -51,6 +59,8 @@ PopupWindow {
     // Internal state
     property int hoveredIndex: -1
     property int selectedIndex: -1
+    property real openEffectProgress: 1.0
+    property real openEffectFlashOpacity: 0.0
 
     surfaceFormat.opaque: false
     color: "transparent"
@@ -60,6 +70,18 @@ PopupWindow {
     implicitHeight: menuContent.height + 10
 
     onVisibleChanged: {
+        if (visible && root.openEffectEnabled) {
+            root.openEffectProgress = 0.0
+            root.openEffectFlashOpacity = 0.0
+            openEffectAnimation.restart()
+            openEffectFlashAnimation.restart()
+        } else if (!visible) {
+            openEffectAnimation.stop()
+            openEffectFlashAnimation.stop()
+            root.openEffectProgress = 1.0
+            root.openEffectFlashOpacity = 0.0
+        }
+
         if (!visible && root.isTopMenu) {
             root.grabRequested = false
             focusGrab.active = false
@@ -161,10 +183,42 @@ PopupWindow {
         }
     }
 
+    NumberAnimation {
+        id: openEffectAnimation
+        target: root
+        property: "openEffectProgress"
+        to: 1.0
+        duration: root.openEffectDuration
+        easing.type: root.openEffectEasing
+    }
+
+    SequentialAnimation {
+        id: openEffectFlashAnimation
+
+        NumberAnimation {
+            target: root
+            property: "openEffectFlashOpacity"
+            to: root.openEffectFlashPeakOpacity
+            duration: root.openEffectFlashRiseDuration
+            easing.type: Easing.OutQuad
+        }
+
+        NumberAnimation {
+            target: root
+            property: "openEffectFlashOpacity"
+            to: 0.0
+            duration: root.openEffectFlashFallDuration
+            easing.type: root.openEffectFlashEasing
+        }
+    }
+
     FocusScope {
         id: focusScope
         anchors.fill: parent
         focus: true
+        opacity: root.openEffectEnabled ? root.openEffectProgress : 1.0
+        scale: root.openEffectEnabled ? (root.openEffectStartScale + ((1.0 - root.openEffectStartScale) * root.openEffectProgress)) : 1.0
+        transformOrigin: Item.Center
 
         HoverHandler {
             id: menuHoverHandler
@@ -200,6 +254,13 @@ PopupWindow {
                 color: "transparent"
                 border.width: 1
                 border.color: Theme.isDark ? Qt.rgba(1, 1, 1, 0.1) : Qt.rgba(1, 1, 1, 0.4)
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                radius: Theme.menuBorderRadius
+                color: Qt.rgba(1, 1, 1, root.openEffectFlashOpacity)
+                visible: root.openEffectEnabled && root.openEffectFlashOpacity > 0.001
             }
         }
 

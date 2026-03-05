@@ -99,6 +99,7 @@ Rectangle {
         anchorPointY: root.height + yOffset
         yOffset: 8
         adaptiveWidth: true
+        openEffectEnabled: true
 
         model: [
             {
