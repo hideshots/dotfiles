@@ -1596,6 +1596,11 @@ ShellRoot {
                                     iconSize: Theme.iconSize
                                 }
 
+                                Widgets.NetworkStatsArea {
+                                    id: networkStatsArea
+                                    height: parent.height
+                                }
+
                                 Widgets.AudioStatusArea {
                                     id: audioStatusArea
                                     height: parent.height

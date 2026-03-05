@@ -5,6 +5,7 @@ singleton PrivacyIndicatorService 1.0 services/PrivacyIndicatorService.qml
 singleton BatteryService 1.0 services/BatteryService.qml
 singleton WifiService 1.0 services/WifiService.qml
 singleton AudioService 1.0 services/AudioService.qml
+singleton NetworkStatsService 1.0 services/NetworkStatsService.qml
 WorkspaceWindows 1.0 WorkspaceWindows.qml
 IconButton 1.0 IconButton.qml
 TimeDisplay 1.0 TimeDisplay.qml

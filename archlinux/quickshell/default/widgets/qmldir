@@ -3,5 +3,6 @@ WeatherWidget 1.0 weather/WeatherWidget.qml
 CalendarWidget 1.0 calendar/CalendarWidget.qml
 SystemTrayArea 1.0 SystemTrayArea.qml
 AudioStatusArea 1.0 AudioStatusArea.qml
+NetworkStatsArea 1.0 NetworkStatsArea.qml
 BatteryStatusArea 1.0 BatteryStatusArea.qml
 WifiStatusArea 1.0 WifiStatusArea.qml
