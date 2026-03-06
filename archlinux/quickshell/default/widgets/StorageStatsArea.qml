@@ -9,7 +9,8 @@ Item {
 
     readonly property var storage: Root.StorageStatsService
 
-    property int horizontalPadding: 4
+    property int leadingPadding: Root.Theme.rightWidgetPadding
+    property int trailingPadding: Root.Theme.rightWidgetPadding
     property int columnSpacing: 5
     property int entryWidth: 24
     property int entryHeight: 21
@@ -23,7 +24,7 @@ Item {
 
     visible: storage.visible
     height: parent.height
-    width: visible ? contentRow.implicitWidth + (horizontalPadding * 2) : 0
+    width: visible ? contentRow.implicitWidth + leadingPadding + trailingPadding : 0
 
     Row {
         id: contentRow

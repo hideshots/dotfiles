@@ -11,7 +11,7 @@ Rectangle {
     signal clicked()
 
     height: parent.height
-    width: iconVisual.implicitWidth + (Theme.itemPadding * 2)
+    width: iconVisual.implicitWidth + (Theme.rightWidgetPadding * 2)
     color: "transparent"
     radius: Theme.borderRadius
 

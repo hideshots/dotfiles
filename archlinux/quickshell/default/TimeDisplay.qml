@@ -8,7 +8,7 @@ Rectangle {
     signal clicked()
 
     height: parent.height
-    width: timeText.width + (Theme.itemPadding * 2)
+    width: timeText.width + (Theme.rightWidgetPadding * 2)
     color: "transparent"
     radius: Theme.borderRadius
 

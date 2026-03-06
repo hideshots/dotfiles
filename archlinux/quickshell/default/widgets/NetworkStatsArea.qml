@@ -11,9 +11,10 @@ Item {
 
     visible: network.visible
     height: parent.height
-    width: visible ? (horizontalPadding * 2) + arrowColumnWidth + reservedArrowGap + valueColumnWidth : 0
+    width: visible ? leadingPadding + trailingPadding + arrowColumnWidth + reservedArrowGap + valueColumnWidth : 0
 
-    property int horizontalPadding: 5
+    property int leadingPadding: Root.Theme.rightWidgetPadding
+    property int trailingPadding: Root.Theme.rightWidgetPadding
     property int compactGap: -8
     property int wideGap: -6
     property int wideHoldMs: 60000

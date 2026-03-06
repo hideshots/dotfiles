@@ -20,9 +20,10 @@ Item {
 
     visible: anyShown
     height: parent.height
-    width: visible ? contentRow.implicitWidth + (horizontalPadding * 2) : 0
+    width: visible ? contentRow.implicitWidth + leadingPadding + trailingPadding : 0
 
-    property int horizontalPadding: 4
+    property int leadingPadding: Root.Theme.rightWidgetPadding
+    property int trailingPadding: Root.Theme.rightWidgetPadding
     property int columnSpacing: 0
     property int labelWidth: 20
     property int valueWidth: 26
@@ -48,6 +49,7 @@ Item {
                     font.pixelSize: 9
                     font.weight: Font.Normal
                     color: "#ffffff"
+                    opacity: 0.9
                     horizontalAlignment: Text.AlignLeft
                     renderType: Text.NativeRendering
                 }
@@ -81,6 +83,7 @@ Item {
                     font.pixelSize: 9
                     font.weight: Font.Normal
                     color: "#ffffff"
+                    opacity: 0.9
                     horizontalAlignment: Text.AlignLeft
                     renderType: Text.NativeRendering
                 }
@@ -114,6 +117,7 @@ Item {
                     font.pixelSize: 9
                     font.weight: Font.Normal
                     color: "#ffffff"
+                    opacity: 0.9
                     horizontalAlignment: Text.AlignLeft
                     renderType: Text.NativeRendering
                 }

@@ -13,7 +13,7 @@ Item {
 
     property var highlightState: null
     property int iconSize: Root.Theme.iconSize
-    property int itemPadding: Root.Theme.itemPadding
+    property int itemPadding: Root.Theme.rightWidgetPadding
 
     implicitWidth: trayRow.implicitWidth
     implicitHeight: trayRow.implicitHeight

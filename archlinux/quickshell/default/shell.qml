@@ -62,13 +62,13 @@ ShellRoot {
     property int controlCenterRightMargin: 16
     property bool batteryPreviewMode: false
     property int batteryPreviewStepMs: 9200
-    property bool hardwareStatsShowCpu: false
-    property bool hardwareStatsShowGpu: false
+    property bool hardwareStatsShowCpu: true
+    property bool hardwareStatsShowGpu: true
     property bool hardwareStatsShowMem: true
     property string hardwareStatsMemMode: "available"
     property int hardwareStatsRefreshMs: 3000
-    property int hardwareStatsColumnSpacing: 6
-    property bool storageStatsEnabled: true
+    property int hardwareStatsColumnSpacing: 10
+    property bool storageStatsEnabled: false
     property int storageStatsRefreshMs: 30000
     property int storageStatsColumnSpacing: 5
     property var storageStatsEntries: [
@@ -183,7 +183,7 @@ ShellRoot {
     property string weatherLocation: "Krasnodar"
     property string weatherDisplayLocation: "Richmond"
     property string weatherUnits: "u"
-    property string weatherVariant: "small"
+    property string weatherVariant: "medium"
     property bool widgetGlassDebug: false
     property real widgetGlassRefraction: 8.2
     property real widgetGlassBodyRefractionWidthPx: 32.0

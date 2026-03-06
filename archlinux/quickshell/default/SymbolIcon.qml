@@ -50,6 +50,9 @@ Item {
     readonly property bool _showSvg: svgReady || (_hasSvgCandidate && !fallbackWhileSvgLoading && svgImage.status !== Image.Error)
     readonly property bool _showFallbackText: !svgReady && (!_hasSvgCandidate || fallbackWhileSvgLoading || svgImage.status === Image.Error)
     readonly property bool svgTintActive: _showSvg && svgTintEnabled
+    readonly property real _layoutWidth: root.width > 0 ? root.width : root.implicitWidth
+    readonly property real _layoutHeight: root.height > 0 ? root.height : root.implicitHeight
+    readonly property real _svgRenderSize: Math.max(1, Math.min(_layoutWidth, _layoutHeight))
 
     implicitWidth: _showSvg ? pixelSize : fallbackText.implicitWidth
     implicitHeight: _showSvg ? pixelSize : fallbackText.implicitHeight
@@ -75,8 +78,8 @@ Item {
     Image {
         id: svgImage
         anchors.centerIn: parent
-        width: root.width * root._effectiveSvgScale
-        height: root.height * root._effectiveSvgScale
+        width: root._svgRenderSize * root._effectiveSvgScale
+        height: root._svgRenderSize * root._effectiveSvgScale
         visible: root._showSvg
         opacity: root.svgTintActive ? 0 : 1
         source: root._hasSvgCandidate ? root._svgSource : ""

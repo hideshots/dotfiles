@@ -45,11 +45,12 @@ QtObject {
 
     // Spacing and sizing
     readonly property int itemPadding: 10
+    readonly property int rightWidgetPadding: itemPadding
     readonly property int itemVerticalPadding: 4
     readonly property int borderRadius: 99
     readonly property int privacyIndicatorDotSize: 5
     readonly property int privacyIndicatorArrowSize: 11
-    readonly property int privacyIndicatorOffsetX: 3
+    readonly property int privacyIndicatorOffsetX: 4
     readonly property int privacyIndicatorSpacing: 4
     readonly property int privacyIndicatorControlCenterCompensationX: 2
     readonly property string privacyIndicatorArrowGlyph: "􀋒"

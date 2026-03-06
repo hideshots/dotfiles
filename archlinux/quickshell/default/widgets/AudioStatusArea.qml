@@ -21,7 +21,7 @@ Rectangle {
 
     visible: audio.visible
     height: parent.height
-    width: visible ? audioIcon.width + (Root.Theme.itemPadding * 2) : 0
+    width: visible ? audioIcon.width + (Root.Theme.rightWidgetPadding * 2) : 0
     color: "transparent"
     radius: Root.Theme.borderRadius
 

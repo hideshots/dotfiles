@@ -23,7 +23,7 @@ Rectangle {
 
     visible: battery.visible
     height: parent.height
-    width: visible ? contentRow.implicitWidth + (Root.Theme.itemPadding * 2) : 0
+    width: visible ? contentRow.implicitWidth + (Root.Theme.rightWidgetPadding * 2) : 0
     color: "transparent"
     radius: Root.Theme.borderRadius
 

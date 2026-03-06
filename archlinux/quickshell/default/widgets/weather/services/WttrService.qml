@@ -12,8 +12,8 @@ QtObject {
     readonly property var symbolByKey: ({
         clear_day: "􀆮",
         clear_night: "􀆺",
-        cloudy_day: "􀇕",
-        cloudy_night: "􀇛",
+        cloudy_day: "􀇃",
+        cloudy_night: "􀇃",
         light_rain_day: "􀇅",
         light_rain_night: "􀇝",
         heavy_rain_day: "􀇉",
@@ -43,6 +43,8 @@ QtObject {
         tornado_day: "􀇟",
         tornado_night: "􀇟"
     })
+    readonly property string sunriseGlyph: "􀆲"
+    readonly property string sunsetGlyph: "􀆴"
     property var data: ({
         city: "—",
         temp: "—",
@@ -236,6 +238,139 @@ QtObject {
         return hour;
     }
 
+    function _minuteFromWttrTime(value) {
+        if (value === undefined || value === null) {
+            return -1;
+        }
+
+        const raw = String(value).trim();
+        if (raw.length === 0) {
+            return -1;
+        }
+
+        const numeric = parseInt(raw, 10);
+        if (isNaN(numeric)) {
+            return -1;
+        }
+
+        const hour = Math.floor(numeric / 100);
+        const minute = numeric % 100;
+        if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+            return -1;
+        }
+
+        return hour * 60 + minute;
+    }
+
+    function _minuteFromAmPm(value) {
+        if (value === undefined || value === null) {
+            return -1;
+        }
+
+        const raw = String(value).trim();
+        if (raw.length === 0) {
+            return -1;
+        }
+
+        const match = raw.match(/(\d{1,2}):(\d{2})\s*([AP]M)/i);
+        if (!match) {
+            return -1;
+        }
+
+        let hour = parseInt(match[1], 10);
+        const minute = parseInt(match[2], 10);
+        const suffix = match[3].toUpperCase();
+
+        if (isNaN(hour) || isNaN(minute) || hour < 1 || hour > 12 || minute < 0 || minute > 59) {
+            return -1;
+        }
+
+        if (suffix === "AM" && hour === 12) {
+            hour = 0;
+        } else if (suffix === "PM" && hour !== 12) {
+            hour += 12;
+        }
+
+        return hour * 60 + minute;
+    }
+
+    function _parseDateOnly(value) {
+        if (value === undefined || value === null) {
+            return null;
+        }
+
+        const raw = String(value).trim();
+        const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (!match) {
+            return null;
+        }
+
+        const year = parseInt(match[1], 10);
+        const month = parseInt(match[2], 10);
+        const day = parseInt(match[3], 10);
+        if (isNaN(year) || isNaN(month) || isNaN(day)) {
+            return null;
+        }
+
+        return {
+            year: year,
+            month: month,
+            day: day
+        };
+    }
+
+    function _dayStartEpochMs(dateText) {
+        const parsed = _parseDateOnly(dateText);
+        if (!parsed) {
+            return -1;
+        }
+        return new Date(parsed.year, parsed.month - 1, parsed.day, 0, 0, 0, 0).getTime();
+    }
+
+    function _observationEpochMs(current) {
+        const raw = _safeValue(current.localObsDateTime).trim();
+        const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{1,2}):(\d{2})(?:\s*([AP]M))?$/i);
+        if (!match) {
+            return Date.now();
+        }
+
+        const year = parseInt(match[1], 10);
+        const month = parseInt(match[2], 10);
+        const day = parseInt(match[3], 10);
+        let hour = parseInt(match[4], 10);
+        const minute = parseInt(match[5], 10);
+        const suffix = match[6] ? match[6].toUpperCase() : "";
+
+        if (isNaN(year) || isNaN(month) || isNaN(day) || isNaN(hour) || isNaN(minute) || minute < 0 || minute > 59) {
+            return Date.now();
+        }
+
+        if (suffix.length > 0) {
+            if (hour < 1 || hour > 12) {
+                return Date.now();
+            }
+            if (suffix === "AM" && hour === 12) {
+                hour = 0;
+            } else if (suffix === "PM" && hour !== 12) {
+                hour += 12;
+            }
+        } else if (hour < 0 || hour > 23) {
+            return Date.now();
+        }
+
+        return new Date(year, month - 1, day, hour, minute, 0, 0).getTime();
+    }
+
+    function _ceilToHourEpochMs(epochMs) {
+        const date = new Date(epochMs);
+        date.setSeconds(0, 0);
+        if (date.getMinutes() > 0) {
+            date.setHours(date.getHours() + 1);
+            date.setMinutes(0);
+        }
+        return date.getTime();
+    }
+
     function _toAmPmLabel(hour24) {
         if (hour24 < 0 || hour24 > 23) {
             return "—";
@@ -244,6 +379,17 @@ QtObject {
         const suffix = hour24 >= 12 ? "PM" : "AM";
         const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12;
         return hour12 + suffix;
+    }
+
+    function _toAmPmWithMinutesLabel(hour24, minute) {
+        if (hour24 < 0 || hour24 > 23 || minute < 0 || minute > 59) {
+            return "—";
+        }
+
+        const suffix = hour24 >= 12 ? "PM" : "AM";
+        const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12;
+        const minuteText = minute < 10 ? "0" + minute : String(minute);
+        return hour12 + ":" + minuteText + suffix;
     }
 
     function _isDaytimeHour(hour24) {
@@ -337,7 +483,100 @@ QtObject {
         return (new Date()).getHours();
     }
 
-    function _parseHourlyForecast(weatherDays, current) {
+    function _buildAnchorPoints(weatherDays) {
+        const anchors = [];
+        if (!Array.isArray(weatherDays) || weatherDays.length === 0) {
+            return anchors;
+        }
+
+        for (let dayIndex = 0; dayIndex < weatherDays.length; dayIndex++) {
+            const day = weatherDays[dayIndex] || {};
+            const dayStart = _dayStartEpochMs(day.date);
+            if (dayStart < 0) {
+                continue;
+            }
+
+            const hourlyArray = day.hourly;
+            if (!Array.isArray(hourlyArray) || hourlyArray.length === 0) {
+                continue;
+            }
+
+            for (let i = 0; i < hourlyArray.length; i++) {
+                const entry = hourlyArray[i] || {};
+                const minuteOfDay = _minuteFromWttrTime(entry.time);
+                if (minuteOfDay < 0) {
+                    continue;
+                }
+
+                const tempRaw = normalizedUnits === "u" ? entry.tempF : entry.tempC;
+                const tempNumber = Number(tempRaw);
+                if (!isFinite(tempNumber)) {
+                    continue;
+                }
+
+                const hour24 = Math.floor(minuteOfDay / 60);
+                const conditionRaw = _safeGet(entry, ["weatherDesc", 0, "value"]);
+                const symbol = _resolveHourlySymbol(entry, conditionRaw, hour24);
+                const epochMs = dayStart + minuteOfDay * 60 * 1000;
+
+                anchors.push({
+                    epochMs: epochMs,
+                    temp: tempNumber,
+                    symbol: symbol,
+                    entry: entry
+                });
+            }
+        }
+
+        anchors.sort(function (left, right) {
+            return left.epochMs - right.epochMs;
+        });
+
+        return anchors;
+    }
+
+    function _buildAstronomyEvents(weatherDays) {
+        const events = [];
+        if (!Array.isArray(weatherDays) || weatherDays.length === 0) {
+            return events;
+        }
+
+        for (let dayIndex = 0; dayIndex < weatherDays.length; dayIndex++) {
+            const day = weatherDays[dayIndex] || {};
+            const dayStart = _dayStartEpochMs(day.date);
+            if (dayStart < 0) {
+                continue;
+            }
+
+            const astronomy = _safeGet(day, ["astronomy", 0]) || {};
+            const sunriseMinute = _minuteFromAmPm(astronomy.sunrise);
+            const sunsetMinute = _minuteFromAmPm(astronomy.sunset);
+
+            if (sunriseMinute >= 0) {
+                events.push({
+                    type: "sunrise",
+                    epochMs: dayStart + sunriseMinute * 60 * 1000,
+                    symbol: sunriseGlyph
+                });
+            }
+
+            if (sunsetMinute >= 0) {
+                events.push({
+                    type: "sunset",
+                    epochMs: dayStart + sunsetMinute * 60 * 1000,
+                    symbol: sunsetGlyph
+                });
+            }
+        }
+
+        events.sort(function (left, right) {
+            return left.epochMs - right.epochMs;
+        });
+
+        return events;
+    }
+
+    function _parseHourlyForecastLegacy(weatherDays, current) {
         if (!Array.isArray(weatherDays) || weatherDays.length === 0) {
             return [];
         }
@@ -395,6 +634,88 @@ QtObject {
         }
 
         return output;
+    }
+
+    function _parseHourlyForecast(weatherDays, current) {
+        const anchors = _buildAnchorPoints(weatherDays);
+        if (anchors.length < 2) {
+            return _parseHourlyForecastLegacy(weatherDays, current);
+        }
+
+        const slotCount = 6;
+        const oneHourMs = 60 * 60 * 1000;
+        const observationEpochMs = _observationEpochMs(current);
+        const windowStart = _ceilToHourEpochMs(observationEpochMs);
+        const windowEnd = windowStart + slotCount * oneHourMs;
+
+        const output = [];
+
+        for (let index = 0; index < slotCount; index++) {
+            const targetEpoch = windowStart + index * oneHourMs;
+
+            let rightIndex = -1;
+            for (let i = 0; i < anchors.length; i++) {
+                if (anchors[i].epochMs >= targetEpoch) {
+                    rightIndex = i;
+                    break;
+                }
+            }
+
+            if (rightIndex <= 0) {
+                return _parseHourlyForecastLegacy(weatherDays, current);
+            }
+
+            const left = anchors[rightIndex - 1];
+            const right = anchors[rightIndex];
+            if (right.epochMs <= left.epochMs) {
+                return _parseHourlyForecastLegacy(weatherDays, current);
+            }
+
+            const ratio = (targetEpoch - left.epochMs) / (right.epochMs - left.epochMs);
+            const temp = Math.round(left.temp + (right.temp - left.temp) * ratio);
+            const date = new Date(targetEpoch);
+
+            output.push({
+                epochMs: targetEpoch,
+                timeLabel: _toAmPmLabel(date.getHours()),
+                temp: _safeValue(temp),
+                symbol: left.symbol
+            });
+        }
+
+        const events = _buildAstronomyEvents(weatherDays);
+        let chosenEvent = null;
+        for (let j = 0; j < events.length; j++) {
+            const event = events[j];
+            if (event.epochMs >= windowStart && event.epochMs < windowEnd) {
+                chosenEvent = event;
+                break;
+            }
+        }
+
+        if (chosenEvent) {
+            let bestIndex = 0;
+            let bestDistance = Number.POSITIVE_INFINITY;
+            for (let k = 0; k < output.length; k++) {
+                const distance = Math.abs(output[k].epochMs - chosenEvent.epochMs);
+                if (distance < bestDistance) {
+                    bestDistance = distance;
+                    bestIndex = k;
+                }
+            }
+
+            const eventDate = new Date(chosenEvent.epochMs);
+            output[bestIndex].timeLabel = _toAmPmWithMinutesLabel(eventDate.getHours(), eventDate.getMinutes());
+            output[bestIndex].symbol = chosenEvent.symbol;
+        }
+
+        return output.map(function (entry) {
+            return {
+                timeLabel: entry.timeLabel,
+                temp: entry.temp,
+                symbol: entry.symbol
+            };
+        });
     }
 
     function _parseWeatherPayload(payloadText) {

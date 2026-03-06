@@ -646,15 +646,20 @@ Rectangle {
                 width: parent.width - 168
                 spacing: 0
 
-                Root.SymbolIcon {
+                Item {
                     width: parent.width
                     height: 16
-                    glyph: weatherService.data.symbol
-                    fallbackColor: Root.Theme.textPrimary
-                    opacity: 0.75
-                    fallbackFontFamily: Root.Theme.fontFamilySymbol
-                    pixelSize: 16
-                    fontWeight: Font.Normal
+
+                    Root.SymbolIcon {
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        glyph: weatherService.data.symbol
+                        fallbackColor: Root.Theme.textPrimary
+                        opacity: 0.75
+                        fallbackFontFamily: Root.Theme.fontFamilySymbol
+                        pixelSize: 16
+                        fontWeight: Font.Normal
+                    }
                 }
 
                 Item {
