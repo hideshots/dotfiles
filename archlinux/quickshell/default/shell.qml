@@ -1238,7 +1238,7 @@ ShellRoot {
 
         delegate: ControlCenter.ControlCenterOverlay {
             required property var modelData
-            screen: modelData
+            variantScreen: modelData
             shellRoot: shell
         }
     }
@@ -1260,7 +1260,7 @@ ShellRoot {
                 shell.toggleNotificationCenter(triggerItem);
             }
             function toggleControlCenterForBar(triggerItem) {
-                shell.toggleControlCenter(triggerItem, barPanelWindow.screen);
+                shell.toggleControlCenter(triggerItem, barPanelWindow.modelData);
             }
 
             anchors {
@@ -1406,7 +1406,7 @@ ShellRoot {
                                 // Workspace windows (pass the state object down)
                                 WorkspaceWindows {
                                     height: parent.height
-                                    screen: modelData
+                                    screen: barPanelWindow.modelData
                                     highlightState: leftHi
                                 }
                             }
@@ -1571,7 +1571,7 @@ ShellRoot {
                                 var notificationCenterShouldHighlight = barPanelWindow.notificationCenterOpenProxy
                                     && (barPanelWindow.notificationCenterTriggerItemProxy === timeDisplay || notificationTriggeredFromKeyboard);
                                 var controlCenterShouldHighlight = barPanelWindow.controlCenterOpenProxy
-                                    && barPanelWindow.controlCenterTargetScreenProxy === barPanelWindow.screen
+                                    && barPanelWindow.controlCenterTargetScreenProxy === barPanelWindow.modelData
                                     && (barPanelWindow.controlCenterTriggerItemProxy === controlCenterButton || controlTriggeredFromKeyboard);
 
                                 if (notificationCenterShouldHighlight) {

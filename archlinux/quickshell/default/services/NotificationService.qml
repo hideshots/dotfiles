@@ -14,7 +14,7 @@ Singleton {
     property bool keepTransientInHistory: false
     property bool focusModeEnabled: false
     property bool resetTimestampOnReplace: true
-    property bool debugLogging: true
+    property bool debugLogging: false
     property bool debugActiveRowUpdates: false
     property int debugMediaLogLimit: 10
     property int _debugMediaLogsEmitted: 0

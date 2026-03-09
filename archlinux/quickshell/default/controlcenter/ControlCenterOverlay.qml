@@ -1,3 +1,4 @@
+// qmllint disable uncreatable-type
 import Quickshell
 import Quickshell.Wayland
 import QtQuick
@@ -7,8 +8,11 @@ import "." as ControlCenter
 PanelWindow {
     id: root
     required property var shellRoot
+    required property var variantScreen
 
-    readonly property bool requestedOpen: root.shellRoot.controlCenterEnabled && root.shellRoot.controlCenterOpen && root.shellRoot.controlCenterTargetScreen === screen
+    readonly property bool requestedOpen: root.shellRoot.controlCenterEnabled
+        && root.shellRoot.controlCenterOpen
+        && root.shellRoot.controlCenterTargetScreen === root.variantScreen
     property bool overlayVisible: false
     property real panelRevealProgress: 0.0
     property real flashOpacity: 0.0
@@ -31,6 +35,7 @@ PanelWindow {
     anchors.bottom: true
     exclusionMode: ExclusionMode.Ignore
 
+    screen: root.variantScreen
     color: "transparent"
     surfaceFormat.opaque: false
     focusable: false

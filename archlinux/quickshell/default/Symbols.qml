@@ -9,25 +9,25 @@ QtObject {
 
     readonly property var glyphMap: ({
             // Theme / privacy
-            "􀋒": { sfName: "", usage: "privacy location arrow" },
-            "􀅾": { sfName: "", usage: "clear / dismiss buttons" },
-            "􀆅": { sfName: "", usage: "menu checkmark" },
-            "􀆊": { sfName: "", usage: "menu submenu chevron" },
-            "􀆔": { sfName: "", usage: "menu shortcut command modifier (text-only by convention)" },
-            "􀆕": { sfName: "", usage: "menu shortcut shift modifier (text-only by convention)" },
-            "􀆝": { sfName: "", usage: "menu shortcut option modifier (text-only by convention)" },
-            "􀆨": { sfName: "", usage: "menu restart" },
+            "􀋒": { sfName: "", usage: "privacy location arrow", textOnly: true },
+            "􀅾": { sfName: "", usage: "clear / dismiss buttons", textOnly: true },
+            "􀆅": { sfName: "", usage: "menu checkmark", textOnly: true },
+            "􀆊": { sfName: "", usage: "menu submenu chevron", textOnly: true },
+            "􀆔": { sfName: "", usage: "menu shortcut command modifier (text-only by convention)", textOnly: true },
+            "􀆕": { sfName: "", usage: "menu shortcut shift modifier (text-only by convention)", textOnly: true },
+            "􀆝": { sfName: "", usage: "menu shortcut option modifier (text-only by convention)", textOnly: true },
+            "􀆨": { sfName: "", usage: "menu restart", textOnly: true },
             "􀆿": { sfName: "sparkles", usage: "menubar apple logo" },
-            "􀈎": { sfName: "", usage: "menu system settings" },
-            "􀉩": { sfName: "", usage: "menu log out" },
+            "􀈎": { sfName: "", usage: "menu system settings", textOnly: true },
+            "􀉩": { sfName: "", usage: "menu log out", textOnly: true },
             "􀊫": { sfName: "", usage: "unused commented menubar icon" },
-            "􀎥": { sfName: "", usage: "menu sleep" },
-            "􀙗": { sfName: "", usage: "menu about this mac" },
-            "􀙧": { sfName: "", usage: "menu lock screen" },
+            "􀎥": { sfName: "", usage: "menu sleep", textOnly: true },
+            "􀙗": { sfName: "", usage: "menu about this mac", textOnly: true },
+            "􀙧": { sfName: "", usage: "menu lock screen", textOnly: true },
             "􀜊": { sfName: "switch.2", usage: "menubar control center" },
-            "􀜗": { sfName: "", usage: "menu force quit" },
-            "􀷃": { sfName: "", usage: "menu shut down" },
-            "􁣡": { sfName: "", usage: "menu app store" },
+            "􀜗": { sfName: "", usage: "menu force quit", textOnly: true },
+            "􀷃": { sfName: "", usage: "menu shut down", textOnly: true },
+            "􁣡": { sfName: "", usage: "menu app store", textOnly: true },
 
             // Control center
             "􀖀": { sfName: "bluetooth", usage: "bluetooth on" },
@@ -40,16 +40,17 @@ QtObject {
             "􀛮": { sfName: "lightbulb.fill", usage: "nightshift min", scale: 1.0  },
             "􁷙": { sfName: "lightbulb.max.fill", usage: "nightshift max", scale: 1.4  },
             "􀯇": { sfName: "square.on.square.intersection.dashed", usage: "reduce transparency" },
-            "􀊄": { sfName: "play", usage: "now playing play" },
-            "􀊆": { sfName: "pause", usage: "now playing pause" },
-            "􀊊": { sfName: "backward", usage: "now playing previous" },
-            "􀊌": { sfName: "forward", usage: "now playing next" },
+            "􀊄": { sfName: "play.fill", usage: "now playing play" },
+            "􀊆": { sfName: "pause.fill", usage: "now playing pause" },
+            "􀊊": { sfName: "backward.end.fill", usage: "now playing previous" },
+            "􀊌": { sfName: "forward.end.fill", usage: "now playing next" },
             "􀊡": { sfName: "speaker.fill", usage: "volume slider minus", scale: 0.7 },
             "􀊣": { sfName: "speaker.slash.fill", usage: "audio muted / unavailable" },
             "􀊩": { sfName: "speaker.wave.3.fill", usage: "volume slider plus", scale: 1.0 },
-            "􀊱": { sfName: "", usage: "privacy mic active" },
-            "􁅀": { sfName: "", usage: "privacy system audio / screen share" },
-            "􁅒": { sfName: "", usage: "bluetooth off" },
+            "􀊱": { sfName: "", usage: "privacy mic active", textOnly: true },
+            "􀌟": { sfName: "", usage: "privacy camera active", textOnly: true },
+            "􁅀": { sfName: "", usage: "privacy system audio / screen share", textOnly: true },
+            "􁅒": { sfName: "", usage: "bluetooth off", textOnly: true },
             "􁊕": { sfName: "circle.dotted.and.circle", usage: "reduce motion" },
             "􂱣": { sfName: "sun.righthalf.filled", usage: "night shift toggle" },
             "􀢋": { sfName: "battery.100percent.bolt", usage: "battery charging / adapter", scale: 1.5  },
@@ -140,6 +141,11 @@ QtObject {
         }
 
         return Math.max(0.1, _safeNumber(entry.scale, 1.0));
+    }
+
+    function isTextFallbackGlyph(glyph) {
+        var entry = _entryForGlyph(glyph);
+        return !!(entry && entry.textOnly);
     }
 
     function warnMissingOnce(glyph, reason) {

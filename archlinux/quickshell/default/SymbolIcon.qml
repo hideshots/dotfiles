@@ -21,6 +21,7 @@ Item {
     readonly property string _trimmedGlyph: glyph === undefined || glyph === null ? "" : String(glyph)
     readonly property string _trimmedSvgOverride: svgNameOverride === undefined || svgNameOverride === null ? "" : String(svgNameOverride).trim()
     readonly property bool _glyphKnown: Root.Symbols.hasGlyphEntry(_trimmedGlyph)
+    readonly property bool _textFallbackGlyph: Root.Symbols.isTextFallbackGlyph(_trimmedGlyph)
     readonly property string _sfName: svgEnabled ? Root.Symbols.sfNameForGlyph(_trimmedGlyph) : ""
     readonly property string _svgSource: {
         if (!svgEnabled) {
@@ -35,6 +36,12 @@ Item {
     }
     readonly property real _glyphSvgScale: svgEnabled ? Root.Symbols.scaleForGlyph(_trimmedGlyph) : 1.0
     readonly property real _effectiveSvgScale: Math.max(0.1, root.svgScale) * Math.max(0.1, _glyphSvgScale)
+    readonly property bool _missingSvgMapping: svgEnabled
+        && _trimmedSvgOverride.length === 0
+        && _trimmedGlyph.length > 0
+        && _glyphKnown
+        && _sfName.length === 0
+        && !_textFallbackGlyph
     readonly property bool _hasSvgCandidate: {
         if (!svgEnabled || _svgSource.length === 0) {
             return false;
@@ -50,29 +57,28 @@ Item {
     readonly property bool _showSvg: svgReady || (_hasSvgCandidate && !fallbackWhileSvgLoading && svgImage.status !== Image.Error)
     readonly property bool _showFallbackText: !svgReady && (!_hasSvgCandidate || fallbackWhileSvgLoading || svgImage.status === Image.Error)
     readonly property bool svgTintActive: _showSvg && svgTintEnabled
-    readonly property real _layoutWidth: root.width > 0 ? root.width : root.implicitWidth
-    readonly property real _layoutHeight: root.height > 0 ? root.height : root.implicitHeight
-    readonly property real _svgRenderSize: Math.max(1, Math.min(_layoutWidth, _layoutHeight))
+    readonly property real _svgImplicitSize: Math.max(1, Math.ceil(Math.max(1, root.pixelSize) * _effectiveSvgScale))
+    readonly property real _svgRenderWidth: root.width > 0 ? root.width : Math.max(1, root.pixelSize)
+    readonly property real _svgRenderHeight: root.height > 0 ? root.height : Math.max(1, root.pixelSize)
+    readonly property real _svgRenderSize: Math.max(1, Math.min(_svgRenderWidth, _svgRenderHeight))
 
-    implicitWidth: _showSvg ? pixelSize : fallbackText.implicitWidth
-    implicitHeight: _showSvg ? pixelSize : fallbackText.implicitHeight
+    implicitWidth: _showSvg ? _svgImplicitSize : fallbackText.implicitWidth
+    implicitHeight: _showSvg ? _svgImplicitSize : fallbackText.implicitHeight
 
     onSvgEnabledChanged: {
-        if (!svgEnabled || _trimmedGlyph.length === 0) {
+        if (!_missingSvgMapping) {
             return;
         }
-        if (_glyphKnown && _sfName.length === 0) {
-            Root.Symbols.warnMissingOnce(_trimmedGlyph, "missing mapping");
-        }
+
+        Root.Symbols.warnMissingOnce(_trimmedGlyph, "missing mapping");
     }
 
     onGlyphChanged: {
-        if (!svgEnabled || _trimmedGlyph.length === 0) {
+        if (!_missingSvgMapping) {
             return;
         }
-        if (_glyphKnown && _sfName.length === 0) {
-            Root.Symbols.warnMissingOnce(_trimmedGlyph, "missing mapping");
-        }
+
+        Root.Symbols.warnMissingOnce(_trimmedGlyph, "missing mapping");
     }
 
     Image {
