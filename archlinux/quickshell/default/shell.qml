@@ -58,6 +58,9 @@ ShellRoot {
     property bool controlCenterOpen: false
     property var controlCenterTriggerItem: null
     property var controlCenterTargetScreen: null
+    // Optional output name override for keyboard-triggered control center (example: "DP-2").
+    // Leave empty to auto-pick.
+    property string controlCenterPrimaryScreenName: "DP-1"
     property int controlCenterTopMargin: 44
     property int controlCenterRightMargin: 16
     property bool batteryPreviewMode: false
@@ -146,8 +149,28 @@ ShellRoot {
         }
 
         var screens = Quickshell.screens;
+        if (screens && screens.length > 0 && shell.controlCenterPrimaryScreenName.length > 0) {
+            for (var i = 0; i < screens.length; i++) {
+                if (screens[i] && screens[i].name === shell.controlCenterPrimaryScreenName) {
+                    return screens[i];
+                }
+            }
+        }
+
+        // Auto-pick a stable "main" screen by choosing the top-left output,
+        // which avoids relying on backend screen list ordering.
         if (screens && screens.length > 0) {
-            return screens[0];
+            var topLeft = screens[0];
+            for (var j = 1; j < screens.length; j++) {
+                var candidate = screens[j];
+                if (!candidate) {
+                    continue;
+                }
+                if (candidate.y < topLeft.y || (candidate.y === topLeft.y && candidate.x < topLeft.x)) {
+                    topLeft = candidate;
+                }
+            }
+            return topLeft;
         }
 
         return null;

@@ -60,21 +60,24 @@ QtObject {
             "􀛪": { sfName: "battery.0percent", usage: "battery empty", scale: 1.5  },
 
             // Weather
-            "􀆶": { sfName: "", usage: "weather dust_day" },
-            "􀆸": { sfName: "", usage: "weather haze_day" },
-            "􀇄": { sfName: "", usage: "weather drizzle" },
-            "􀇅": { sfName: "", usage: "weather light_rain_day" },
-            "􀇉": { sfName: "", usage: "weather heavy_rain/squall" },
-            "􀇋": { sfName: "", usage: "weather mist/fog" },
-            "􀇏": { sfName: "", usage: "weather snow" },
-            "􀇕": { sfName: "", usage: "weather cloudy_day" },
-            "􀇛": { sfName: "", usage: "weather cloudy_night" },
-            "􀇝": { sfName: "", usage: "weather light_rain_night" },
-            "􀇟": { sfName: "", usage: "weather thunder/tornado" },
-            "􀇣": { sfName: "", usage: "weather smoke" },
-            "􀇤": { sfName: "", usage: "weather sand/ash" },
-            "􁑰": { sfName: "", usage: "weather haze_night" },
-            "􁶾": { sfName: "", usage: "weather dust_night" }
+            "􀆲": { sfName: "sunrise.fill", usage: "weather sunrise event" },
+            "􀆴": { sfName: "sunset.fill", usage: "weather sunset event", scale: 1.2 },
+            "􀆶": { sfName: "sun.dust.fill", usage: "weather dust_day" },
+            "􀆸": { sfName: "sun.haze.fill", usage: "weather haze_day" },
+            "􀇃": { sfName: "cloud.fill", usage: "weather cloudy all-day" },
+            "􀇄": { sfName: "cloud.drizzle.fill", usage: "weather drizzle" },
+            "􀇅": { sfName: "cloud.sun.rain.fill", usage: "weather light_rain_day" },
+            "􀇉": { sfName: "cloud.heavyrain.fill", usage: "weather heavy_rain/squall" },
+            "􀇋": { sfName: "cloud.fog.fill", usage: "weather mist/fog" },
+            "􀇏": { sfName: "cloud.snow.fill", usage: "weather snow" },
+            "􀇕": { sfName: "cloud.sun.fill", usage: "weather cloudy_day (legacy)" },
+            "􀇛": { sfName: "cloud.moon.fill", usage: "weather cloudy_night (legacy)" },
+            "􀇝": { sfName: "cloud.moon.rain.fill", usage: "weather light_rain_night", scale: 1.3  },
+            "􀇟": { sfName: "cloud.bolt.rain.fill", usage: "weather thunder/tornado" },
+            "􀇣": { sfName: "smoke.fill", usage: "weather smoke" },
+            "􀇤": { sfName: "sun.dust.fill", usage: "weather sand/ash" },
+            "􁑰": { sfName: "moon.haze.fill", usage: "weather haze_night" },
+            "􁶾": { sfName: "moon.dust.fill", usage: "weather dust_night" }
         })
 
     property var _warnedKeys: ({})
