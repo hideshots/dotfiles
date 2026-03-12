@@ -3,6 +3,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import Quickshell.Services.UPower
 
 QtObject {
     id: root
@@ -10,7 +11,7 @@ QtObject {
     property bool monitorEnabled: true
     property bool previewMode: false
     property int previewStepMs: 1200
-    property bool backendAvailable: true
+    property bool backendAvailable: false
     property bool hasBattery: false
     property int percentage: 100
     property bool onAdapter: true
@@ -18,12 +19,19 @@ QtObject {
     property string powerSourceText: "Power Adapter"
     property bool showPercentage: false
 
+    property bool powerProfilesChecked: false
+    property bool powerProfilesAvailable: false
+
+    readonly property int powerProfile: powerProfilesAvailable ? PowerProfiles.profile : PowerProfile.Balanced
+    readonly property string powerProfileText: root._powerProfileLabel(root.powerProfile)
+    readonly property string powerProfileDegradationReason: root._degradationReasonLabel(PowerProfiles.degradationReason)
+    readonly property var powerProfileChoices: root._powerProfileChoices()
+
     readonly property bool visible: previewMode || hasBattery
     readonly property string iconGlyph: root._iconGlyphForState(percentage, onAdapter)
     readonly property string stateFilePath: Quickshell.cachePath("battery-indicator-state.json")
-    readonly property var listDevicesCommand: ["upower", "-e"]
+    readonly property var displayDevice: UPower.displayDevice
 
-    property string _batteryDevicePath: ""
     property int _previewStageIndex: 0
     property bool _stateLoaded: false
 
@@ -75,15 +83,6 @@ QtObject {
         return Math.max(0, Math.min(100, Math.round(numeric)));
     }
 
-    function _looksLikeMissingCommand(text) {
-        if (text === undefined || text === null) {
-            return false;
-        }
-
-        var line = String(text).toLowerCase();
-        return line.indexOf("not found") >= 0 || line.indexOf("no such file") >= 0;
-    }
-
     function _setState(nextPercentage, nextOnAdapter, nextStatusText, nextPowerSourceText) {
         root.percentage = _clampPercentage(nextPercentage);
         root.onAdapter = !!nextOnAdapter;
@@ -113,29 +112,73 @@ QtObject {
         return "􀛨";
     }
 
-    function _statusFromRaw(rawState) {
-        var state = String(rawState || "").trim().toLowerCase();
-        if (state === "charging" || state === "pending-charge") {
+    function _statusFromState(state) {
+        if (state === UPowerDeviceState.Charging || state === UPowerDeviceState.PendingCharge) {
             return "Charging";
         }
-        if (state === "discharging" || state === "pending-discharge") {
+        if (state === UPowerDeviceState.Discharging || state === UPowerDeviceState.PendingDischarge) {
             return "On Battery";
         }
-        if (state === "fully-charged") {
+        if (state === UPowerDeviceState.FullyCharged) {
             return "Fully Charged";
         }
-        if (state === "empty") {
+        if (state === UPowerDeviceState.Empty) {
             return "Empty";
         }
-        if (state === "unknown" || state.length === 0) {
-            return "Unknown";
-        }
-        return state.charAt(0).toUpperCase() + state.slice(1);
+
+        return "Unknown";
     }
 
-    function _onAdapterFromRaw(rawState) {
-        var state = String(rawState || "").trim().toLowerCase();
-        return state === "charging" || state === "fully-charged" || state === "pending-charge";
+    function _onAdapterFromState(state) {
+        return state === UPowerDeviceState.Charging || state === UPowerDeviceState.FullyCharged || state === UPowerDeviceState.PendingCharge;
+    }
+
+    function _powerProfileLabel(profile) {
+        if (profile === PowerProfile.PowerSaver) {
+            return "Power Saver";
+        }
+        if (profile === PowerProfile.Performance) {
+            return "Performance";
+        }
+
+        return "Balanced";
+    }
+
+    function _degradationReasonLabel(reason) {
+        if (reason === PerformanceDegradationReason.LapDetected) {
+            return "Performance limited: lap detected";
+        }
+        if (reason === PerformanceDegradationReason.HighTemperature) {
+            return "Performance limited: high temperature";
+        }
+
+        return "";
+    }
+
+    function _powerProfileChoices() {
+        if (!root.powerProfilesAvailable) {
+            return [];
+        }
+
+        var choices = [
+            {
+                profile: PowerProfile.PowerSaver,
+                label: "Power Saver"
+            },
+            {
+                profile: PowerProfile.Balanced,
+                label: "Balanced"
+            }
+        ];
+
+        if (PowerProfiles.hasPerformanceProfile) {
+            choices.push({
+                profile: PowerProfile.Performance,
+                label: "Performance"
+            });
+        }
+
+        return choices;
     }
 
     function _applyPreviewStage() {
@@ -148,45 +191,27 @@ QtObject {
         if (index < 0) {
             index = 0;
         }
+
         var stage = root._previewStages[index];
         root._setState(stage.percentage, stage.onAdapter, stage.statusText, stage.powerSourceText);
     }
 
-    function _findBatteryDevicePath(text) {
-        var lines = String(text || "").split("\n");
-        for (var i = 0; i < lines.length; i++) {
-            var line = String(lines[i]).trim();
-            if (line.length === 0) {
-                continue;
-            }
-            if (line.toLowerCase().indexOf("/battery_") >= 0 || line.toLowerCase().indexOf("/battery") >= 0) {
-                return line;
-            }
-        }
-        return "";
-    }
-
-    function _parseBatteryInfo(text) {
-        var lines = String(text || "").split("\n");
-        var rawState = "";
-        var pct = root.percentage;
-
-        for (var i = 0; i < lines.length; i++) {
-            var line = String(lines[i]).trim();
-            if (line.toLowerCase().indexOf("state:") === 0) {
-                rawState = String(line.slice("state:".length)).trim();
-                continue;
-            }
-
-            var pctMatch = line.match(/^percentage:\s*([0-9]+(?:\.[0-9]+)?)%/i);
-            if (pctMatch) {
-                pct = Number(pctMatch[1]);
-            }
+    function _syncLiveState() {
+        if (!root.monitorEnabled || root.previewMode) {
+            return;
         }
 
-        var computedOnAdapter = root._onAdapterFromRaw(rawState);
-        var computedStatus = root._statusFromRaw(rawState);
-        root._setState(pct, computedOnAdapter, computedStatus, computedOnAdapter ? "Power Adapter" : "Battery");
+        var device = root.displayDevice;
+        var ready = !!device && device.ready;
+        root.backendAvailable = ready;
+        root.hasBattery = ready && device.isPresent && device.isLaptopBattery;
+
+        if (!root.hasBattery) {
+            root._setState(100, !UPower.onBattery, ready ? "Unknown" : "Unavailable", UPower.onBattery ? "Battery" : "Power Adapter");
+            return;
+        }
+
+        root._setState(device.percentage, root._onAdapterFromState(device.state), root._statusFromState(device.state), UPower.onBattery ? "Battery" : "Power Adapter");
     }
 
     function _loadState() {
@@ -212,19 +237,37 @@ QtObject {
         }));
     }
 
-    function _setBackendUnavailable() {
-        root.backendAvailable = false;
-        root.hasBattery = false;
-        root._batteryDevicePath = "";
-        refreshTimer.stop();
-    }
-
     function refresh() {
-        if (!root.monitorEnabled || root.previewMode || !root.backendAvailable || listDevicesProcess.running || batteryInfoProcess.running) {
+        if (root.previewMode) {
             return;
         }
 
-        listDevicesProcess.exec(root.listDevicesCommand);
+        root._syncLiveState();
+    }
+
+    function setPowerProfile(nextProfile) {
+        if (!root.powerProfilesAvailable) {
+            return;
+        }
+
+        var targetProfile = Number(nextProfile);
+        if (!isFinite(targetProfile)) {
+            return;
+        }
+
+        if (targetProfile === PowerProfile.Performance && !PowerProfiles.hasPerformanceProfile) {
+            return;
+        }
+
+        PowerProfiles.profile = targetProfile;
+    }
+
+    function _probePowerProfiles() {
+        if (powerProfilesProbe.running) {
+            return;
+        }
+
+        powerProfilesProbe.exec(["powerprofilesctl", "list"]);
     }
 
     onShowPercentageChanged: {
@@ -235,22 +278,24 @@ QtObject {
 
     onMonitorEnabledChanged: {
         if (!monitorEnabled) {
-            refreshTimer.stop();
+            previewTimer.stop();
+            powerProfilesPollTimer.stop();
             return;
         }
+
+        powerProfilesPollTimer.start();
+        root._probePowerProfiles();
 
         if (previewMode) {
             previewTimer.start();
             return;
         }
 
-        refresh();
-        refreshTimer.start();
+        root.refresh();
     }
 
     onPreviewModeChanged: {
         if (previewMode) {
-            refreshTimer.stop();
             root._previewStageIndex = 0;
             root._applyPreviewStage();
             previewTimer.start();
@@ -258,16 +303,16 @@ QtObject {
         }
 
         previewTimer.stop();
-        refresh();
-        refreshTimer.start();
+        root.refresh();
     }
 
-    onPreviewStepMsChanged: {
-        previewTimer.interval = Math.max(200, previewStepMs);
-    }
+    onPreviewStepMsChanged: previewTimer.interval = Math.max(200, previewStepMs)
 
     Component.onCompleted: {
         root._loadState();
+        root._probePowerProfiles();
+        powerProfilesPollTimer.start();
+
         if (root.previewMode) {
             root._previewStageIndex = 0;
             root._applyPreviewStage();
@@ -275,8 +320,7 @@ QtObject {
             return;
         }
 
-        refresh();
-        refreshTimer.start();
+        root.refresh();
     }
 
     property FileView stateFile: FileView {
@@ -289,14 +333,16 @@ QtObject {
         onSaveFailed: console.warn("Battery state write failed.")
     }
 
-    property Process listDevicesProcess: Process {
-        id: listDevicesProcess
+    property Process powerProfilesProbe: Process {
+        id: powerProfilesProbe
+
         stdout: StdioCollector {
-            id: listDevicesStdout
+            id: powerProfilesStdout
             waitForEnd: true
         }
+
         stderr: StdioCollector {
-            id: listDevicesStderr
+            id: powerProfilesStderr
             waitForEnd: true
         }
 
@@ -305,57 +351,20 @@ QtObject {
                 return;
             }
 
-            var stderrText = String(listDevicesStderr.text || "");
-            if (root._looksLikeMissingCommand(stderrText)) {
-                root._setBackendUnavailable();
-                return;
-            }
+            var stdoutText = String(powerProfilesStdout.text || "").trim();
+            var stderrText = String(powerProfilesStderr.text || "").trim();
 
-            var devicePath = root._findBatteryDevicePath(listDevicesStdout.text);
-            root._batteryDevicePath = devicePath;
-            root.hasBattery = devicePath.length > 0;
-            if (!root.hasBattery) {
-                return;
-            }
-
-            batteryInfoProcess.exec(["upower", "-i", devicePath]);
+            root.powerProfilesChecked = true;
+            root.powerProfilesAvailable = stdoutText.length > 0 && stderrText.length === 0;
         }
     }
 
-    property Process batteryInfoProcess: Process {
-        id: batteryInfoProcess
-        stdout: StdioCollector {
-            id: batteryInfoStdout
-            waitForEnd: true
-        }
-        stderr: StdioCollector {
-            id: batteryInfoStderr
-            waitForEnd: true
-        }
-
-        onRunningChanged: {
-            if (running) {
-                return;
-            }
-
-            var stderrText = String(batteryInfoStderr.text || "");
-            if (root._looksLikeMissingCommand(stderrText)) {
-                root._setBackendUnavailable();
-                return;
-            }
-
-            if (root.hasBattery) {
-                root._parseBatteryInfo(batteryInfoStdout.text);
-            }
-        }
-    }
-
-    property Timer refreshTimer: Timer {
-        id: refreshTimer
-        interval: 15000
+    property Timer powerProfilesPollTimer: Timer {
+        id: powerProfilesPollTimer
+        interval: 60000
         repeat: true
-        running: root.monitorEnabled && !root.previewMode && root.backendAvailable
-        onTriggered: root.refresh()
+        running: root.monitorEnabled
+        onTriggered: root._probePowerProfiles()
     }
 
     property Timer previewTimer: Timer {
@@ -366,6 +375,39 @@ QtObject {
         onTriggered: {
             root._previewStageIndex = (root._previewStageIndex + 1) % root._previewStages.length;
             root._applyPreviewStage();
+        }
+    }
+
+    property Connections upowerConnections: Connections {
+        target: UPower
+
+        function onOnBatteryChanged() {
+            root._syncLiveState();
+        }
+    }
+
+    property Connections displayDeviceConnections: Connections {
+        target: root.displayDevice
+        ignoreUnknownSignals: true
+
+        function onReadyChanged() {
+            root._syncLiveState();
+        }
+
+        function onPercentageChanged() {
+            root._syncLiveState();
+        }
+
+        function onStateChanged() {
+            root._syncLiveState();
+        }
+
+        function onIsPresentChanged() {
+            root._syncLiveState();
+        }
+
+        function onIsLaptopBatteryChanged() {
+            root._syncLiveState();
         }
     }
 }

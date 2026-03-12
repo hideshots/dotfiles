@@ -6,6 +6,7 @@ img="$(realpath -e -- "$img")" || exit 1
 
 wallpaper_state_dir="${XDG_CACHE_HOME:-$HOME/.cache}/quickshell"
 wallpaper_state_file="$wallpaper_state_dir/wallpaper"
+sddm_wallpaper_file="/var/tmp/sddm-wallpaper.png"
 
 mkdir -p "$wallpaper_state_dir"
 
@@ -16,6 +17,20 @@ printf '%s\n' "$img" > "$tmp_state_file" || {
 }
 mv -f "$tmp_state_file" "$wallpaper_state_file" || {
   rm -f "$tmp_state_file"
+  exit 1
+}
+
+tmp_sddm_file="$(mktemp "${sddm_wallpaper_file}.tmp.XXXXXX")" || exit 1
+cp -f -- "$img" "$tmp_sddm_file" || {
+  rm -f "$tmp_sddm_file"
+  exit 1
+}
+chmod 0644 "$tmp_sddm_file" || {
+  rm -f "$tmp_sddm_file"
+  exit 1
+}
+mv -f "$tmp_sddm_file" "$sddm_wallpaper_file" || {
+  rm -f "$tmp_sddm_file"
   exit 1
 }
 

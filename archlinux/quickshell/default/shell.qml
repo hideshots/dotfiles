@@ -18,6 +18,7 @@ ShellRoot {
     // Force-load notifications backend so NotificationServer is active without UI components.
     readonly property var notificationService: Root.NotificationService
     readonly property var batteryService: Root.BatteryService
+    readonly property var mediaService: Root.MediaService
     readonly property var hardwareStatsService: Root.HardwareStatsService
     readonly property var storageStatsService: Root.StorageStatsService
     Component.onCompleted: {

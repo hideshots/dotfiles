@@ -12,20 +12,65 @@ Rectangle {
     property var highlightState: null
 
     readonly property var battery: Root.BatteryService
-    readonly property var _batterySvgWarmupNames: [
-        "battery.100percent.bolt",
-        "battery.100percent",
-        "battery.75percent",
-        "battery.50percent",
-        "battery.25percent",
-        "battery.0percent"
-    ]
+    readonly property var _batterySvgWarmupNames: ["battery.100percent.bolt", "battery.100percent", "battery.75percent", "battery.50percent", "battery.25percent", "battery.0percent"]
 
     visible: battery.visible
     height: parent.height
     width: visible ? contentRow.implicitWidth + (Root.Theme.rightWidgetPadding * 2) : 0
     color: "transparent"
     radius: Root.Theme.borderRadius
+
+    readonly property var powerProfileMenuModel: root._buildPowerProfileMenuModel()
+    function _buildPowerProfileMenuModel() {
+        var items = [
+            {
+                type: "header",
+                label: "Power Profile"
+            }
+        ];
+
+        if (!root.battery.powerProfilesAvailable) {
+            items.push({
+                type: "action",
+                label: root.battery.powerProfilesChecked ? "Unavailable" : "Checking",
+                disabled: true
+            });
+            return items;
+        }
+
+        if (root.battery.powerProfileDegradationReason.length > 0) {
+            items.push({
+                type: "action",
+                label: root.battery.powerProfileDegradationReason,
+                disabled: true
+            });
+            items.push({
+                type: "separator"
+            });
+        }
+
+        var choices = root.battery.powerProfileChoices;
+        for (var i = 0; i < choices.length; i++) {
+            var choice = choices[i];
+            if (!choice) {
+                continue;
+            }
+
+            items.push({
+                type: "action",
+                label: choice.label,
+                reserveCheckmark: true,
+                checked: root.battery.powerProfile === choice.profile,
+                action: (function (profile) {
+                        return function () {
+                            root.battery.setPowerProfile(profile);
+                        };
+                    })(choice.profile)
+            });
+        }
+
+        return items;
+    }
 
     function syncHighlight() {
         if (!root.highlightState) {
@@ -138,6 +183,15 @@ Rectangle {
                 type: "action",
                 label: "Status: " + root.battery.statusText,
                 disabled: true
+            },
+            {
+                type: "separator"
+            },
+            {
+                type: "action",
+                label: "Power Profile: " + root.battery.powerProfileText,
+                submenu: root.powerProfileMenuModel,
+                disabled: !root.battery.powerProfilesAvailable
             },
             {
                 type: "separator"

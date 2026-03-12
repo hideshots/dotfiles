@@ -5,7 +5,6 @@ import QtQuick
 import ".." as Root
 import "layout/GridPacker.js" as GridPacker
 import "layout/TileRegistry.js" as TileRegistry
-import "providers" as Providers
 import "tiles" as Tiles
 
 Item {
@@ -15,12 +14,12 @@ Item {
     readonly property bool wifiChecked: Root.WifiService.enabled
     readonly property bool wifiConnected: Root.WifiService.connected
     readonly property string wifiConnectedName: Root.WifiService.ssid
-    readonly property bool bluetoothChecked: bluetoothProvider.enabled
-    readonly property bool reduceTransparencyChecked: hyprAccessibilityProvider.reduceTransparencyEnabled
+    readonly property bool bluetoothChecked: Root.BluetoothService.enabled
+    readonly property bool reduceTransparencyChecked: Root.AccessibilityService.reduceTransparencyEnabled
     readonly property bool focusChecked: Root.NotificationService.focusModeEnabled
-    readonly property bool nightShiftChecked: nightShiftProvider.enabled
-    readonly property bool reduceMotionChecked: hyprAccessibilityProvider.reduceMotionEnabled
-    readonly property real nightShiftValue: nightShiftProvider.normalizedValue
+    readonly property bool nightShiftChecked: Root.NightShiftService.enabled
+    readonly property bool reduceMotionChecked: Root.AccessibilityService.reduceMotionEnabled
+    readonly property real nightShiftValue: Root.NightShiftService.normalizedValue
     property real displayValue: 0.68
     readonly property real volumeValue: Root.AudioService.value
 
@@ -93,7 +92,7 @@ Item {
                 h: 2,
                 order: 20,
                 data: {
-                    provider: nowPlayingProvider
+                    provider: Root.MediaService
                 }
             },
             {
@@ -337,12 +336,12 @@ Item {
         }
 
         if (tileId === "bluetooth") {
-            bluetoothProvider.setEnabled(!!nextChecked);
+            Root.BluetoothService.setEnabled(!!nextChecked);
             return;
         }
 
         if (tileId === "transparency") {
-            hyprAccessibilityProvider.setReduceTransparencyEnabled(!!nextChecked);
+            Root.AccessibilityService.setReduceTransparencyEnabled(!!nextChecked);
             return;
         }
 
@@ -352,12 +351,12 @@ Item {
         }
 
         if (tileId === "nightshifttoggle") {
-            nightShiftProvider.setEnabled(!!nextChecked);
+            Root.NightShiftService.setEnabled(!!nextChecked);
             return;
         }
 
         if (tileId === "motion") {
-            hyprAccessibilityProvider.setReduceMotionEnabled(!!nextChecked);
+            Root.AccessibilityService.setReduceMotionEnabled(!!nextChecked);
         }
     }
 
@@ -373,29 +372,13 @@ Item {
         }
 
         if (tileId === "nightshift") {
-            nightShiftProvider.setNormalizedValue(1 - clamped);
+            Root.NightShiftService.setNormalizedValue(1 - clamped);
             return;
         }
 
         if (tileId === "volume") {
             Root.AudioService.setVolume(clamped);
         }
-    }
-
-    Providers.NowPlayingProvider {
-        id: nowPlayingProvider
-    }
-
-    Providers.BluetoothProvider {
-        id: bluetoothProvider
-    }
-
-    Providers.HyprAccessibilityProvider {
-        id: hyprAccessibilityProvider
-    }
-
-    Providers.NightShiftProvider {
-        id: nightShiftProvider
     }
 
     Component {
