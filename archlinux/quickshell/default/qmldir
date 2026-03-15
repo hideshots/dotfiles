@@ -6,6 +6,7 @@ singleton BatteryService 1.0 services/BatteryService.qml
 singleton MediaService 1.0 services/MediaService.qml
 singleton WifiService 1.0 services/WifiService.qml
 singleton AudioService 1.0 services/AudioService.qml
+singleton BrightnessService 1.0 services/BrightnessService.qml
 singleton BluetoothService 1.0 services/BluetoothService.qml
 singleton AccessibilityService 1.0 services/AccessibilityService.qml
 singleton NightShiftService 1.0 services/NightShiftService.qml

@@ -3,6 +3,7 @@ import Quickshell
 import Quickshell.Wayland
 import QtQuick
 
+import ".." as Root
 import "." as ControlCenter
 
 PanelWindow {
@@ -47,6 +48,9 @@ PanelWindow {
         if (requestedOpen) {
             if (closeAnimation.running) {
                 closeAnimation.stop();
+            }
+            if (Root.BrightnessService.shouldRefreshOnOpenForScreen(root.variantScreen)) {
+                Root.BrightnessService.refreshForScreen(root.variantScreen);
             }
             root.overlayVisible = true;
             root.flashOpacity = 0.0;
@@ -156,6 +160,7 @@ PanelWindow {
 
     ControlCenter.ControlCenterPanel {
         id: controlCenterPanel
+        targetScreen: root.variantScreen
         z: 1
         openFlashOpacity: root.flashOpacity
         opacity: root.panelRevealProgress

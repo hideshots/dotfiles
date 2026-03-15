@@ -9,6 +9,7 @@ import "tiles" as Tiles
 
 Item {
     id: root
+    required property var targetScreen
     property real openFlashOpacity: 0.0
 
     readonly property bool wifiChecked: Root.WifiService.enabled
@@ -20,8 +21,8 @@ Item {
     readonly property bool nightShiftChecked: Root.NightShiftService.enabled
     readonly property bool reduceMotionChecked: Root.AccessibilityService.reduceMotionEnabled
     readonly property real nightShiftValue: Root.NightShiftService.normalizedValue
-    property real displayValue: 0.68
     readonly property real volumeValue: Root.AudioService.value
+    readonly property var displayState: Root.BrightnessService.stateForScreen(root.targetScreen)
 
     property int gridUnit: 64
     property int gridGap: 12
@@ -177,7 +178,9 @@ Item {
                     title: "Display",
                     minusSymbol: "􀆬",
                     plusSymbol: "􀆮",
-                    value: root.displayValue
+                    value: root.displayState.value,
+                    detailText: root.displayState.available ? root.displayState.detailText : "",
+                    enabled: root.displayState.available
                 }
             },
             {
@@ -367,7 +370,7 @@ Item {
         }
 
         if (tileId === "display") {
-            root.displayValue = clamped;
+            Root.BrightnessService.setNormalizedValueForScreen(root.targetScreen, clamped);
             return;
         }
 

@@ -13,8 +13,10 @@ Item {
     readonly property string resolvedSizeMode: _resolveSizeMode(root.sizeMode)
     readonly property bool compactMode: root.resolvedSizeMode === "2x1"
     readonly property string title: _stringData("title", "Display")
+    readonly property string detailText: _stringData("detailText", "")
     readonly property string minusSymbol: _stringData("minusSymbol", "􀆬")
     readonly property string plusSymbol: _stringData("plusSymbol", "􀆮")
+    readonly property bool sliderEnabled: _boolData("enabled", true)
     readonly property real value: _clamp(_numberData("value", 0.66))
 
     signal valueChangedByUser(real value)
@@ -47,6 +49,10 @@ Item {
         return value === undefined || value === null ? String(fallback) : String(value);
     }
 
+    function _boolData(key, fallback) {
+        return !!_rawDataValue(key, fallback);
+    }
+
     function _numberData(key, fallback) {
         var number = Number(_rawDataValue(key, fallback));
         if (!isFinite(number)) {
@@ -61,6 +67,10 @@ Item {
     }
 
     function _setUserValue(nextValue) {
+        if (!root.sliderEnabled) {
+            return;
+        }
+
         var clamped = _clamp(nextValue);
         if (Math.abs(clamped - root.value) < 0.0001) {
             return;
@@ -70,28 +80,31 @@ Item {
     }
 
     function _setFromTrackX(trackX, trackWidth) {
-        if (trackWidth <= 0) {
+        if (!root.sliderEnabled || trackWidth <= 0) {
             return;
         }
 
-        _setUserValue(trackX / trackWidth);
+        root._setUserValue(trackX / trackWidth);
     }
 
     HoverHandler {
         id: hoverHandler
+        enabled: root.sliderEnabled
     }
 
     Tiles.TileSurface {
         anchors.fill: parent
         flashOverlayOpacity: root.openFlashOpacity
         radius: root.compactMode ? (height / 2) : 25
-        hovered: hoverHandler.hovered
-        pressed: minusTap.pressed || plusTap.pressed || sliderTrackMouseArea.pressed
+        hovered: root.sliderEnabled && hoverHandler.hovered
+        pressed: root.sliderEnabled && (minusTap.pressed || plusTap.pressed || sliderTrackMouseArea.pressed)
         tintColor: Qt.rgba(0, 0, 0, 0.20)
         contrastColor: Qt.rgba(1, 1, 1, 0.0)
         borderColor: Qt.rgba(1, 1, 1, 0.0)
+        opacity: root.sliderEnabled ? 1.0 : 0.48
 
         Text {
+            id: titleLabel
             anchors.left: parent.left
             anchors.leftMargin: root.compactMode ? 12 : 16
             anchors.top: parent.top
@@ -102,6 +115,20 @@ Item {
             font.pixelSize: root.compactMode ? 11 : 12
             font.weight: Font.DemiBold
             renderType: Text.NativeRendering
+        }
+
+        Text {
+            visible: root.sliderEnabled && root.detailText.length > 0
+            anchors.right: parent.right
+            anchors.rightMargin: root.compactMode ? 12 : 16
+            anchors.verticalCenter: titleLabel.verticalCenter
+            text: root.detailText
+            color: Qt.rgba(1, 1, 1, root.sliderEnabled ? 0.60 : 0.72)
+            font.family: Root.Theme.fontFamily
+            font.pixelSize: root.compactMode ? 10 : 11
+            font.weight: Font.Medium
+            renderType: Text.NativeRendering
+            elide: Text.ElideRight
         }
 
         Item {
@@ -123,11 +150,13 @@ Item {
 
                 HoverHandler {
                     id: minusHover
+                    enabled: root.sliderEnabled
                     cursorShape: Qt.PointingHandCursor
                 }
 
                 TapHandler {
                     id: minusTap
+                    enabled: root.sliderEnabled
                     acceptedButtons: Qt.LeftButton
                     onTapped: root._setUserValue(root.value - 0.05)
                 }
@@ -139,7 +168,7 @@ Item {
                     height: 15
                     glyph: root.minusSymbol
                     fallbackColor: Qt.rgba(1, 1, 1, 0.95)
-                    opacity: minusTap.pressed ? 0.62 : (minusHover.hovered ? 0.92 : 1.0)
+                    opacity: !root.sliderEnabled ? 0.68 : (minusTap.pressed ? 0.62 : (minusHover.hovered ? 0.92 : 1.0))
                     fallbackFontFamily: Root.Theme.fontFamilySymbol
                     pixelSize: 15
                     fontWeight: Font.Bold
@@ -158,8 +187,9 @@ Item {
                 MouseArea {
                     id: sliderTrackMouseArea
                     anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
+                    enabled: root.sliderEnabled
+                    hoverEnabled: root.sliderEnabled
+                    cursorShape: root.sliderEnabled ? Qt.PointingHandCursor : Qt.ArrowCursor
                     onPressed: function (mouse) {
                         root._setFromTrackX(mouse.x - sliderTrack.x, sliderTrack.width);
                     }
@@ -182,7 +212,7 @@ Item {
                     height: 4
                     radius: 999
                     color: Qt.rgba(1, 1, 1, 0.25)
-                    opacity: sliderTrackMouseArea.containsMouse ? 0.96 : 0.90
+                    opacity: root.sliderEnabled && sliderTrackMouseArea.containsMouse ? 0.96 : 0.90
                 }
 
                 Rectangle {
@@ -198,7 +228,7 @@ Item {
                     width: 18
                     height: 15
                     radius: 7.5
-                    visible: sliderTrackMouseArea.containsMouse || sliderTrackMouseArea.pressed
+                    visible: root.sliderEnabled && (sliderTrackMouseArea.containsMouse || sliderTrackMouseArea.pressed)
                     x: sliderTrack.x + (sliderTrack.width * root.value) - (width / 2)
                     y: sliderTrack.y + (sliderTrack.height / 2) - (height / 2)
                     color: Qt.rgba(1, 1, 1, 1.0)
@@ -214,11 +244,13 @@ Item {
 
                 HoverHandler {
                     id: plusHover
+                    enabled: root.sliderEnabled
                     cursorShape: Qt.PointingHandCursor
                 }
 
                 TapHandler {
                     id: plusTap
+                    enabled: root.sliderEnabled
                     acceptedButtons: Qt.LeftButton
                     onTapped: root._setUserValue(root.value + 0.05)
                 }
@@ -230,7 +262,7 @@ Item {
                     height: 15
                     glyph: root.plusSymbol
                     fallbackColor: Qt.rgba(1, 1, 1, 0.95)
-                    opacity: plusTap.pressed ? 0.62 : (plusHover.hovered ? 0.92 : 1.0)
+                    opacity: !root.sliderEnabled ? 0.68 : (plusTap.pressed ? 0.62 : (plusHover.hovered ? 0.92 : 1.0))
                     fallbackFontFamily: Root.Theme.fontFamilySymbol
                     pixelSize: 15
                     fontWeight: Font.Bold

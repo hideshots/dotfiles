@@ -1,4 +1,5 @@
 module controlcenter.providers
+BrightnessProvider 1.0 BrightnessProvider.qml
 BluetoothProvider 1.0 BluetoothProvider.qml
 HyprAccessibilityProvider 1.0 HyprAccessibilityProvider.qml
 NightShiftProvider 1.0 NightShiftProvider.qml

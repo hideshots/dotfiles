@@ -19,12 +19,14 @@ ShellRoot {
     readonly property var notificationService: Root.NotificationService
     readonly property var batteryService: Root.BatteryService
     readonly property var mediaService: Root.MediaService
+    readonly property var brightnessService: Root.BrightnessService
     readonly property var hardwareStatsService: Root.HardwareStatsService
     readonly property var storageStatsService: Root.StorageStatsService
     Component.onCompleted: {
         notificationService.refreshTimeLabels();
         batteryService.previewMode = shell.batteryPreviewMode;
         batteryService.previewStepMs = shell.batteryPreviewStepMs;
+        brightnessService.ddcBusByConnectorOverride = shell.controlCenterBrightnessDdcBusByConnector;
         hardwareStatsService.memMode = shell.hardwareStatsMemMode;
         hardwareStatsService.refreshIntervalMs = shell.hardwareStatsRefreshMs;
         hardwareStatsService.gpuPollingEnabled = shell.hardwareStatsShowGpu;
@@ -62,6 +64,8 @@ ShellRoot {
     // Optional output name override for keyboard-triggered control center (example: "DP-2").
     // Leave empty to auto-pick.
     property string controlCenterPrimaryScreenName: "DP-1"
+    // Optional external-monitor DDC map keyed by connector name, for example: ({ "DP-1": 3, "HDMI-A-1": 2 })
+    property var controlCenterBrightnessDdcBusByConnector: ({})
     property int controlCenterTopMargin: 44
     property int controlCenterRightMargin: 16
     property bool batteryPreviewMode: false
@@ -111,6 +115,7 @@ ShellRoot {
             shell.controlCenterTargetScreen = null;
         }
     }
+    onControlCenterBrightnessDdcBusByConnectorChanged: brightnessService.ddcBusByConnectorOverride = controlCenterBrightnessDdcBusByConnector
     function toggleNotificationCenter(triggerItem) {
         var hasTrigger = triggerItem !== undefined && triggerItem !== null;
 
@@ -211,11 +216,11 @@ ShellRoot {
     property bool widgetGlassDebug: false
     property real widgetGlassRefraction: 8.2
     property real widgetGlassBodyRefractionWidthPx: 32.0
-    property real widgetGlassDepth: 0.2
-    property real widgetGlassDispersion: 1.0
+    property real widgetGlassDepth: -0.2
+    property real widgetGlassDispersion: 99.0
     property real widgetGlassFrost: 0.2
-    property real widgetGlassSplay: 2.5
-    property real widgetGlassSplayDepth: 30.0
+    property real widgetGlassSplay: 5.5
+    property real widgetGlassSplayDepth: 12.0
     property real widgetGlassRimWidth: 15.0
     property real widgetGlassRimStrength: 1.0
     property real widgetGlassBodyDepth: 64.0
@@ -230,7 +235,7 @@ ShellRoot {
     property real widgetGlassLightSharpness: 0.0
     property real widgetGlassCornerBoost: 0.5
     property real widgetGlassDispersionLimit: 1.0
-    property real widgetGlassDispersionWidthPx: 9.0
+    property real widgetGlassDispersionWidthPx: 19.0
     property real widgetGlassDispersionCurve: 0.9
     property real widgetGlassOpacity: 1.0
     property color widgetGlassTint: Qt.rgba(0.0, 0.0, 0.0, 0.20)
@@ -805,7 +810,6 @@ ShellRoot {
                                     }
                                 }
                             }
-
                         }
                     }
                 }
