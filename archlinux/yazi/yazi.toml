@@ -1,4 +1,43 @@
 [mgr]
 show_hidden = true
-cache_dir = "~/.cache/yazi"
+sort_by = "natural"
+show_symlink = true
+sort_dir_first = true
+ratio = [0, 1, 1]
+# linemode = "size"
 
+[preview]
+wrap = "yes"
+tab_size = 2
+max_width = 9200
+max_height = 9200
+image_quality = 75
+
+[opener]
+edit = [
+  { run = 'nvim %s', block = true, for = "unix" },
+]
+play = [
+  { run = 'mpv %s', orphan = true, for = "unix" },
+]
+image = [
+  { run = 'xdg-open %s', orphan = true, for = "linux" },
+]
+pdf = [
+  { run = 'xdg-open %s', orphan = true, for = "linux" },
+]
+open = [
+  { run = 'xdg-open %s', desc = "Open", for = "linux" },
+]
+bottles = [
+  { run = 'bottles-cli run -b "Global" -e %s1', orphan = true, for = "linux" },
+]
+
+[open]
+prepend_rules = [
+  { url = "*.exe", use = "bottles" },
+  { mime = "text/*", use = "edit" },
+  { mime = "video/*", use = "play" },
+  { mime = "image/*", use = "image" },
+  { mime = "application/pdf", use = "pdf" },
+]
