@@ -41,3 +41,10 @@ prepend_rules = [
   { mime = "image/*", use = "image" },
   { mime = "application/pdf", use = "pdf" },
 ]
+
+[plugin]
+prepend_previewers = [
+    { mime = "audio/*",   run = "exifaudio"},
+    { mime = "text/csv", run = "miller"},
+    { mime = "application/{*zip,tar,bzip2,7z*,rar,xz,zstd,java-archive}", run = "ouch"}
+]
