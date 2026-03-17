@@ -23,6 +23,8 @@ Item {
     readonly property int reservedArrowGap: Math.max(compactGap, wideGap)
     readonly property int arrowColumnWidth: Math.ceil(Math.max(upArrowMetrics.width, downArrowMetrics.width))
     readonly property int valueColumnWidth: Math.ceil(valueTemplateMetrics.width)
+    readonly property color arrowColor: Root.Theme.textSecondary
+    readonly property color valueColor: Root.Theme.textPrimary
 
     function _numericPrefix(valueText) {
         var parsed = parseFloat(String(valueText || "").trim());
@@ -91,7 +93,7 @@ Item {
                 font.family: Root.Theme.fontFamilySymbol
                 font.pixelSize: 7
                 font.weight: Font.Bold
-                color: "#ffffff"
+                color: root.arrowColor
                 renderType: Text.NativeRendering
             }
 
@@ -103,7 +105,7 @@ Item {
                 font.family: Root.Theme.fontFamily
                 font.pixelSize: 9
                 font.weight: Font.DemiBold
-                color: "#ffffff"
+                color: root.valueColor
                 renderType: Text.NativeRendering
             }
         }
@@ -119,7 +121,7 @@ Item {
                 font.family: Root.Theme.fontFamilySymbol
                 font.pixelSize: 7
                 font.weight: Font.Bold
-                color: "#ffffff"
+                color: root.arrowColor
                 renderType: Text.NativeRendering
             }
 
@@ -131,7 +133,7 @@ Item {
                 font.family: Root.Theme.fontFamily
                 font.pixelSize: 9
                 font.weight: Font.DemiBold
-                color: "#ffffff"
+                color: root.valueColor
                 renderType: Text.NativeRendering
             }
         }

@@ -27,6 +27,8 @@ Item {
     property int columnSpacing: 0
     property int labelWidth: 20
     property int valueWidth: 26
+    readonly property color labelColor: Root.Theme.textSecondary
+    readonly property color valueColor: Root.Theme.textPrimary
 
     Row {
         id: contentRow
@@ -48,7 +50,7 @@ Item {
                     font.family: Root.Theme.fontFamily
                     font.pixelSize: 9
                     font.weight: Font.Normal
-                    color: "#ffffff"
+                    color: root.labelColor
                     opacity: 0.9
                     horizontalAlignment: Text.AlignLeft
                     renderType: Text.NativeRendering
@@ -60,7 +62,7 @@ Item {
                     font.family: Root.Theme.fontFamily
                     font.pixelSize: 12
                     font.weight: Font.Normal
-                    color: "#ffffff"
+                    color: root.valueColor
                     horizontalAlignment: Text.AlignLeft
                     renderType: Text.NativeRendering
                 }
@@ -82,7 +84,7 @@ Item {
                     font.family: Root.Theme.fontFamily
                     font.pixelSize: 9
                     font.weight: Font.Normal
-                    color: "#ffffff"
+                    color: root.labelColor
                     opacity: 0.9
                     horizontalAlignment: Text.AlignLeft
                     renderType: Text.NativeRendering
@@ -94,7 +96,7 @@ Item {
                     font.family: Root.Theme.fontFamily
                     font.pixelSize: 12
                     font.weight: Font.Normal
-                    color: "#ffffff"
+                    color: root.valueColor
                     horizontalAlignment: Text.AlignLeft
                     renderType: Text.NativeRendering
                 }
@@ -116,7 +118,7 @@ Item {
                     font.family: Root.Theme.fontFamily
                     font.pixelSize: 9
                     font.weight: Font.Normal
-                    color: "#ffffff"
+                    color: root.labelColor
                     opacity: 0.9
                     horizontalAlignment: Text.AlignLeft
                     renderType: Text.NativeRendering
@@ -128,7 +130,7 @@ Item {
                     font.family: Root.Theme.fontFamily
                     font.pixelSize: 12
                     font.weight: Font.Normal
-                    color: "#ffffff"
+                    color: root.valueColor
                     horizontalAlignment: Text.AlignLeft
                     renderType: Text.NativeRendering
                 }

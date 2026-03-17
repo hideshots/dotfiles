@@ -21,6 +21,9 @@ Item {
     property int fillTop: 14
     property int fillInset: 2
     property int fillHeight: 4
+    readonly property color labelColor: Root.Theme.textSecondary
+    readonly property color meterBorderColor: Qt.rgba(Root.Theme.textPrimary.r, Root.Theme.textPrimary.g, Root.Theme.textPrimary.b, 0.75)
+    readonly property color meterFillColor: Qt.rgba(Root.Theme.textPrimary.r, Root.Theme.textPrimary.g, Root.Theme.textPrimary.b, 0.85)
 
     visible: storage.visible
     height: parent.height
@@ -52,7 +55,7 @@ Item {
                     font.family: Root.Theme.fontFamily
                     font.pixelSize: 9
                     font.weight: Font.Normal
-                    color: "#ffffff"
+                    color: root.labelColor
                     horizontalAlignment: Text.AlignLeft
                     elide: Text.ElideRight
                     renderType: Text.NativeRendering
@@ -67,7 +70,7 @@ Item {
                     opacity: 0.8
                     color: "transparent"
                     border.width: 1
-                    border.color: "#ffffff"
+                    border.color: root.meterBorderColor
                 }
 
                 Rectangle {
@@ -76,7 +79,7 @@ Item {
                     width: entryRoot.fillWidth
                     height: root.fillHeight
                     radius: 5.5
-                    color: "#d9d9d9"
+                    color: root.meterFillColor
                 }
             }
         }
