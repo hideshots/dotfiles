@@ -1,7 +1,7 @@
 [mgr]
 show_hidden = true
-sort_by = "natural"
 show_symlink = true
+sort_by = "natural"
 sort_dir_first = true
 ratio = [0, 1, 1]
 # linemode = "size"
@@ -17,18 +17,23 @@ image_quality = 75
 edit = [
   { run = 'nvim %s', block = true, for = "unix" },
 ]
+
 play = [
   { run = 'mpv %s', orphan = true, for = "unix" },
 ]
+
 image = [
   { run = 'xdg-open %s', orphan = true, for = "linux" },
 ]
+
 pdf = [
   { run = 'xdg-open %s', orphan = true, for = "linux" },
 ]
+
 open = [
   { run = 'xdg-open %s', desc = "Open", for = "linux" },
 ]
+
 bottles = [
   { run = 'bottles-cli run -b "Global" -e %s1', orphan = true, for = "linux" },
 ]
@@ -44,7 +49,17 @@ prepend_rules = [
 
 [plugin]
 prepend_previewers = [
-    { mime = "audio/*",   run = "exifaudio"},
-    { mime = "text/csv", run = "miller"},
-    { mime = "application/{*zip,tar,bzip2,7z*,rar,xz,zstd,java-archive}", run = "ouch"}
+  { mime = "audio/*", run = "exifaudio" },
+  { mime = "text/csv", run = "miller" },
+  { mime = "application/{*zip,tar,bzip2,7z*,rar,xz,zstd,java-archive}", run = "ouch" },
 ]
+
+[[plugin.prepend_fetchers]]
+id = "git"
+url = "*"
+run = "git"
+
+[[plugin.prepend_fetchers]]
+id = "git"
+url = "*/"
+run = "git"

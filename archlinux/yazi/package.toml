@@ -33,5 +33,20 @@ use = "uhs-robert/recycle-bin"
 rev = "fa68711"
 hash = "8714306b5cac6359edbacbf545fbd691"
 
+[[plugin.deps]]
+use = "MasouShizuka/close-and-restore-tab"
+rev = "5047217"
+hash = "bb24648b1f96f1cef8c1543742189aad"
+
+[[plugin.deps]]
+use = "yazi-rs/plugins:git"
+rev = "1962818"
+hash = "26db011a778f261d730d4f5f8bf24b3f"
+
+[[plugin.deps]]
+use = "yazi-rs/plugins:no-status"
+rev = "1962818"
+hash = "3e023d31f29201efdac2a6ae35fedb78"
+
 [flavor]
 deps = []

@@ -1,33 +1,37 @@
 [mgr]
 prepend_keymap = [
   # Preview
-  { on = "F",        run = "plugin toggle-pane max-preview",           desc = "Maximize preview pane" },
+  { on = "F",        run = "plugin toggle-pane max-preview",             desc = "Maximize preview pane" },
 
   # Navigation
-  { on = ["g","d"],  run = "cd /home/drama/Downloads",                 desc = "Go to Downloads" },
-  { on = ["g","v"],  run = "cd /home/drama/Videos",                    desc = "Go to Videos" },
-  { on = ["g","p"],  run = "cd /home/drama/Pictures",                  desc = "Go to Pictures" },
-  { on = ["g","m"],  run = "cd /home/drama/Music",                     desc = "Go to Music" },
-  { on = ["g","G"],  run = "cd /home/drama/Graphics",                  desc = "Go to Graphics" },
-  { on = ["g","g"],  run = "cd /mnt/hdd/Games",                        desc = "Go to Games" },
-  { on = ["g","c"],  run = "cd /home/drama/dotfiles/archlinux",        desc = "Go to dotfiles" },
-  { on = ["g","P"],  run = "cd /mnt/hdd/Projects",                     desc = "Go to Projects" },
-  { on = ["g","H"],  run = "cd /mnt/hdd",                              desc = "Go to hdd" },
-  { on = ["g","S"],  run = "cd /mnt/ssd",                              desc = "Go to ssd" },
-  { on = ["g","D"],  run = "cd /mnt/dev",                              desc = "Go to dev" },
+  { on = ["g","d"],  run = "cd /home/drama/Downloads",                   desc = "Go to Downloads" },
+  { on = ["g","v"],  run = "cd /home/drama/Videos",                      desc = "Go to Videos" },
+  { on = ["g","p"],  run = "cd /home/drama/Pictures",                    desc = "Go to Pictures" },
+  { on = ["g","m"],  run = "cd /home/drama/Music",                       desc = "Go to Music" },
+  { on = ["g","3"],  run = "cd /home/drama/Graphics",                    desc = "Go to Graphics" },
+  { on = ["g","G"],  run = "cd /mnt/hdd/Games",                          desc = "Go to Games" },
+  { on = ["g","c"],  run = "cd /home/drama/dotfiles/archlinux",          desc = "Go to dotfiles" },
+  { on = ["g","P"],  run = "cd /mnt/hdd/Projects",                       desc = "Go to Projects" },
+  { on = ["g","H"],  run = "cd /mnt/hdd",                                desc = "Go to hdd" },
+  { on = ["g","S"],  run = "cd /mnt/ssd",                                desc = "Go to ssd" },
+  { on = ["g","D"],  run = "cd /mnt/dev",                                desc = "Go to dev" },
 
   # Convert
-  { on = ["m","p"],  run = "plugin convert -- --extension='png'",      desc = "to png" },
-  { on = ["m","j"],  run = "plugin convert -- --extension='jpg'",      desc = "to jpg" },
-  { on = ["m","w"],  run = "plugin convert -- --extension='webp'",     desc = "to webp" },
+  { on = ["m","p"],  run = "plugin convert -- --extension='png'",        desc = "to png" },
+  { on = ["m","j"],  run = "plugin convert -- --extension='jpg'",        desc = "to jpg" },
+  { on = ["m","w"],  run = "plugin convert -- --extension='webp'",       desc = "to webp" },
 
   # Actions
-  { on = ["c","m"],  run = "plugin chmod",                             desc = "Chmod on selected files" },
+  { on = ["c","m"],  run = "plugin chmod",                               desc = "Chmod on selected files" },
+
+  # Tabs
+  { on = ["<C-w>"],  run = "plugin close-and-restore-tab close_to_left", desc = "Close tab, go left" },
+  { on = ["<C-t>"],  run = "plugin close-and-restore-tab restore",       desc = "Restore closed tab" },
 
   # Trash
-  { on = ["R","o"],  run = "plugin recycle-bin -- open",               desc = "Open Trash" },
-  { on = ["R","e"],  run = "plugin recycle-bin -- empty",              desc = "Empty Trash" },
-  { on = ["R","D"],  run = "plugin recycle-bin -- emptyDays",          desc = "Empty by days deleted" },
-  { on = ["R","d"],  run = "plugin recycle-bin -- delete",             desc = "Delete from Trash" },
-  { on = ["R","r"],  run = "plugin recycle-bin -- restore",            desc = "Restore from Trash" },
+  { on = ["R","o"],  run = "plugin recycle-bin -- open",                 desc = "Open Trash" },
+  { on = ["R","e"],  run = "plugin recycle-bin -- empty",                desc = "Empty Trash" },
+  { on = ["R","D"],  run = "plugin recycle-bin -- emptyDays",            desc = "Empty by days deleted" },
+  { on = ["R","d"],  run = "plugin recycle-bin -- delete",               desc = "Delete from Trash" },
+  { on = ["R","r"],  run = "plugin recycle-bin -- restore",              desc = "Restore from Trash" },
 ]
