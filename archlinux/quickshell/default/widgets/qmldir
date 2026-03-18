@@ -8,3 +8,4 @@ HardwareStatsArea 1.0 HardwareStatsArea.qml
 StorageStatsArea 1.0 StorageStatsArea.qml
 BatteryStatusArea 1.0 BatteryStatusArea.qml
 WifiStatusArea 1.0 WifiStatusArea.qml
+SystemOsd 1.0 SystemOsd.qml

@@ -17,6 +17,7 @@ ShellRoot {
     id: shell
     // Force-load notifications backend so NotificationServer is active without UI components.
     readonly property var notificationService: Root.NotificationService
+    readonly property var audioService: Root.AudioService
     readonly property var batteryService: Root.BatteryService
     readonly property var mediaService: Root.MediaService
     readonly property var brightnessService: Root.BrightnessService
@@ -68,6 +69,24 @@ ShellRoot {
     property var controlCenterBrightnessDdcBusByConnector: ({})
     property int controlCenterTopMargin: 44
     property int controlCenterRightMargin: 16
+    property int osdTopMargin: 44
+    property int osdRightMargin: 16
+    property int osdSpacing: 12
+    property int osdVisibleMs: 3000
+    property string osdTargetScreenName: ""
+    property bool osdBrightnessVisible: false
+    property bool osdVolumeVisible: false
+    readonly property bool osdAnyVisible: shell.osdBrightnessVisible || shell.osdVolumeVisible
+    property real osdBrightnessValue: 0.0
+    property string osdBrightnessDetailText: ""
+    property string osdBrightnessIconGlyph: "􀆮"
+    property real osdVolumeValue: 0.0
+    property string osdVolumeDetailText: ""
+    property string osdVolumeIconGlyph: "􀊩"
+    property bool _audioOsdPrimed: false
+    property real _lastAudioValue: 0.0
+    property bool _lastAudioMuted: false
+    property var _lastBrightnessByScreen: ({})
     property bool batteryPreviewMode: false
     property int batteryPreviewStepMs: 9200
     property bool hardwareStatsShowCpu: true
@@ -83,7 +102,7 @@ ShellRoot {
         {
             label: "MAC",
             mountPoint: "/"
-        },
+        }
         // {
         //     label: "HDD",
         //     mountPoint: "/mnt/hdd"
@@ -92,6 +111,7 @@ ShellRoot {
         //     label: "DEV",
         //     mountPoint: "/mnt/dev"
         // }
+        ,
     ]
     property int networkStatsCompactGap: -8
     property int networkStatsWideGap: -6
@@ -182,6 +202,227 @@ ShellRoot {
         return null;
     }
 
+    function _screenNameValue(screen) {
+        if (!screen || screen.name === undefined || screen.name === null) {
+            return "";
+        }
+
+        return String(screen.name);
+    }
+
+    function activeOsdScreen(preferredScreen) {
+        var screens = Quickshell.screens;
+        var focusedMonitor = Hyprland.focusedMonitor;
+        var focusedName = focusedMonitor && focusedMonitor.name !== undefined && focusedMonitor.name !== null ? String(focusedMonitor.name) : "";
+        if (screens && screens.length !== undefined && focusedName.length > 0) {
+            for (var i = 0; i < screens.length; i++) {
+                var screen = screens[i];
+                if (!screen) {
+                    continue;
+                }
+
+                if (shell._screenNameValue(screen) === focusedName) {
+                    return screen;
+                }
+
+                var monitor = Hyprland.monitorFor(screen);
+                var monitorName = monitor && monitor.name !== undefined && monitor.name !== null ? String(monitor.name) : "";
+                if (monitorName.length > 0 && monitorName === focusedName) {
+                    return screen;
+                }
+            }
+        }
+
+        if (preferredScreen !== undefined && preferredScreen !== null) {
+            return preferredScreen;
+        }
+
+        return shell.keyboardControlCenterScreen();
+    }
+
+    function _normalizedOsdValue(nextValue) {
+        var numeric = Number(nextValue);
+        if (!isFinite(numeric)) {
+            return 0.0;
+        }
+
+        return Math.max(0, Math.min(1, numeric));
+    }
+
+    function _percentText(nextValue) {
+        return Math.round(shell._normalizedOsdValue(nextValue) * 100) + "%";
+    }
+
+    function _brightnessIconGlyphForValue(nextValue) {
+        return shell._normalizedOsdValue(nextValue) <= 0.34 ? "􀆬" : "􀆮";
+    }
+
+    function _isControlCenterOpenOnScreen(screen) {
+        var screenName = shell._screenNameValue(screen);
+        var targetName = shell._screenNameValue(shell.controlCenterTargetScreen);
+        return shell.controlCenterOpen && screenName.length > 0 && screenName === targetName;
+    }
+
+    function _clearOsdTargetIfIdle() {
+        if (!shell.osdAnyVisible) {
+            shell.osdTargetScreenName = "";
+        }
+    }
+
+    function _showVolumeOsd() {
+        if (!shell.audioService.backendAvailable || !shell.audioService.available || shell.audioService.osdSuppressed) {
+            return;
+        }
+
+        var targetScreen = shell.activeOsdScreen(null);
+        var targetName = shell._screenNameValue(targetScreen);
+        if (targetName.length === 0 || shell._isControlCenterOpenOnScreen(targetScreen)) {
+            return;
+        }
+
+        brightnessOsdHideTimer.stop();
+        shell.osdBrightnessVisible = false;
+        shell.osdTargetScreenName = targetName;
+        shell.osdVolumeValue = shell._normalizedOsdValue(shell.audioService.value);
+        shell.osdVolumeDetailText = shell.audioService.muted ? "Muted" : shell._percentText(shell.osdVolumeValue);
+        shell.osdVolumeIconGlyph = shell.audioService.iconGlyph;
+        shell.osdVolumeVisible = true;
+        volumeOsdHideTimer.restart();
+    }
+
+    function _showBrightnessOsdForState(sourceScreen, state) {
+        if (!state || !state.available) {
+            return;
+        }
+
+        var targetScreen = shell.activeOsdScreen(sourceScreen);
+        var targetName = shell._screenNameValue(targetScreen);
+        if (targetName.length === 0 || shell._isControlCenterOpenOnScreen(targetScreen)) {
+            return;
+        }
+
+        var value = shell._normalizedOsdValue(state.value);
+        volumeOsdHideTimer.stop();
+        shell.osdVolumeVisible = false;
+        shell.osdTargetScreenName = targetName;
+        shell.osdBrightnessValue = value;
+        shell.osdBrightnessDetailText = shell._percentText(value);
+        shell.osdBrightnessIconGlyph = shell._brightnessIconGlyphForValue(value);
+        shell.osdBrightnessVisible = true;
+        brightnessOsdHideTimer.restart();
+    }
+
+    function _preferredBrightnessSourceScreen() {
+        var activeScreen = shell.activeOsdScreen(null);
+        var screens = Quickshell.screens;
+        if (activeScreen) {
+            var activeState = shell.brightnessService.stateForScreen(activeScreen);
+            if (activeState && activeState.available) {
+                return activeScreen;
+            }
+        }
+
+        if (!screens || screens.length === undefined) {
+            return activeScreen;
+        }
+
+        for (var i = 0; i < screens.length; i++) {
+            var availableScreen = screens[i];
+            if (!availableScreen || !shell.brightnessService.shouldRefreshOnOpenForScreen(availableScreen)) {
+                continue;
+            }
+
+            var availableState = shell.brightnessService.stateForScreen(availableScreen);
+            if (availableState && availableState.available) {
+                return availableScreen;
+            }
+        }
+
+        for (var j = 0; j < screens.length; j++) {
+            var fallbackInternal = screens[j];
+            if (fallbackInternal && shell.brightnessService.shouldRefreshOnOpenForScreen(fallbackInternal)) {
+                return fallbackInternal;
+            }
+        }
+
+        return activeScreen;
+    }
+
+    function _syncAudioOsdState() {
+        var nextAvailable = shell.audioService.backendAvailable && shell.audioService.available;
+        var nextValue = shell._normalizedOsdValue(shell.audioService.value);
+        var nextMuted = !!shell.audioService.muted;
+
+        if (!shell._audioOsdPrimed) {
+            if (!nextAvailable && shell.audioService.backendAvailable) {
+                return;
+            }
+
+            shell._audioOsdPrimed = true;
+            shell._lastAudioValue = nextValue;
+            shell._lastAudioMuted = nextMuted;
+            return;
+        }
+
+        var valueChanged = Math.abs(nextValue - shell._lastAudioValue) > 0.0001;
+        var mutedChanged = nextMuted !== shell._lastAudioMuted;
+
+        shell._lastAudioValue = nextValue;
+        shell._lastAudioMuted = nextMuted;
+
+        if (!nextAvailable) {
+            return;
+        }
+
+        if (valueChanged || mutedChanged) {
+            shell._showVolumeOsd();
+        }
+    }
+
+    function _syncBrightnessOsdState() {
+        var screens = Quickshell.screens;
+        var nextSnapshots = ({});
+        var brightnessShown = false;
+
+        if (!screens || screens.length === undefined) {
+            shell._lastBrightnessByScreen = nextSnapshots;
+            return;
+        }
+
+        for (var i = 0; i < screens.length; i++) {
+            var screen = screens[i];
+            if (!screen || !shell.brightnessService.shouldRefreshOnOpenForScreen(screen)) {
+                continue;
+            }
+
+            var key = shell._screenNameValue(screen);
+            if (key.length === 0) {
+                continue;
+            }
+
+            var state = shell.brightnessService.stateForScreen(screen);
+            var snapshot = {
+                available: !!(state && state.available),
+                value: shell._normalizedOsdValue(state ? state.value : 0),
+                backend: state && state.backend !== undefined && state.backend !== null ? String(state.backend) : "",
+                backlightDevice: state && state.backlightDevice !== undefined && state.backlightDevice !== null ? String(state.backlightDevice) : ""
+            };
+            var previous = shell._lastBrightnessByScreen[key];
+            nextSnapshots[key] = snapshot;
+
+            if (!previous || brightnessShown || !snapshot.available || snapshot.backend !== "backlight" || !previous.available || previous.backend !== "backlight") {
+                continue;
+            }
+
+            if (Math.abs(snapshot.value - previous.value) > 0.0001) {
+                shell._showBrightnessOsdForState(screen, state);
+                brightnessShown = true;
+            }
+        }
+
+        shell._lastBrightnessByScreen = nextSnapshots;
+    }
+
     IpcHandler {
         target: "shell"
 
@@ -191,6 +432,22 @@ ShellRoot {
 
         function toggleNotificationCenter() {
             shell.toggleNotificationCenter(null);
+        }
+
+        function showBrightnessOsd() {
+            var sourceScreen = shell._preferredBrightnessSourceScreen();
+            if (!sourceScreen) {
+                return;
+            }
+
+            if (shell.brightnessService.shouldRefreshOnOpenForScreen(sourceScreen)) {
+                shell.brightnessService.refreshForScreen(sourceScreen);
+            }
+
+            var state = shell.brightnessService.stateForScreen(sourceScreen);
+            if (state && state.available) {
+                shell._showBrightnessOsdForState(sourceScreen, state);
+            }
         }
     }
 
@@ -205,6 +462,64 @@ ShellRoot {
         context: Qt.ApplicationShortcut
         enabled: shell.controlCenterOpen
         onActivated: shell.controlCenterOpen = false
+    }
+    Timer {
+        id: volumeOsdHideTimer
+        interval: Math.max(0, shell.osdVisibleMs)
+        repeat: false
+        onTriggered: {
+            shell.osdVolumeVisible = false;
+            shell._clearOsdTargetIfIdle();
+        }
+    }
+    Timer {
+        id: brightnessOsdHideTimer
+        interval: Math.max(0, shell.osdVisibleMs)
+        repeat: false
+        onTriggered: {
+            shell.osdBrightnessVisible = false;
+            shell._clearOsdTargetIfIdle();
+        }
+    }
+    Timer {
+        id: audioOsdSyncTimer
+        interval: 10
+        repeat: false
+        onTriggered: shell._syncAudioOsdState()
+    }
+    Timer {
+        id: brightnessOsdSyncTimer
+        interval: 10
+        repeat: false
+        onTriggered: shell._syncBrightnessOsdState()
+    }
+    Connections {
+        target: shell.audioService
+        ignoreUnknownSignals: true
+
+        function onAvailableChanged() {
+            audioOsdSyncTimer.restart();
+        }
+
+        function onBackendAvailableChanged() {
+            audioOsdSyncTimer.restart();
+        }
+
+        function onMutedChanged() {
+            audioOsdSyncTimer.restart();
+        }
+
+        function onValueChanged() {
+            audioOsdSyncTimer.restart();
+        }
+    }
+    Connections {
+        target: shell.brightnessService
+        ignoreUnknownSignals: true
+
+        function onScreenStatesChanged() {
+            brightnessOsdSyncTimer.restart();
+        }
     }
     property int weatherPanelTopMargin: 50
     property int weatherPanelLeftMargin: 10
@@ -446,9 +761,7 @@ ShellRoot {
 
     PanelWindow {
         id: notificationsPopupPanel
-        visible: shell.notificationsPopupEnabled
-            && !shell.notificationService.focusModeEnabled
-            && shell.notificationService.activeCount > 0
+        visible: shell.notificationsPopupEnabled && !shell.notificationService.focusModeEnabled && shell.notificationService.activeCount > 0
 
         anchors.top: true
         anchors.right: true
@@ -1196,10 +1509,7 @@ ShellRoot {
             preventStealing: true
             function _insideNotificationCenterInteraction(mouseX, mouseY) {
                 var panelPos = notificationCenter.mapToItem(notificationCenterBackdropMouseArea, 0, 0);
-                var interactionBleed = Math.max(
-                    shell.notificationsActionWindowBleed + Math.max(0, shell.notificationsActionHoverOverlapPx),
-                    shell.notificationsDismissWindowBleed + Math.max(0, shell.notificationsDismissHoverOverlapPx)
-                );
+                var interactionBleed = Math.max(shell.notificationsActionWindowBleed + Math.max(0, shell.notificationsActionHoverOverlapPx), shell.notificationsDismissWindowBleed + Math.max(0, shell.notificationsDismissHoverOverlapPx));
                 return mouseX >= (panelPos.x - interactionBleed) && mouseX <= (panelPos.x + notificationCenter.width + interactionBleed) && mouseY >= (panelPos.y - interactionBleed) && mouseY <= (panelPos.y + notificationCenter.height + interactionBleed);
             }
 
@@ -1245,6 +1555,56 @@ ShellRoot {
             required property var modelData
             variantScreen: modelData
             shellRoot: shell
+        }
+    }
+
+    Variants {
+        model: Quickshell.screens
+
+        PanelWindow {
+            id: osdPanelWindow
+            required property var modelData
+            readonly property string panelScreenName: shell._screenNameValue(osdPanelWindow.modelData)
+            readonly property bool targetMatch: panelScreenName.length > 0 && panelScreenName === shell.osdTargetScreenName
+
+            visible: osdSurface.overlayVisible
+            screen: osdPanelWindow.modelData
+            anchors.top: true
+            anchors.right: true
+            margins.top: shell.osdTopMargin
+            margins.right: shell.osdRightMargin
+            exclusionMode: ExclusionMode.Ignore
+
+            color: "transparent"
+            surfaceFormat.opaque: false
+            focusable: false
+            WlrLayershell.layer: WlrLayer.Overlay
+            WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+            WlrLayershell.namespace: "quickshell:osd"
+            mask: osdMask
+            HyprlandWindow.visibleMask: osdMask
+
+            implicitWidth: osdSurface.implicitWidth
+            implicitHeight: osdSurface.implicitHeight
+
+            Region {
+                id: osdMask
+                item: osdSurface
+            }
+
+            Widgets.SystemOsd {
+                id: osdSurface
+                requestedVisible: osdPanelWindow.targetMatch && shell.osdAnyVisible
+                brightnessVisible: shell.osdBrightnessVisible
+                volumeVisible: shell.osdVolumeVisible
+                brightnessValue: shell.osdBrightnessValue
+                volumeValue: shell.osdVolumeValue
+                brightnessDetailText: shell.osdBrightnessDetailText
+                volumeDetailText: shell.osdVolumeDetailText
+                brightnessIconGlyph: shell.osdBrightnessIconGlyph
+                volumeIconGlyph: shell.osdVolumeIconGlyph
+                cardSpacing: shell.osdSpacing
+            }
         }
     }
 
@@ -1573,11 +1933,8 @@ ShellRoot {
                             function syncRightHighlight() {
                                 var notificationTriggeredFromKeyboard = barPanelWindow.notificationCenterTriggerItemProxy == null;
                                 var controlTriggeredFromKeyboard = barPanelWindow.controlCenterTriggerItemProxy == null;
-                                var notificationCenterShouldHighlight = barPanelWindow.notificationCenterOpenProxy
-                                    && (barPanelWindow.notificationCenterTriggerItemProxy === timeDisplay || notificationTriggeredFromKeyboard);
-                                var controlCenterShouldHighlight = barPanelWindow.controlCenterOpenProxy
-                                    && barPanelWindow.controlCenterTargetScreenProxy === barPanelWindow.modelData
-                                    && (barPanelWindow.controlCenterTriggerItemProxy === controlCenterButton || controlTriggeredFromKeyboard);
+                                var notificationCenterShouldHighlight = barPanelWindow.notificationCenterOpenProxy && (barPanelWindow.notificationCenterTriggerItemProxy === timeDisplay || notificationTriggeredFromKeyboard);
+                                var controlCenterShouldHighlight = barPanelWindow.controlCenterOpenProxy && barPanelWindow.controlCenterTargetScreenProxy === barPanelWindow.modelData && (barPanelWindow.controlCenterTriggerItemProxy === controlCenterButton || controlTriggeredFromKeyboard);
 
                                 if (notificationCenterShouldHighlight) {
                                     rightHi.activeTarget = timeDisplay;

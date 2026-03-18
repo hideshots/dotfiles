@@ -43,6 +43,8 @@ QtObject {
     property var backlightResolveOutputLines: []
     property var backlightReadCurrentOutputLines: []
     property var backlightReadMaxOutputLines: []
+    readonly property string watchedBacklightDevice: root._resolvedWatchedBacklightDevice()
+    readonly property string watchedBacklightPath: root.watchedBacklightDevice.length > 0 ? "/sys/class/backlight/" + root.watchedBacklightDevice + "/brightness" : ""
 
     function _defaultState() {
         return {
@@ -550,6 +552,63 @@ QtObject {
         root._scheduleAutoDetectIfNeeded();
     }
 
+    function _resolvedWatchedBacklightDevice() {
+        var screens = Quickshell.screens;
+        if (!screens || screens.length === undefined) {
+            return "";
+        }
+
+        for (var i = 0; i < screens.length; i++) {
+            var screen = screens[i];
+            if (!screen || !root._isInternalScreen(screen)) {
+                continue;
+            }
+
+            var state = root._stateForKey(root._screenKey(screen));
+            if (state && state.backend === "backlight" && String(state.backlightDevice || "").length > 0) {
+                return String(state.backlightDevice);
+            }
+        }
+
+        return "";
+    }
+
+    function _applyWatchedBacklightValue(rawText) {
+        var device = root.watchedBacklightDevice;
+        var currentValue = Number(String(rawText || "").trim());
+        var screens = Quickshell.screens;
+        if (device.length === 0 || !isFinite(currentValue) || currentValue < 0 || !screens || screens.length === undefined) {
+            return;
+        }
+
+        for (var i = 0; i < screens.length; i++) {
+            var screen = screens[i];
+            if (!screen || !root._isInternalScreen(screen)) {
+                continue;
+            }
+
+            var key = root._screenKey(screen);
+            var state = root._stateForKey(key);
+            var maxValue = Number(state.maxValue);
+            if (String(state.backlightDevice || "") !== device || !isFinite(maxValue) || maxValue <= 0) {
+                continue;
+            }
+
+            root._replaceState(key, {
+                available: true,
+                value: Math.max(0, Math.min(1, currentValue / maxValue)),
+                backend: "backlight",
+                detailText: "Backlight",
+                busy: state.busy,
+                maxValue: maxValue,
+                ddcBus: -1,
+                backlightDevice: state.backlightDevice,
+                trackingMode: "live",
+                mappingSource: "backlight"
+            });
+        }
+    }
+
     function _scheduleAutoDetectIfNeeded() {
         if (!root.cacheLoaded || !root.ddcAutoDetectEnabled || !root.ddcBackendAvailable) {
             return;
@@ -997,6 +1056,11 @@ QtObject {
             root._syncAllScreens();
         }
     }
+    onWatchedBacklightPathChanged: {
+        if (root.watchedBacklightPath.length > 0) {
+            watchedBacklightFile.reload();
+        }
+    }
 
     Component.onCompleted: {
         root._loadCache();
@@ -1022,6 +1086,16 @@ QtObject {
         blockLoading: true
         printErrors: false
         onSaveFailed: console.warn("Brightness cache write failed.")
+    }
+
+    property FileView watchedBacklightFile: FileView {
+        id: watchedBacklightFile
+        path: root.watchedBacklightPath
+        preload: root.watchedBacklightPath.length > 0
+        watchChanges: root.watchedBacklightPath.length > 0
+        printErrors: false
+        onLoaded: root._applyWatchedBacklightValue(watchedBacklightFile.text())
+        onFileChanged: watchedBacklightFile.reload()
     }
 
     property Timer detectDelayTimer: Timer {

@@ -9,6 +9,7 @@ Item {
     property string sizeMode: "4x1"
     property var tileData: ({})
     property real openFlashOpacity: 0.0
+    property bool interactive: true
 
     readonly property string resolvedSizeMode: _resolveSizeMode(root.sizeMode)
     readonly property bool compactMode: root.resolvedSizeMode === "2x1"
@@ -17,7 +18,11 @@ Item {
     readonly property string minusSymbol: _stringData("minusSymbol", "􀆬")
     readonly property string plusSymbol: _stringData("plusSymbol", "􀆮")
     readonly property bool sliderEnabled: _boolData("enabled", true)
+    readonly property bool sliderInteractive: root.sliderEnabled && root.interactive
     readonly property real value: _clamp(_numberData("value", 0.66))
+    property real pendingValue: root.value
+    property bool hasPendingValue: false
+    readonly property real presentedValue: root.hasPendingValue ? root.pendingValue : root.value
 
     signal valueChangedByUser(real value)
 
@@ -72,10 +77,12 @@ Item {
         }
 
         var clamped = _clamp(nextValue);
-        if (Math.abs(clamped - root.value) < 0.0001) {
+        if (Math.abs(clamped - root.presentedValue) < 0.0001) {
             return;
         }
 
+        root.pendingValue = clamped;
+        root.hasPendingValue = true;
         root.valueChangedByUser(clamped);
     }
 
@@ -87,17 +94,29 @@ Item {
         root._setUserValue(trackX / trackWidth);
     }
 
+    onValueChanged: {
+        if (!root.hasPendingValue) {
+            root.pendingValue = root.value;
+            return;
+        }
+
+        if (Math.abs(root.value - root.pendingValue) < 0.005) {
+            root.pendingValue = root.value;
+            root.hasPendingValue = false;
+        }
+    }
+
     HoverHandler {
         id: hoverHandler
-        enabled: root.sliderEnabled
+        enabled: root.sliderInteractive
     }
 
     Tiles.TileSurface {
         anchors.fill: parent
         flashOverlayOpacity: root.openFlashOpacity
         radius: root.compactMode ? (height / 2) : 25
-        hovered: root.sliderEnabled && hoverHandler.hovered
-        pressed: root.sliderEnabled && (minusTap.pressed || plusTap.pressed || sliderTrackMouseArea.pressed)
+        hovered: root.sliderInteractive && hoverHandler.hovered
+        pressed: root.sliderInteractive && (minusTap.pressed || plusTap.pressed || sliderTrackMouseArea.pressed)
         tintColor: Qt.rgba(0, 0, 0, 0.20)
         contrastColor: Qt.rgba(1, 1, 1, 0.0)
         borderColor: Qt.rgba(1, 1, 1, 0.0)
@@ -150,15 +169,15 @@ Item {
 
                 HoverHandler {
                     id: minusHover
-                    enabled: root.sliderEnabled
+                    enabled: root.sliderInteractive
                     cursorShape: Qt.PointingHandCursor
                 }
 
                 TapHandler {
                     id: minusTap
-                    enabled: root.sliderEnabled
+                    enabled: root.sliderInteractive
                     acceptedButtons: Qt.LeftButton
-                    onTapped: root._setUserValue(root.value - 0.05)
+                    onTapped: root._setUserValue(root.presentedValue - 0.05)
                 }
 
                 Root.SymbolIcon {
@@ -187,9 +206,9 @@ Item {
                 MouseArea {
                     id: sliderTrackMouseArea
                     anchors.fill: parent
-                    enabled: root.sliderEnabled
-                    hoverEnabled: root.sliderEnabled
-                    cursorShape: root.sliderEnabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                    enabled: root.sliderInteractive
+                    hoverEnabled: root.sliderInteractive
+                    cursorShape: root.sliderInteractive ? Qt.PointingHandCursor : Qt.ArrowCursor
                     onPressed: function (mouse) {
                         root._setFromTrackX(mouse.x - sliderTrack.x, sliderTrack.width);
                     }
@@ -218,7 +237,7 @@ Item {
                 Rectangle {
                     anchors.left: sliderTrack.left
                     anchors.verticalCenter: sliderTrack.verticalCenter
-                    width: sliderTrack.width * root.value
+                    width: sliderTrack.width * root.presentedValue
                     height: sliderTrack.height
                     radius: sliderTrack.radius
                     color: Qt.rgba(1, 1, 1, 0.96)
@@ -228,8 +247,8 @@ Item {
                     width: 18
                     height: 15
                     radius: 7.5
-                    visible: root.sliderEnabled && (sliderTrackMouseArea.containsMouse || sliderTrackMouseArea.pressed)
-                    x: sliderTrack.x + (sliderTrack.width * root.value) - (width / 2)
+                    visible: root.sliderInteractive && (sliderTrackMouseArea.containsMouse || sliderTrackMouseArea.pressed)
+                    x: sliderTrack.x + (sliderTrack.width * root.presentedValue) - (width / 2)
                     y: sliderTrack.y + (sliderTrack.height / 2) - (height / 2)
                     color: Qt.rgba(1, 1, 1, 1.0)
                 }
@@ -244,15 +263,15 @@ Item {
 
                 HoverHandler {
                     id: plusHover
-                    enabled: root.sliderEnabled
+                    enabled: root.sliderInteractive
                     cursorShape: Qt.PointingHandCursor
                 }
 
                 TapHandler {
                     id: plusTap
-                    enabled: root.sliderEnabled
+                    enabled: root.sliderInteractive
                     acceptedButtons: Qt.LeftButton
-                    onTapped: root._setUserValue(root.value + 0.05)
+                    onTapped: root._setUserValue(root.presentedValue + 0.05)
                 }
 
                 Root.SymbolIcon {
