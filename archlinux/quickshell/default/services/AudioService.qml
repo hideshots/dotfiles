@@ -1,7 +1,7 @@
 pragma Singleton
 
 import QtQuick
-import Quickshell.Io
+import Quickshell.Services.Pipewire
 
 QtObject {
     id: root
@@ -10,19 +10,17 @@ QtObject {
     property bool muted: false
     property real value: 0.0
     property bool monitorEnabled: true
-    property bool backendAvailable: true
+    readonly property bool backendAvailable: Pipewire.ready
+    readonly property bool osdSuppressed: osdSuppressTimer.running
 
     readonly property int percent: Math.round(root.value * 100)
     readonly property int iconLevel: _iconLevelFromValue(root.value)
-    readonly property bool sliderEnabled: backendAvailable && available
+    readonly property bool sliderEnabled: monitorEnabled && backendAvailable && available
     readonly property bool visible: true
     readonly property string iconGlyph: (!backendAvailable || !available || muted) ? "􀊣" : "􀊩"
     readonly property string iconSvgName: (!backendAvailable || !available || muted) ? "speaker.slash.fill" : ("speaker.wave.3.fill." + String(iconLevel))
-
-    readonly property var getVolumeCommand: ["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"]
-    readonly property var subscribeCommand: ["wpctl", "subscribe"]
-    readonly property var setMuteOnCommand: ["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "1"]
-    readonly property var setMuteOffCommand: ["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "0"]
+    readonly property var trackedSink: Pipewire.ready ? Pipewire.defaultAudioSink : null
+    readonly property var trackedAudio: root.trackedSink && root.trackedSink.ready && root.trackedSink.audio ? root.trackedSink.audio : null
 
     function _clamp(nextValue) {
         var numeric = Number(nextValue);
@@ -52,205 +50,143 @@ QtObject {
         root.value = 0.0;
     }
 
-    function _setBackendUnavailable() {
-        root.backendAvailable = false;
-        root._clearState();
-        restartTimer.stop();
-        refreshDebounce.stop();
-    }
-
-    function _looksLikeMissingCommand(text) {
-        if (text === undefined || text === null) {
-            return false;
-        }
-        var line = String(text).toLowerCase();
-        return line.indexOf("not found") >= 0 || line.indexOf("no such file") >= 0;
-    }
-
-    function _applyGetVolumeOutput(data) {
-        var line = data === undefined || data === null ? "" : String(data).trim();
-        if (line.length === 0) {
+    function _syncFromPipewire() {
+        if (!root.monitorEnabled || !root.backendAvailable) {
             root._clearState();
             return;
         }
 
-        if (_looksLikeMissingCommand(line)) {
-            _setBackendUnavailable();
-            return;
-        }
-
-        var volumeMatch = line.match(/Volume:\s*([0-9]*\.?[0-9]+)/i);
-        if (!volumeMatch) {
-            if (line.toLowerCase().indexOf("no default sink") >= 0) {
-                root._clearState();
-            }
-            return;
-        }
-
-        var parsedValue = Number(volumeMatch[1]);
-        if (!isFinite(parsedValue)) {
+        if (!root.trackedSink || !root.trackedSink.ready || !root.trackedAudio) {
+            root._clearState();
             return;
         }
 
         root.available = true;
-        root.value = _clamp(parsedValue);
-        root.muted = line.indexOf("[MUTED]") >= 0;
+        root.value = _clamp(root.trackedAudio.volume);
+        root.muted = !!root.trackedAudio.muted;
+    }
+
+    function _scheduleSync() {
+        syncDebounce.restart();
     }
 
     function refresh() {
-        if (!root.monitorEnabled || !root.backendAvailable || getVolumeProcess.running) {
-            return;
+        root._scheduleSync();
+    }
+
+    function suppressOsdFor(durationMs) {
+        var intervalMs = Math.max(0, Math.round(Number(durationMs)));
+        if (!isFinite(intervalMs) || intervalMs <= 0) {
+            intervalMs = 450;
         }
 
-        getVolumeProcess.exec(root.getVolumeCommand);
+        osdSuppressTimer.interval = intervalMs;
+        osdSuppressTimer.restart();
     }
 
     function setMuted(nextMuted) {
-        if (!root.backendAvailable || setMuteProcess.running) {
+        if (!root.sliderEnabled || !root.trackedAudio) {
             return;
         }
 
-        setMuteProcess.exec(nextMuted ? root.setMuteOnCommand : root.setMuteOffCommand);
+        root.available = true;
+        root.muted = !!nextMuted;
+        root.trackedAudio.muted = root.muted;
+        root._scheduleSync();
     }
 
     function setVolume(nextValue) {
-        if (!root.backendAvailable || setVolumeProcess.running) {
+        if (!root.sliderEnabled || !root.trackedAudio) {
             return;
         }
 
         var clamped = _clamp(nextValue);
-        setVolumeProcess.exec(["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", clamped.toFixed(4)]);
-
-        if (root.muted && clamped > 0) {
-            root.setMuted(false);
-        }
-    }
-
-    function _startSubscribe() {
-        if (!root.monitorEnabled || !root.backendAvailable || subscribeProcess.running) {
-            return;
+        if (root.trackedAudio.muted && clamped > 0) {
+            root.muted = false;
+            root.trackedAudio.muted = false;
         }
 
-        subscribeProcess.exec(root.subscribeCommand);
+        root.available = true;
+        root.value = clamped;
+        root.trackedAudio.volume = clamped;
+        root._scheduleSync();
     }
 
     onMonitorEnabledChanged: {
         if (!monitorEnabled) {
-            restartTimer.stop();
-            refreshDebounce.stop();
+            syncDebounce.stop();
             _clearState();
-            if (subscribeProcess.running) {
-                subscribeProcess.signal(15);
-            }
             return;
         }
 
         refresh();
-        _startSubscribe();
     }
 
-    Component.onCompleted: {
-        refresh();
-        _startSubscribe();
-    }
+    Component.onCompleted: root.refresh()
 
-    property Process getVolumeProcess: Process {
-        id: getVolumeProcess
-
-        stdout: SplitParser {
-            splitMarker: "\n"
-            onRead: function (data) {
-                root._applyGetVolumeOutput(data);
-            }
-        }
-
-        stderr: SplitParser {
-            splitMarker: "\n"
-            onRead: function (data) {
-                if (root._looksLikeMissingCommand(data)) {
-                    root._setBackendUnavailable();
-                }
-            }
-        }
-    }
-
-    property Process setVolumeProcess: Process {
-        id: setVolumeProcess
-        onRunningChanged: {
-            if (!running && root.monitorEnabled && root.backendAvailable) {
-                root.refresh();
-            }
-        }
-
-        stderr: SplitParser {
-            splitMarker: "\n"
-            onRead: function (data) {
-                if (root._looksLikeMissingCommand(data)) {
-                    root._setBackendUnavailable();
-                }
-            }
-        }
-    }
-
-    property Process setMuteProcess: Process {
-        id: setMuteProcess
-        onRunningChanged: {
-            if (!running && root.monitorEnabled && root.backendAvailable) {
-                root.refresh();
-            }
-        }
-
-        stderr: SplitParser {
-            splitMarker: "\n"
-            onRead: function (data) {
-                if (root._looksLikeMissingCommand(data)) {
-                    root._setBackendUnavailable();
-                }
-            }
-        }
-    }
-
-    property Process subscribeProcess: Process {
-        id: subscribeProcess
-
-        stdout: SplitParser {
-            splitMarker: "\n"
-            onRead: function (data) {
-                var line = data === undefined || data === null ? "" : String(data).trim();
-                if (line.length === 0) {
-                    return;
-                }
-                refreshDebounce.restart();
-            }
-        }
-
-        stderr: SplitParser {
-            splitMarker: "\n"
-            onRead: function (data) {
-                if (root._looksLikeMissingCommand(data)) {
-                    root._setBackendUnavailable();
-                }
-            }
-        }
-
-        onRunningChanged: {
-            if (!running && root.monitorEnabled && root.backendAvailable) {
-                restartTimer.restart();
-            }
-        }
-    }
-
-    property Timer refreshDebounce: Timer {
-        id: refreshDebounce
-        interval: 120
+    property Timer osdSuppressTimer: Timer {
+        id: osdSuppressTimer
+        interval: 450
         repeat: false
-        onTriggered: root.refresh()
     }
 
-    property Timer restartTimer: Timer {
-        id: restartTimer
-        interval: 2000
+    property Timer syncDebounce: Timer {
+        id: syncDebounce
+        interval: 20
         repeat: false
-        onTriggered: root._startSubscribe()
+        onTriggered: root._syncFromPipewire()
+    }
+
+    property PwObjectTracker sinkTracker: PwObjectTracker {
+        id: sinkTracker
+        objects: Pipewire.nodes.values
+    }
+
+    property Connections pipewireConnection: Connections {
+        target: Pipewire
+        ignoreUnknownSignals: true
+
+        function onReadyChanged() {
+            root._scheduleSync();
+        }
+
+        function onDefaultAudioSinkChanged() {
+            root._scheduleSync();
+        }
+    }
+
+    property Connections pipewireNodesConnection: Connections {
+        target: Pipewire.nodes
+        ignoreUnknownSignals: true
+
+        function onValuesChanged() {
+            root._scheduleSync();
+        }
+    }
+
+    property Connections sinkConnection: Connections {
+        target: root.trackedSink
+        ignoreUnknownSignals: true
+
+        function onReadyChanged() {
+            root._scheduleSync();
+        }
+
+        function onAudioChanged() {
+            root._scheduleSync();
+        }
+    }
+
+    property Connections audioConnection: Connections {
+        target: root.trackedAudio
+        ignoreUnknownSignals: true
+
+        function onVolumeChanged() {
+            root._scheduleSync();
+        }
+
+        function onMutedChanged() {
+            root._scheduleSync();
+        }
     }
 }

@@ -25,6 +25,10 @@ Rectangle {
     color: "transparent"
     radius: Root.Theme.borderRadius
 
+    function suppressWidgetOsd() {
+        root.audio.suppressOsdFor(500);
+    }
+
     function syncHighlight() {
         if (!root.highlightState) {
             return;
@@ -69,10 +73,10 @@ Rectangle {
         anchors.centerIn: parent
         width: Root.Theme.iconSize
         height: Root.Theme.iconSize
-        fallbackWhileSvgLoading: false
+        fallbackWhileSvgLoading: true
         glyph: root.audio.iconGlyph
         svgNameOverride: root.audio.iconSvgName
-        fallbackFontFamily: Root.Theme.fontFamily
+        fallbackFontFamily: Root.Theme.fontFamilySymbol
         pixelSize: Root.Theme.iconSize
         fallbackColor: Root.Theme.textSecondary
     }
@@ -97,6 +101,7 @@ Rectangle {
         acceptedButtons: Qt.LeftButton | Qt.MiddleButton
         onClicked: function (mouse) {
             if (mouse.button === Qt.MiddleButton) {
+                root.suppressWidgetOsd();
                 root.audio.setMuted(!root.audio.muted);
                 return;
             }
@@ -113,6 +118,7 @@ Rectangle {
 
             var step = 0.05;
             var direction = delta > 0 ? 1 : -1;
+            root.suppressWidgetOsd();
             root.audio.setVolume(root.audio.value + (step * direction));
             wheel.accepted = true;
         }
@@ -149,6 +155,7 @@ Rectangle {
                     return;
                 }
                 var value = Math.max(0, Math.min(1, localX / sliderTrack.width));
+                root.suppressWidgetOsd();
                 root.audio.setVolume(value);
             }
 
