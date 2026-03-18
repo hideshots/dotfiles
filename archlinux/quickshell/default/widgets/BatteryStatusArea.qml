@@ -13,12 +13,47 @@ Rectangle {
 
     readonly property var battery: Root.BatteryService
     readonly property var _batterySvgWarmupNames: ["battery.100percent.bolt", "battery.100percent", "battery.75percent", "battery.50percent", "battery.25percent", "battery.0percent"]
+    readonly property bool _showPercentageCapsule: root.battery.showPercentage
+    readonly property string _percentageDisplayText: String(root.battery.percentage)
+    readonly property real _percentageCapsuleWidth: Math.max(
+        Root.Theme.batteryPercentageCapsuleMinWidth,
+        Math.ceil(percentageTextMetrics.implicitWidth) + (Root.Theme.batteryPercentageCapsuleHorizontalPadding * 2)
+    )
 
     visible: battery.visible
     height: parent.height
-    width: visible ? contentRow.implicitWidth + (Root.Theme.rightWidgetPadding * 2) : 0
+    width: visible ? contentVisual.implicitWidth + (Root.Theme.rightWidgetPadding * 2) : 0
     color: "transparent"
     radius: Root.Theme.borderRadius
+
+    function _capsuleFontWeightKeyword(weight) {
+        return weight >= Font.Bold ? "bold" : "normal";
+    }
+
+    function _capsuleCanvasFontSpec() {
+        return root._capsuleFontWeightKeyword(Root.Theme.batteryPercentageCapsuleFontWeight)
+            + " "
+            + Root.Theme.batteryPercentageCapsuleFontSize
+            + "px '"
+            + Root.Theme.batteryPercentageCapsuleFontFamily
+            + "'";
+    }
+
+    function _addRoundedRectPath(ctx, width, height, radius) {
+        var clampedRadius = Math.max(0, Math.min(radius, width / 2, height / 2));
+
+        ctx.beginPath();
+        ctx.moveTo(clampedRadius, 0);
+        ctx.lineTo(width - clampedRadius, 0);
+        ctx.arc(width - clampedRadius, clampedRadius, clampedRadius, -Math.PI / 2, 0, false);
+        ctx.lineTo(width, height - clampedRadius);
+        ctx.arc(width - clampedRadius, height - clampedRadius, clampedRadius, 0, Math.PI / 2, false);
+        ctx.lineTo(clampedRadius, height);
+        ctx.arc(clampedRadius, height - clampedRadius, clampedRadius, Math.PI / 2, Math.PI, false);
+        ctx.lineTo(0, clampedRadius);
+        ctx.arc(clampedRadius, clampedRadius, clampedRadius, Math.PI, (Math.PI * 3) / 2, false);
+        ctx.closePath();
+    }
 
     readonly property var powerProfileMenuModel: root._buildPowerProfileMenuModel()
     function _buildPowerProfileMenuModel() {
@@ -111,27 +146,64 @@ Rectangle {
         }
     }
 
-    Row {
-        id: contentRow
+    Item {
+        id: contentVisual
         anchors.centerIn: parent
-        spacing: 8
+        implicitWidth: root._showPercentageCapsule ? batteryPercentageCapsule.implicitWidth : batteryIcon.implicitWidth
+        implicitHeight: root._showPercentageCapsule ? batteryPercentageCapsule.implicitHeight : batteryIcon.implicitHeight
 
         Text {
-            id: percentageText
-            anchors.verticalCenter: parent.verticalCenter
-            anchors.verticalCenterOffset: 1
-            visible: root.battery.showPercentage
-            text: String(root.battery.percentage) + "%"
-            font.family: Root.Theme.fontFamily
-            font.pixelSize: 12
-            font.weight: Font.Medium
-            color: Root.Theme.textPrimary
+            id: percentageTextMetrics
+            visible: false
+            text: root._percentageDisplayText
+            font.family: Root.Theme.batteryPercentageCapsuleFontFamily
+            font.pixelSize: Root.Theme.batteryPercentageCapsuleFontSize
+            font.weight: Root.Theme.batteryPercentageCapsuleFontWeight
             renderType: Text.NativeRendering
+        }
+
+        Canvas {
+            id: batteryPercentageCapsule
+            anchors.centerIn: parent
+            visible: root._showPercentageCapsule
+            width: root._percentageCapsuleWidth
+            height: Root.Theme.batteryPercentageCapsuleHeight
+            implicitWidth: width
+            implicitHeight: height
+            smooth: true
+            antialiasing: true
+
+            onPaint: {
+                var ctx = getContext("2d");
+                ctx.clearRect(0, 0, width, height);
+
+                ctx.fillStyle = Root.Theme.batteryPercentageCapsuleFill;
+                root._addRoundedRectPath(ctx, width, height, Root.Theme.batteryPercentageCapsuleRadius);
+                ctx.fill();
+
+                ctx.globalCompositeOperation = "destination-out";
+                ctx.fillStyle = "rgba(0,0,0,1)";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.font = root._capsuleCanvasFontSpec();
+                ctx.fillText(
+                    root._percentageDisplayText,
+                    width * 0.5,
+                    (height * 0.5) + Root.Theme.batteryPercentageCapsuleTextVerticalOffset
+                );
+                ctx.globalCompositeOperation = "source-over";
+            }
+
+            onWidthChanged: requestPaint()
+            onHeightChanged: requestPaint()
+            onVisibleChanged: requestPaint()
+            Component.onCompleted: requestPaint()
         }
 
         Root.SymbolIcon {
             id: batteryIcon
-            anchors.verticalCenter: parent.verticalCenter
+            anchors.centerIn: parent
+            visible: !root._showPercentageCapsule
             width: Root.Theme.iconSize
             height: Root.Theme.iconSize
             fallbackWhileSvgLoading: false
@@ -140,18 +212,29 @@ Rectangle {
             pixelSize: Root.Theme.iconSize
             fallbackColor: Root.Theme.textSecondary
         }
+
+        DropShadow {
+            anchors.fill: batteryIcon
+            source: batteryIcon
+            visible: Root.Theme.isDark && !root._showPercentageCapsule
+            horizontalOffset: Root.Theme.shadowHorizontalOffset
+            verticalOffset: Root.Theme.shadowVerticalOffset
+            radius: Root.Theme.shadowRadius
+            samples: 16
+            spread: 0
+            color: Root.Theme.shadowColor
+        }
     }
 
-    DropShadow {
-        anchors.fill: contentRow
-        source: contentRow
-        visible: Root.Theme.isDark
-        horizontalOffset: Root.Theme.shadowHorizontalOffset
-        verticalOffset: Root.Theme.shadowVerticalOffset
-        radius: Root.Theme.shadowRadius
-        samples: 16
-        spread: 0
-        color: Root.Theme.shadowColor
+    Connections {
+        target: root.battery
+        function onPercentageChanged() {
+            batteryPercentageCapsule.requestPaint();
+        }
+
+        function onShowPercentageChanged() {
+            batteryPercentageCapsule.requestPaint();
+        }
     }
 
     MouseArea {

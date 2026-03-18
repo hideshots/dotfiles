@@ -68,6 +68,17 @@ QtObject {
         ? Qt.rgba(0, 0, 0, 0.4)
         : Qt.rgba(246/255, 246/255, 246/255, 0.72)
 
+    // Battery percentage capsule
+    readonly property color batteryPercentageCapsuleFill: "#ffffff"
+    readonly property int batteryPercentageCapsuleMinWidth: 27
+    readonly property int batteryPercentageCapsuleHeight: 14
+    readonly property int batteryPercentageCapsuleRadius: 4
+    readonly property string batteryPercentageCapsuleFontFamily: fontFamily
+    readonly property int batteryPercentageCapsuleFontSize: 12
+    readonly property int batteryPercentageCapsuleFontWeight: Font.Bold
+    readonly property int batteryPercentageCapsuleHorizontalPadding: 4
+    readonly property real batteryPercentageCapsuleTextVerticalOffset: 1
+
     // Menu colors
     readonly property color menuBackground: isDark
         ? Qt.rgba(0.15, 0.15, 0.15, 0.65)

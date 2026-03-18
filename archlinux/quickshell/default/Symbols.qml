@@ -53,12 +53,12 @@ QtObject {
             "􁅒": { sfName: "", usage: "bluetooth off", textOnly: true },
             "􁊕": { sfName: "circle.dotted.and.circle", usage: "reduce motion" },
             "􂱣": { sfName: "sun.righthalf.filled", usage: "night shift toggle" },
-            "􀢋": { sfName: "battery.100percent.bolt", usage: "battery charging / adapter", scale: 1.5  },
-            "􀛨": { sfName: "battery.100percent", usage: "battery full", scale: 1.5  },
-            "􀺸": { sfName: "battery.75percent", usage: "battery 75 percent", scale: 1.5 },
-            "􀺶": { sfName: "battery.50percent", usage: "battery 51 percent", scale: 1.5  },
-            "􀛩": { sfName: "battery.25percent", usage: "battery 25 percent", scale: 1.5  },
-            "􀛪": { sfName: "battery.0percent", usage: "battery empty", scale: 1.5  },
+            "􀢋": { sfName: "battery.100percent.bolt", usage: "battery charging / adapter", scale: 1.8  },
+            "􀛨": { sfName: "battery.100percent", usage: "battery full", scale: 1.8  },
+            "􀺸": { sfName: "battery.75percent", usage: "battery 75 percent", scale: 1.8 },
+            "􀺶": { sfName: "battery.50percent", usage: "battery 51 percent", scale: 1.8  },
+            "􀛩": { sfName: "battery.25percent", usage: "battery 25 percent", scale: 1.8  },
+            "􀛪": { sfName: "battery.0percent", usage: "battery empty", scale: 1.8  },
 
             // Weather
             "􀆲": { sfName: "sunrise.fill", usage: "weather sunrise event" },
