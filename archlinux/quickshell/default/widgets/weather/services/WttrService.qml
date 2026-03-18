@@ -720,10 +720,13 @@ QtObject {
 
     function _parseWeatherPayload(payloadText) {
         const parsed = JSON.parse(payloadText);
+        const payload = parsed && typeof parsed === "object" && parsed.data && typeof parsed.data === "object"
+            ? parsed.data
+            : parsed;
 
-        const cityFromApi = _safeGet(parsed, ["nearest_area", 0, "areaName", 0, "value"]);
-        const current = _safeGet(parsed, ["current_condition", 0]) || {};
-        const weatherDays = Array.isArray(parsed.weather) ? parsed.weather : [];
+        const cityFromApi = _safeGet(payload, ["nearest_area", 0, "areaName", 0, "value"]);
+        const current = _safeGet(payload, ["current_condition", 0]) || {};
+        const weatherDays = Array.isArray(payload.weather) ? payload.weather : [];
         const today = weatherDays[0] || {};
 
         const city = cityFromApi && String(cityFromApi).length > 0
