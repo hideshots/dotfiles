@@ -67,6 +67,15 @@ Item {
         return String(first).trim();
     }
 
+    function _truncatedWifiDetail(text) {
+        var value = text === undefined || text === null ? "" : String(text).trim();
+        if (value.length <= 9) {
+            return value;
+        }
+
+        return value.slice(0, 9) + "..";
+    }
+
     function buildTileDescriptors() {
         var descriptors = [
             {
@@ -82,7 +91,7 @@ Item {
                     title: "Wi-Fi",
                     detailOn: "On",
                     detailOff: "Off",
-                    detail: root.wifiChecked ? (root.wifiConnected && root.wifiConnectedName.length > 0 ? root.wifiConnectedName : "On") : "Off",
+                    detail: root.wifiChecked ? (root.wifiConnected && root.wifiConnectedName.length > 0 ? root._truncatedWifiDetail(root.wifiConnectedName) : "On") : "Off",
                     checked: root.wifiChecked
                 }
             },
@@ -193,7 +202,9 @@ Item {
                     title: "Sound",
                     minusSymbol: "􀊡",
                     plusSymbol: "􀊩",
-                    value: root.volumeValue
+                    value: root.volumeValue,
+                    detailText: Root.AudioService.available && Root.AudioService.muted ? "Muted" : "",
+                    enabled: Root.AudioService.sliderEnabled
                 }
             },
         ];
@@ -380,6 +391,7 @@ Item {
         }
 
         if (tileId === "volume") {
+            Root.AudioService.suppressOsdFor(500);
             Root.AudioService.setVolume(clamped);
         }
     }
