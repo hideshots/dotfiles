@@ -16,6 +16,8 @@ QtObject {
     property bool ethernetConnected: false
     property bool monitorEnabled: true
     property bool backendAvailable: true
+    property bool _pendingHasWifiDevice: false
+    property bool _pendingEthernetConnected: false
 
     readonly property string statusText: !enabled ? "Off" : (connected ? "Connected" : "Not Connected")
     readonly property string iconGlyph: !enabled ? "􀙈" : (connected ? "􀙇" : "􀙥")
@@ -41,6 +43,8 @@ QtObject {
         root.signalLevel = 0;
         root.hasWifiDevice = false;
         root.ethernetConnected = false;
+        root._pendingHasWifiDevice = false;
+        root._pendingEthernetConnected = false;
     }
 
     function _looksLikeMissingCommand(text) {
@@ -180,12 +184,12 @@ QtObject {
         var state = String(parts.slice(1).join(":")).trim().toLowerCase();
 
         if (type === "wifi" || type === "802-11-wireless") {
-            root.hasWifiDevice = true;
+            root._pendingHasWifiDevice = true;
             return;
         }
 
         if (type === "ethernet" && state.indexOf("connected") === 0) {
-            root.ethernetConnected = true;
+            root._pendingEthernetConnected = true;
         }
     }
 
@@ -212,8 +216,8 @@ QtObject {
         }
 
         if (!deviceStatusProcess.running) {
-            root.hasWifiDevice = false;
-            root.ethernetConnected = false;
+            root._pendingHasWifiDevice = false;
+            root._pendingEthernetConnected = false;
             deviceStatusProcess.exec(root.deviceStatusCommand);
         }
     }
@@ -331,6 +335,14 @@ QtObject {
                     root._setBackendUnavailable();
                 }
             }
+        }
+
+        onRunningChanged: {
+            if (running) {
+                return;
+            }
+            root.hasWifiDevice = root._pendingHasWifiDevice;
+            root.ethernetConnected = root._pendingEthernetConnected;
         }
     }
 
