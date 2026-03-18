@@ -973,7 +973,7 @@ QtObject {
                 return;
             }
 
-            writeProcess.exec(["brightnessctl", "-d", device, "set", Math.round(clamped * 100) + "%"]);
+            writeProcess.exec(["brightnessctl", "-q", "-d", device, "set", Math.round(clamped * 100) + "%"]);
             return;
         }
 
