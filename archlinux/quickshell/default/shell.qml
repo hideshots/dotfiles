@@ -1634,7 +1634,7 @@ ShellRoot {
                 right: true
             }
 
-            implicitHeight: 72
+            implicitHeight: 90
             color: "transparent"
 
             exclusiveZone: 36
@@ -1644,30 +1644,48 @@ ShellRoot {
             }
 
             Rectangle {
-                anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.right: parent.right
-                height: 72
-                color: "transparent"
+              anchors.top: parent.top
+              anchors.left: parent.left
+              anchors.right: parent.right
+              height: 90
+              color: "transparent"
 
-                gradient: Gradient {
-                    GradientStop {
-                        position: 0.00
-                        color: Theme.isDark ? Qt.rgba(0, 0, 0, 0.18) : Qt.rgba(1, 1, 1, 0.12)
-                    }
-                    GradientStop {
-                        position: 0.25
-                        color: Theme.isDark ? Qt.rgba(0, 0, 0, 0.10) : Qt.rgba(1, 1, 1, 0.07)
-                    }
-                    GradientStop {
-                        position: 0.60
-                        color: Theme.isDark ? Qt.rgba(0, 0, 0, 0.04) : Qt.rgba(1, 1, 1, 0.01)
-                    }
-                    GradientStop {
-                        position: 1.00
-                        color: "transparent"
-                    }
+              gradient: Gradient {
+                GradientStop {
+                  position: 0.00
+                  color: Theme.isDark
+                  ? Qt.rgba(0, 0, 0, 0.333)
+                  : Qt.rgba(110/255, 111/255, 75/255, 0.79)
                 }
+                GradientStop {
+                  position: 0.10
+                  color: Theme.isDark
+                  ? Qt.rgba(0, 0, 0, 0.333)
+                  : Qt.rgba(110/255, 111/255, 75/255, 0.70)
+                }
+                GradientStop {
+                  position: 0.35
+                  color: Theme.isDark
+                  ? Qt.rgba(0, 0, 0, 0.22)
+                  : Qt.rgba(110/255, 111/255, 75/255, 0.56)
+                }
+                GradientStop {
+                  position: 0.60
+                  color: Theme.isDark
+                  ? Qt.rgba(0, 0, 0, 0.10)
+                  : Qt.rgba(110/255, 111/255, 75/255, 0.30)
+                }
+                GradientStop {
+                  position: 0.82
+                  color: Theme.isDark
+                  ? Qt.rgba(0, 0, 0, 0.03)
+                  : Qt.rgba(110/255, 111/255, 75/255, 0.10)
+                }
+                GradientStop {
+                  position: 1.00
+                  color: "transparent"
+                }
+              }
             }
 
             Item {
@@ -2025,6 +2043,11 @@ ShellRoot {
                                     id: storageStatsArea
                                     height: parent.height
                                     columnSpacing: shell.storageStatsColumnSpacing
+                                }
+
+                                Widgets.PrivacyStatusArea {
+                                    id: privacyStatusArea
+                                    height: parent.height
                                 }
 
                                 Widgets.HardwareStatsArea {

@@ -42,8 +42,9 @@ QtObject {
         })
 
     readonly property bool purpleIndicatorActive: root.systemAudioRecordingActive || root.screenShareActive
-    readonly property string activeDotKind: root.cameraActive ? "camera" : (root.micActive ? "mic" : (root.purpleIndicatorActive ? "systemAudio" : "none"))
-    readonly property bool anyActive: root.cameraActive || root.micActive || root.purpleIndicatorActive || root.locationActive
+    readonly property string activePrimaryKind: root.purpleIndicatorActive ? "systemAudio" : (root.micActive ? "mic" : (root.cameraActive ? "camera" : (root.locationActive ? "location" : "none")))
+    readonly property string activeDotKind: root.activePrimaryKind === "location" ? "none" : root.activePrimaryKind
+    readonly property bool anyActive: root.activePrimaryKind !== "none"
 
     function _safeString(value) {
         if (value === undefined || value === null) {

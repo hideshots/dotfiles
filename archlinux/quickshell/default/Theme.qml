@@ -54,10 +54,14 @@ QtObject {
     readonly property int privacyIndicatorSpacing: 4
     readonly property int privacyIndicatorControlCenterCompensationX: 2
     readonly property string privacyIndicatorArrowGlyph: "􀋒"
+    readonly property color privacyIndicatorSurfaceBackground: Qt.rgba(0, 0, 0, 0.20)
     readonly property color privacyCameraIndicator: "#30D158"
     readonly property color privacyMicrophoneIndicator: "#fe872a"
     readonly property color privacySystemAudioIndicator: "#5c59fa"
     readonly property color privacyLocationIndicator: "#0A84FF"
+    readonly property int privacyStatusCapsuleWidth: 40
+    readonly property int privacyStatusCapsuleHeight: 25
+    readonly property int privacyStatusCapsuleIconSize: 14
 
     // Material background effects (from CSS variables)
     readonly property color materialUltraThick: isDark

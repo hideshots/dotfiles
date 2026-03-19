@@ -231,16 +231,16 @@ Item {
     function _privacyIconDescriptors() {
         var descriptors = [];
 
-        if (root.privacyState.micActive) {
-            descriptors.push({
-                glyph: "􀊱",
-                color: Root.Theme.privacyMicrophoneIndicator
-            });
-        }
         if (root.privacyState.systemAudioRecordingActive || root.privacyState.screenShareActive) {
             descriptors.push({
                 glyph: "􁅀",
                 color: Root.Theme.privacySystemAudioIndicator
+            });
+        }
+        if (root.privacyState.micActive) {
+            descriptors.push({
+                glyph: "􀊱",
+                color: Root.Theme.privacyMicrophoneIndicator
             });
         }
         if (root.privacyState.cameraActive) {
@@ -437,7 +437,7 @@ Item {
         height: root.privacyRowHeight
         anchors.horizontalCenter: parent.horizontalCenter
         radius: Math.round(height / 2)
-        tintColor: Qt.rgba(0, 0, 0, 0.20)
+        tintColor: Root.Theme.privacyIndicatorSurfaceBackground
         contrastColor: Qt.rgba(1, 1, 1, 0.0)
         borderColor: Qt.rgba(1, 1, 1, 0.0)
 

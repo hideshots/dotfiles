@@ -5,6 +5,7 @@ SystemTrayArea 1.0 SystemTrayArea.qml
 AudioStatusArea 1.0 AudioStatusArea.qml
 NetworkStatsArea 1.0 NetworkStatsArea.qml
 HardwareStatsArea 1.0 HardwareStatsArea.qml
+PrivacyStatusArea 1.0 PrivacyStatusArea.qml
 StorageStatsArea 1.0 StorageStatsArea.qml
 BatteryStatusArea 1.0 BatteryStatusArea.qml
 WifiStatusArea 1.0 WifiStatusArea.qml
