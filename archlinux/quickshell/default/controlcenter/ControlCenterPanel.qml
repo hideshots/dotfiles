@@ -468,6 +468,7 @@ Item {
                         Root.SymbolIcon {
                             svgScale: 1.18
                             anchors.centerIn: parent
+                            anchors.horizontalCenterOffset: -1
                             width: 8
                             height: 8
                             glyph: privacyIconChip.modelData.glyph
