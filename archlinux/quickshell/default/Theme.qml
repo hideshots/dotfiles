@@ -62,6 +62,9 @@ QtObject {
     readonly property int privacyStatusCapsuleWidth: 40
     readonly property int privacyStatusCapsuleHeight: 25
     readonly property int privacyStatusCapsuleIconSize: 14
+    readonly property real privacyStatusCapsuleMicSvgScale: 1.0
+    readonly property real privacyStatusCapsuleCameraSvgScale: 1.5
+    readonly property real privacyStatusCapsuleSystemAudioSvgScale: 1.5
 
     // Material background effects (from CSS variables)
     readonly property color materialUltraThick: isDark

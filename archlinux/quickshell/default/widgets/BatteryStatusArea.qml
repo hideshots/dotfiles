@@ -15,10 +15,11 @@ Rectangle {
     readonly property var _batterySvgWarmupNames: ["battery.100percent.bolt", "battery.100percent", "battery.75percent", "battery.50percent", "battery.25percent", "battery.0percent"]
     readonly property bool _showPercentageCapsule: root.battery.showPercentage
     readonly property string _percentageDisplayText: String(root.battery.percentage)
-    readonly property real _percentageCapsuleWidth: Math.max(
+    readonly property real _fixedPercentageCapsuleWidth: Math.max(
         Root.Theme.batteryPercentageCapsuleMinWidth,
-        Math.ceil(percentageTextMetrics.implicitWidth) + (Root.Theme.batteryPercentageCapsuleHorizontalPadding * 2)
+        Math.ceil(percentageCapsuleTemplateMetrics.implicitWidth) + (Root.Theme.batteryPercentageCapsuleHorizontalPadding * 2)
     )
+    readonly property real _contentWidth: Math.max(_fixedPercentageCapsuleWidth, batteryIcon.implicitWidth)
 
     visible: battery.visible
     height: parent.height
@@ -149,13 +150,13 @@ Rectangle {
     Item {
         id: contentVisual
         anchors.centerIn: parent
-        implicitWidth: root._showPercentageCapsule ? batteryPercentageCapsule.implicitWidth : batteryIcon.implicitWidth
+        implicitWidth: root._contentWidth
         implicitHeight: root._showPercentageCapsule ? batteryPercentageCapsule.implicitHeight : batteryIcon.implicitHeight
 
         Text {
-            id: percentageTextMetrics
+            id: percentageCapsuleTemplateMetrics
             visible: false
-            text: root._percentageDisplayText
+            text: "100"
             font.family: Root.Theme.batteryPercentageCapsuleFontFamily
             font.pixelSize: Root.Theme.batteryPercentageCapsuleFontSize
             font.weight: Root.Theme.batteryPercentageCapsuleFontWeight
@@ -166,7 +167,7 @@ Rectangle {
             id: batteryPercentageCapsule
             anchors.centerIn: parent
             visible: root._showPercentageCapsule
-            width: root._percentageCapsuleWidth
+            width: root._fixedPercentageCapsuleWidth
             height: Root.Theme.batteryPercentageCapsuleHeight
             implicitWidth: width
             implicitHeight: height
