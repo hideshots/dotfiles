@@ -55,6 +55,7 @@ ShellRoot {
     readonly property color notificationsControlBorderColor: Root.Theme.isDark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(1, 1, 1, 0.52)
     property bool notificationCenterOpen: false
     property var notificationCenterTriggerItem: null
+    property var notificationCenterTargetScreen: null
     property bool notificationCenterEnabled: true
     property int notificationCenterTopMargin: 44
     property int notificationCenterRightMargin: 16
@@ -136,12 +137,14 @@ ShellRoot {
         }
     }
     onControlCenterBrightnessDdcBusByConnectorChanged: brightnessService.ddcBusByConnectorOverride = controlCenterBrightnessDdcBusByConnector
-    function toggleNotificationCenter(triggerItem) {
+    function toggleNotificationCenter(triggerItem, screen) {
         var hasTrigger = triggerItem !== undefined && triggerItem !== null;
+        var targetScreen = screen !== undefined ? screen : null;
 
         if (shell.notificationCenterOpen) {
-            if (hasTrigger && shell.notificationCenterTriggerItem !== triggerItem) {
+            if (hasTrigger && (shell.notificationCenterTriggerItem !== triggerItem || shell.notificationCenterTargetScreen !== targetScreen)) {
                 shell.notificationCenterTriggerItem = triggerItem;
+                shell.notificationCenterTargetScreen = targetScreen;
                 return;
             }
             shell.notificationCenterOpen = false;
@@ -149,6 +152,7 @@ ShellRoot {
         }
 
         shell.notificationCenterTriggerItem = hasTrigger ? triggerItem : null;
+        shell.notificationCenterTargetScreen = targetScreen ?? shell.keyboardNotificationCenterScreen();
         shell.notificationCenterOpen = true;
     }
     function toggleControlCenter(triggerItem, screen) {
@@ -202,6 +206,15 @@ ShellRoot {
         return null;
     }
 
+    function keyboardNotificationCenterScreen() {
+        var focusedScreen = shell._focusedMonitorScreen();
+        if (focusedScreen) {
+            return focusedScreen;
+        }
+
+        return shell.keyboardControlCenterScreen();
+    }
+
     function _screenNameValue(screen) {
         if (!screen || screen.name === undefined || screen.name === null) {
             return "";
@@ -210,7 +223,7 @@ ShellRoot {
         return String(screen.name);
     }
 
-    function activeOsdScreen(preferredScreen) {
+    function _focusedMonitorScreen() {
         var screens = Quickshell.screens;
         var focusedMonitor = Hyprland.focusedMonitor;
         var focusedName = focusedMonitor && focusedMonitor.name !== undefined && focusedMonitor.name !== null ? String(focusedMonitor.name) : "";
@@ -231,6 +244,15 @@ ShellRoot {
                     return screen;
                 }
             }
+        }
+
+        return null;
+    }
+
+    function activeOsdScreen(preferredScreen) {
+        var focusedScreen = shell._focusedMonitorScreen();
+        if (focusedScreen) {
+            return focusedScreen;
         }
 
         if (preferredScreen !== undefined && preferredScreen !== null) {
@@ -1495,6 +1517,7 @@ ShellRoot {
         anchors.bottom: true
         exclusionMode: ExclusionMode.Ignore
 
+        screen: shell.notificationCenterTargetScreen ?? shell.keyboardNotificationCenterScreen()
         color: "transparent"
         surfaceFormat.opaque: false
         focusable: false
@@ -1616,13 +1639,23 @@ ShellRoot {
             WlrLayershell.namespace: "qsbar"
             required property var modelData
             screen: barPanelWindow.modelData
+            readonly property string panelScreenName: shell._screenNameValue(barPanelWindow.modelData)
             property bool notificationCenterOpenProxy: shell.notificationCenterOpen
             property var notificationCenterTriggerItemProxy: shell.notificationCenterTriggerItem
+            property var notificationCenterTargetScreenProxy: shell.notificationCenterTargetScreen
             property bool controlCenterOpenProxy: shell.controlCenterOpen
             property var controlCenterTriggerItemProxy: shell.controlCenterTriggerItem
             property var controlCenterTargetScreenProxy: shell.controlCenterTargetScreen
+            readonly property string notificationCenterTargetScreenName: shell._screenNameValue(barPanelWindow.notificationCenterTargetScreenProxy)
+            readonly property bool notificationCenterOpenOnThisScreen: barPanelWindow.notificationCenterOpenProxy
+                && barPanelWindow.panelScreenName.length > 0
+                && barPanelWindow.panelScreenName === barPanelWindow.notificationCenterTargetScreenName
+            readonly property string controlCenterTargetScreenName: shell._screenNameValue(barPanelWindow.controlCenterTargetScreenProxy)
+            readonly property bool controlCenterOpenOnThisScreen: barPanelWindow.controlCenterOpenProxy
+                && barPanelWindow.panelScreenName.length > 0
+                && barPanelWindow.panelScreenName === barPanelWindow.controlCenterTargetScreenName
             function toggleNotificationCenterForBar(triggerItem) {
-                shell.toggleNotificationCenter(triggerItem);
+                shell.toggleNotificationCenter(triggerItem, barPanelWindow.modelData);
             }
             function toggleControlCenterForBar(triggerItem) {
                 shell.toggleControlCenter(triggerItem, barPanelWindow.modelData);
@@ -1636,6 +1669,7 @@ ShellRoot {
 
             implicitHeight: 90
             color: "transparent"
+            WlrLayershell.layer: (barPanelWindow.notificationCenterOpenOnThisScreen || barPanelWindow.controlCenterOpenOnThisScreen) ? WlrLayer.Overlay : WlrLayer.Top
 
             exclusiveZone: 36
 
@@ -1951,8 +1985,8 @@ ShellRoot {
                             function syncRightHighlight() {
                                 var notificationTriggeredFromKeyboard = barPanelWindow.notificationCenterTriggerItemProxy == null;
                                 var controlTriggeredFromKeyboard = barPanelWindow.controlCenterTriggerItemProxy == null;
-                                var notificationCenterShouldHighlight = barPanelWindow.notificationCenterOpenProxy && (barPanelWindow.notificationCenterTriggerItemProxy === timeDisplay || notificationTriggeredFromKeyboard);
-                                var controlCenterShouldHighlight = barPanelWindow.controlCenterOpenProxy && barPanelWindow.controlCenterTargetScreenProxy === barPanelWindow.modelData && (barPanelWindow.controlCenterTriggerItemProxy === controlCenterButton || controlTriggeredFromKeyboard);
+                                var notificationCenterShouldHighlight = barPanelWindow.notificationCenterOpenOnThisScreen && (barPanelWindow.notificationCenterTriggerItemProxy === timeDisplay || notificationTriggeredFromKeyboard);
+                                var controlCenterShouldHighlight = barPanelWindow.controlCenterOpenOnThisScreen && (barPanelWindow.controlCenterTriggerItemProxy === controlCenterButton || controlTriggeredFromKeyboard);
 
                                 if (notificationCenterShouldHighlight) {
                                     rightHi.activeTarget = timeDisplay;
@@ -1997,6 +2031,9 @@ ShellRoot {
                                     rightSection.syncRightHighlight();
                                 }
                                 function onNotificationCenterTriggerItemProxyChanged() {
+                                    rightSection.syncRightHighlight();
+                                }
+                                function onNotificationCenterTargetScreenProxyChanged() {
                                     rightSection.syncRightHighlight();
                                 }
                                 function onControlCenterOpenProxyChanged() {
