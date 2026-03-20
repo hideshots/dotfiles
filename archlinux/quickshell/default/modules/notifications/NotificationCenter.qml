@@ -689,6 +689,7 @@ FocusScope {
 
                     Root.SymbolIcon {
                         anchors.centerIn: parent
+                        anchors.verticalCenterOffset: 1
                         visible: !clearButton.hovered
                         width: 12
                         height: 12
